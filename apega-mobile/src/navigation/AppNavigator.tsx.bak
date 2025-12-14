@@ -1,0 +1,70 @@
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import HomeScreenNew from '../screens/HomeScreenNew';
+import ItemDetailScreen from '../screens/ItemDetailScreen';
+import NewItemScreen from '../screens/NewItemScreen';
+import SubscriptionScreen from '../screens/SubscriptionScreen';
+import SearchScreen from '../screens/SearchScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import FavoritesScreen from '../screens/FavoritesScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
+
+export type RootStackParamList = {
+  Home: undefined;
+  ItemDetail: { itemId?: string; item?: any };
+  NewItem: undefined;
+  Subscription: undefined;
+  Search: undefined;
+  Profile: undefined;
+  Favorites: undefined;
+  Notifications: undefined;
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+export default function AppNavigator() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator
+        initialRouteName="Home"
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen
+          name="Home"
+          component={HomeScreenNew}
+        />
+        <Stack.Screen
+          name="ItemDetail"
+          component={ItemDetailScreen}
+        />
+        <Stack.Screen
+          name="NewItem"
+          component={NewItemScreen}
+        />
+        <Stack.Screen
+          name="Subscription"
+          component={SubscriptionScreen}
+        />
+        <Stack.Screen
+          name="Search"
+          component={SearchScreen}
+        />
+        <Stack.Screen
+          name="Profile"
+          component={ProfileScreen}
+        />
+        <Stack.Screen
+          name="Favorites"
+          component={FavoritesScreen}
+        />
+        <Stack.Screen
+          name="Notifications"
+          component={NotificationsScreen}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}

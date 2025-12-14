@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no" />
+    <title>Apega Desapega</title>
+
+    <!-- Mobile-first styles -->
+    <style id="expo-reset">
+      /* Force mobile-first display */
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        height: 100%;
+        background-color: #f3f4f6;
+      }
+
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #f3f4f6;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      /* Mobile container - constrained to mobile width */
+      #root {
+        width: 100%;
+        max-width: 430px;
+        height: 100%;
+        max-height: 932px;
+        display: flex;
+        flex-direction: column;
+        background-color: #ffffff;
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Responsive adjustments for smaller screens */
+      @media (max-width: 430px) {
+        body {
+          background-color: #ffffff;
+        }
+
+        #root {
+          max-width: 100%;
+          max-height: 100%;
+          box-shadow: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <noscript>
+      Você precisa habilitar JavaScript para executar este app.
+    </noscript>
+    <div id="root"></div>
+  </body>
+</html>

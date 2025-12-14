@@ -1,0 +1,198 @@
+const express = require('express');
+const { sql } = require('../config/database');
+const { authenticate, optionalAuth } = require('../middleware/auth');
+
+const router = express.Router();
+
+// Obter perfil público de um usuário
+router.get('/:id', optionalAuth, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const users = await sql`
+      SELECT
+        id, name, avatar_url, bio, city, state,
+        store_name, store_description, subscription_type,
+        rating, total_reviews, total_sales, total_followers, total_following,
+        is_verified, created_at
+      FROM users
+      WHERE id = ${id} AND is_active = true
+    `;
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: true, message: 'Usuário não encontrado' });
+    }
+
+    const user = users[0];
+
+    // Verificar se está seguindo (se logado)
+    if (req.user) {
+      const following = await sql`
+        SELECT id FROM followers WHERE follower_id = ${req.user.id} AND following_id = ${id}
+      `;
+      user.is_following = following.length > 0;
+    }
+
+    res.json({ success: true, user });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Listar produtos de um usuário
+router.get('/:id/products', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status = 'active' } = req.query;
+
+    const products = await sql`
+      SELECT
+        p.*,
+        (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url
+      FROM products p
+      WHERE p.seller_id = ${id} AND p.status = ${status}
+      ORDER BY p.created_at DESC
+    `;
+
+    res.json({ success: true, products });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Seguir usuário
+router.post('/:id/follow', authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (id === req.user.id) {
+      return res.status(400).json({ error: true, message: 'Você não pode seguir a si mesmo' });
+    }
+
+    // Verificar se já segue
+    const existing = await sql`
+      SELECT id FROM followers WHERE follower_id = ${req.user.id} AND following_id = ${id}
+    `;
+
+    if (existing.length > 0) {
+      return res.status(400).json({ error: true, message: 'Você já segue este usuário' });
+    }
+
+    await sql`
+      INSERT INTO followers (follower_id, following_id)
+      VALUES (${req.user.id}, ${id})
+    `;
+
+    // Atualizar contadores
+    await sql`UPDATE users SET total_followers = total_followers + 1 WHERE id = ${id}`;
+    await sql`UPDATE users SET total_following = total_following + 1 WHERE id = ${req.user.id}`;
+
+    // Notificar
+    await sql`
+      INSERT INTO notifications (user_id, type, title, message, data)
+      VALUES (${id}, 'follow', 'Novo seguidor', ${`${req.user.name} começou a seguir você`}, ${JSON.stringify({ user_id: req.user.id })})
+    `;
+
+    res.json({ success: true, message: 'Seguindo com sucesso' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Deixar de seguir
+router.delete('/:id/follow', authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const deleted = await sql`
+      DELETE FROM followers WHERE follower_id = ${req.user.id} AND following_id = ${id}
+      RETURNING id
+    `;
+
+    if (deleted.length > 0) {
+      await sql`UPDATE users SET total_followers = GREATEST(total_followers - 1, 0) WHERE id = ${id}`;
+      await sql`UPDATE users SET total_following = GREATEST(total_following - 1, 0) WHERE id = ${req.user.id}`;
+    }
+
+    res.json({ success: true, message: 'Deixou de seguir' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Listar seguidores
+router.get('/:id/followers', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const followers = await sql`
+      SELECT
+        u.id, u.name, u.avatar_url, u.store_name
+      FROM followers f
+      JOIN users u ON f.follower_id = u.id
+      WHERE f.following_id = ${id}
+      ORDER BY f.created_at DESC
+    `;
+
+    res.json({ success: true, followers });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Listar quem o usuário segue
+router.get('/:id/following', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const following = await sql`
+      SELECT
+        u.id, u.name, u.avatar_url, u.store_name
+      FROM followers f
+      JOIN users u ON f.following_id = u.id
+      WHERE f.follower_id = ${id}
+      ORDER BY f.created_at DESC
+    `;
+
+    res.json({ success: true, following });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Saldo e transações
+router.get('/my/balance', authenticate, async (req, res, next) => {
+  try {
+    const userData = await sql`
+      SELECT balance, cashback_balance FROM users WHERE id = ${req.user.id}
+    `;
+
+    // Transações recentes
+    const transactions = await sql`
+      SELECT * FROM transactions
+      WHERE user_id = ${req.user.id}
+      ORDER BY created_at DESC
+      LIMIT 20
+    `;
+
+    // Saldo pendente (vendas não completadas)
+    const pending = await sql`
+      SELECT COALESCE(SUM(seller_receives), 0) as total
+      FROM orders
+      WHERE seller_id = ${req.user.id}
+        AND status IN ('pending_shipment', 'shipped', 'in_transit', 'delivered')
+    `;
+
+    res.json({
+      success: true,
+      balance: parseFloat(userData[0].balance),
+      cashback: parseFloat(userData[0].cashback_balance),
+      pending: parseFloat(pending[0].total),
+      transactions
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+module.exports = router;
