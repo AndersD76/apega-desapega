@@ -1,0 +1,12 @@
+{
+  "name": "apega-desapega",
+  "version": "1.0.0",
+  "description": "Apega Desapega - App de Brechó",
+  "scripts": {
+    "start": "cd apega-backend && npm install && node src/server.js",
+    "postinstall": "cd apega-backend && npm install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
