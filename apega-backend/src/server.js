@@ -70,12 +70,19 @@ app.use((err, req, res, next) => {
 
 // 404 handler - Para rotas da API, retorna JSON. Para outras rotas, serve o frontend
 app.use((req, res) => {
+  // Se é rota da API, retorna JSON
   if (req.path.startsWith('/api/')) {
-    res.status(404).json({ error: true, message: 'Rota não encontrada' });
-  } else {
-    // Serve o frontend para rotas não-API (SPA routing)
-    res.sendFile(path.join(__dirname, '../public/index.html'));
+    return res.status(404).json({ error: true, message: 'Rota não encontrada' });
   }
+
+  // Se é um arquivo estático (tem extensão), retorna 404
+  const hasExtension = /\.[a-zA-Z0-9]+$/.test(req.path);
+  if (hasExtension) {
+    return res.status(404).send('File not found');
+  }
+
+  // Para rotas de navegação (SPA), serve o index.html
+  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 app.listen(PORT, () => {
