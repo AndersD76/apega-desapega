@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 // URL base da API - ajustar conforme ambiente
 const getApiBaseUrl = () => {
   if (!__DEV__) {
-    return 'https://api.apegadesapega.com.br/api';
+    return 'https://apega-desapega-production.up.railway.app/api';
   }
   // No navegador, usar localhost
   if (Platform.OS === 'web') {
