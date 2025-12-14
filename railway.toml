@@ -1,0 +1,8 @@
+[build]
+builder = "NIXPACKS"
+watchPatterns = ["apega-backend/**"]
+
+[deploy]
+startCommand = "cd apega-backend && npm install && node src/server.js"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
