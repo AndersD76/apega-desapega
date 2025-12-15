@@ -184,9 +184,13 @@ export default function MyStoreScreen({ navigation }: Props) {
 
       <TouchableOpacity
         style={styles.menuButton}
-        onPress={() => openActionMenu(product)}
+        onPress={(e) => {
+          e.stopPropagation();
+          openActionMenu(product);
+        }}
+        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
       >
-        <Ionicons name="ellipsis-vertical" size={20} color={COLORS.textSecondary} />
+        <Ionicons name="ellipsis-vertical" size={24} color={COLORS.textSecondary} />
       </TouchableOpacity>
     </TouchableOpacity>
   );
