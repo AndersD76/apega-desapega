@@ -11,14 +11,18 @@ import {
   RefreshControl,
   Modal,
   Alert,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
-import { BottomNavigation, Tab, Button } from '../components';
+import { BottomNavigation } from '../components';
 import { getMyProducts, updateProduct, deleteProduct, Product as APIProduct } from '../services/products';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
+
+const { width } = Dimensions.get('window');
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MyStore'>;
 
@@ -32,18 +36,22 @@ interface Product {
   image_url?: string;
 }
 
+interface TabItem {
+  id: string;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+}
+
 export default function MyStoreScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<string>('active');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  // Menu de ações
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  // Carregar produtos do vendedor
   const fetchProducts = useCallback(async () => {
     try {
       const response = await getMyProducts();
@@ -70,7 +78,6 @@ export default function MyStoreScreen({ navigation }: Props) {
     fetchProducts();
   }, [fetchProducts]);
 
-  // Atualizar ao voltar para a tela
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       fetchProducts();
@@ -83,11 +90,13 @@ export default function MyStoreScreen({ navigation }: Props) {
     fetchProducts();
   }, [fetchProducts]);
 
-  const tabs = [
-    { id: 'active', label: `ativos (${products.filter(p => p.status === 'active').length})` },
-    { id: 'paused', label: `pausados (${products.filter(p => p.status === 'paused').length})` },
-    { id: 'sold', label: `vendidos (${products.filter(p => p.status === 'sold').length})` },
+  const tabs: TabItem[] = [
+    { id: 'active', label: 'Ativos', icon: 'checkmark-circle', color: COLORS.success },
+    { id: 'paused', label: 'Pausados', icon: 'pause-circle', color: '#F59E0B' },
+    { id: 'sold', label: 'Vendidos', icon: 'bag-check', color: COLORS.primary },
   ];
+
+  const getTabCount = (tabId: string) => products.filter(p => p.status === tabId).length;
 
   const filteredProducts = products.filter(product => product.status === activeTab);
 
@@ -97,6 +106,10 @@ export default function MyStoreScreen({ navigation }: Props) {
     if (isNaN(numPrice)) return 'R$ 0,00';
     return `R$ ${numPrice.toFixed(2).replace('.', ',')}`;
   };
+
+  const totalViews = products.reduce((sum, p) => sum + p.views, 0);
+  const totalFavorites = products.reduce((sum, p) => sum + p.favorites, 0);
+  const totalSold = products.filter(p => p.status === 'sold').length;
 
   const openActionMenu = (product: Product) => {
     setSelectedProduct(product);
@@ -112,9 +125,7 @@ export default function MyStoreScreen({ navigation }: Props) {
 
   const handleToggleStatus = async () => {
     if (!selectedProduct) return;
-
     const newStatus = selectedProduct.status === 'active' ? 'paused' : 'active';
-
     try {
       await updateProduct(selectedProduct.id, { status: newStatus });
       setProducts(prev => prev.map(p =>
@@ -128,7 +139,6 @@ export default function MyStoreScreen({ navigation }: Props) {
 
   const handleDelete = () => {
     setShowActionMenu(false);
-
     Alert.alert(
       'Remover produto?',
       'Esta ação não pode ser desfeita.',
@@ -156,26 +166,40 @@ export default function MyStoreScreen({ navigation }: Props) {
       <TouchableOpacity
         style={styles.productCardContent}
         onPress={() => navigation.navigate('EditProduct', { productId: product.id })}
-        activeOpacity={0.7}
+        activeOpacity={0.9}
       >
-        {product.image_url ? (
-          <Image source={{ uri: product.image_url }} style={styles.productImage} />
-        ) : (
-          <View style={[styles.productImage, styles.productImagePlaceholder]}>
-            <Ionicons name="image" size={40} color={COLORS.textTertiary} />
+        <View style={styles.productImageContainer}>
+          {product.image_url ? (
+            <Image source={{ uri: product.image_url }} style={styles.productImage} />
+          ) : (
+            <View style={[styles.productImage, styles.productImagePlaceholder]}>
+              <Ionicons name="image-outline" size={32} color={COLORS.gray[400]} />
+            </View>
+          )}
+
+          {/* Status Badge */}
+          <View style={[
+            styles.statusBadge,
+            product.status === 'active' && styles.statusActive,
+            product.status === 'paused' && styles.statusPaused,
+            product.status === 'sold' && styles.statusSold,
+          ]}>
+            <Text style={styles.statusText}>
+              {product.status === 'active' ? 'Ativo' : product.status === 'paused' ? 'Pausado' : 'Vendido'}
+            </Text>
           </View>
-        )}
+        </View>
 
         <View style={styles.productInfo}>
           <Text style={styles.productTitle} numberOfLines={2}>{product.title}</Text>
           <Text style={styles.productPrice}>{formatPrice(product.price)}</Text>
 
           <View style={styles.statsRow}>
-            <View style={styles.stat}>
+            <View style={styles.statItem}>
               <Ionicons name="eye-outline" size={14} color={COLORS.textSecondary} />
               <Text style={styles.statText}>{product.views}</Text>
             </View>
-            <View style={styles.stat}>
+            <View style={styles.statItem}>
               <Ionicons name="heart-outline" size={14} color={COLORS.textSecondary} />
               <Text style={styles.statText}>{product.favorites}</Text>
             </View>
@@ -188,50 +212,135 @@ export default function MyStoreScreen({ navigation }: Props) {
         onPress={() => openActionMenu(product)}
         hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
       >
-        <Ionicons name="ellipsis-vertical" size={24} color={COLORS.textPrimary} />
+        <Ionicons name="ellipsis-vertical" size={20} color={COLORS.textSecondary} />
       </TouchableOpacity>
+    </View>
+  );
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <View style={styles.emptyIconContainer}>
+        <Ionicons
+          name={activeTab === 'active' ? 'storefront-outline' : activeTab === 'paused' ? 'pause-circle-outline' : 'bag-check-outline'}
+          size={48}
+          color={COLORS.gray[400]}
+        />
+      </View>
+      <Text style={styles.emptyTitle}>
+        {activeTab === 'active' ? 'Nenhum produto ativo' :
+         activeTab === 'paused' ? 'Nenhum produto pausado' :
+         'Nenhum produto vendido'}
+      </Text>
+      <Text style={styles.emptySubtitle}>
+        {activeTab === 'active' ? 'Adicione produtos para começar a vender' :
+         activeTab === 'paused' ? 'Seus produtos pausados aparecerão aqui' :
+         'Seus produtos vendidos aparecerão aqui'}
+      </Text>
+      {activeTab === 'active' && (
+        <TouchableOpacity
+          style={styles.emptyButton}
+          onPress={() => navigation.navigate('NewItem', {})}
+        >
+          <LinearGradient
+            colors={[COLORS.primary, COLORS.primaryDark]}
+            style={styles.emptyButtonGradient}
+          >
+            <Ionicons name="add" size={20} color={COLORS.white} />
+            <Text style={styles.emptyButtonText}>Adicionar produto</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
+      <StatusBar barStyle="light-content" />
 
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + SPACING.sm }]}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>minha loja</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('NewItem', {})}>
-          <Ionicons name="add" size={28} color={COLORS.primary} />
-        </TouchableOpacity>
-      </View>
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.primaryDark]}
+        style={[styles.header, { paddingTop: insets.top + SPACING.sm }]}
+      >
+        <View style={styles.headerTop}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Minha Loja</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('NewItem', {})}
+            style={styles.addButton}
+          >
+            <Ionicons name="add" size={24} color={COLORS.white} />
+          </TouchableOpacity>
+        </View>
 
-      {/* Stats Summary */}
-      <View style={styles.statsCard}>
-        <View style={styles.statBox}>
-          <Text style={styles.statValue}>{products.length}</Text>
-          <Text style={styles.statLabel}>produtos</Text>
+        {/* Dashboard Stats */}
+        <View style={styles.dashboardStats}>
+          <View style={styles.dashboardStatItem}>
+            <View style={[styles.dashboardStatIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+              <Ionicons name="cube-outline" size={20} color={COLORS.white} />
+            </View>
+            <Text style={styles.dashboardStatValue}>{products.length}</Text>
+            <Text style={styles.dashboardStatLabel}>Produtos</Text>
+          </View>
+          <View style={styles.dashboardStatDivider} />
+          <View style={styles.dashboardStatItem}>
+            <View style={[styles.dashboardStatIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+              <Ionicons name="eye-outline" size={20} color={COLORS.white} />
+            </View>
+            <Text style={styles.dashboardStatValue}>{totalViews}</Text>
+            <Text style={styles.dashboardStatLabel}>Visualizações</Text>
+          </View>
+          <View style={styles.dashboardStatDivider} />
+          <View style={styles.dashboardStatItem}>
+            <View style={[styles.dashboardStatIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+              <Ionicons name="heart-outline" size={20} color={COLORS.white} />
+            </View>
+            <Text style={styles.dashboardStatValue}>{totalFavorites}</Text>
+            <Text style={styles.dashboardStatLabel}>Favoritos</Text>
+          </View>
         </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statValue}>{products.reduce((sum, p) => sum + p.views, 0)}</Text>
-          <Text style={styles.statLabel}>visualizações</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statValue}>{products.reduce((sum, p) => sum + p.favorites, 0)}</Text>
-          <Text style={styles.statLabel}>favoritos</Text>
+      </LinearGradient>
+
+      {/* Tabs */}
+      <View style={styles.tabsContainer}>
+        <View style={styles.tabsWrapper}>
+          {tabs.map((tab) => (
+            <TouchableOpacity
+              key={tab.id}
+              style={[styles.tab, activeTab === tab.id && styles.tabActive]}
+              onPress={() => setActiveTab(tab.id)}
+            >
+              <Ionicons
+                name={tab.icon}
+                size={18}
+                color={activeTab === tab.id ? tab.color : COLORS.gray[400]}
+              />
+              <Text style={[
+                styles.tabLabel,
+                activeTab === tab.id && { color: tab.color }
+              ]}>
+                {tab.label}
+              </Text>
+              <View style={[
+                styles.tabBadge,
+                activeTab === tab.id && { backgroundColor: tab.color }
+              ]}>
+                <Text style={[
+                  styles.tabBadgeText,
+                  activeTab === tab.id && { color: COLORS.white }
+                ]}>
+                  {getTabCount(tab.id)}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
-
-      <Tab
-        items={tabs}
-        activeTab={activeTab}
-        onTabPress={setActiveTab}
-      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -241,35 +350,24 @@ export default function MyStoreScreen({ navigation }: Props) {
         }
       >
         {loading ? (
-          <View style={styles.emptyState}>
+          <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={styles.loadingText}>Carregando produtos...</Text>
           </View>
         ) : filteredProducts.length > 0 ? (
-          filteredProducts.map(renderProductCard)
-        ) : (
-          <View style={styles.emptyState}>
-            <Ionicons name="storefront-outline" size={64} color={COLORS.textTertiary} />
-            <Text style={styles.emptyTitle}>nenhum produto</Text>
-            <Text style={styles.emptySubtitle}>
-              {activeTab === 'active' ? 'adicione produtos para começar a vender' : 'nenhum produto nesta categoria'}
-            </Text>
-            {activeTab === 'active' && (
-              <Button
-                label="adicionar produto"
-                variant="primary"
-                onPress={() => navigation.navigate('NewItem', {})}
-                style={{ marginTop: SPACING.lg }}
-              />
-            )}
+          <View style={styles.productsList}>
+            {filteredProducts.map(renderProductCard)}
           </View>
+        ) : (
+          renderEmptyState()
         )}
 
-        <View style={{ height: 80 }} />
+        <View style={{ height: 100 }} />
       </ScrollView>
 
       <BottomNavigation navigation={navigation} activeRoute="Profile" />
 
-      {/* Modal de Menu de Ações */}
+      {/* Action Menu Modal */}
       <Modal
         visible={showActionMenu}
         transparent
@@ -287,23 +385,38 @@ export default function MyStoreScreen({ navigation }: Props) {
                 <Text style={styles.actionMenuTitle} numberOfLines={1}>
                   {selectedProduct?.title}
                 </Text>
+                <Text style={styles.actionMenuPrice}>
+                  {formatPrice(selectedProduct?.price)}
+                </Text>
               </View>
 
               <TouchableOpacity style={styles.actionMenuItem} onPress={handleEdit}>
-                <Ionicons name="create-outline" size={22} color={COLORS.textPrimary} />
-                <Text style={styles.actionMenuText}>Editar produto</Text>
+                <View style={[styles.actionIcon, { backgroundColor: '#E0E7FF' }]}>
+                  <Ionicons name="create-outline" size={20} color="#6366F1" />
+                </View>
+                <View style={styles.actionContent}>
+                  <Text style={styles.actionText}>Editar produto</Text>
+                  <Text style={styles.actionDescription}>Alterar informações</Text>
+                </View>
               </TouchableOpacity>
 
               {selectedProduct?.status !== 'sold' && (
                 <TouchableOpacity style={styles.actionMenuItem} onPress={handleToggleStatus}>
-                  <Ionicons
-                    name={selectedProduct?.status === 'active' ? 'pause-outline' : 'play-outline'}
-                    size={22}
-                    color={COLORS.textPrimary}
-                  />
-                  <Text style={styles.actionMenuText}>
-                    {selectedProduct?.status === 'active' ? 'Pausar anúncio' : 'Ativar anúncio'}
-                  </Text>
+                  <View style={[styles.actionIcon, { backgroundColor: '#FEF3C7' }]}>
+                    <Ionicons
+                      name={selectedProduct?.status === 'active' ? 'pause-outline' : 'play-outline'}
+                      size={20}
+                      color="#F59E0B"
+                    />
+                  </View>
+                  <View style={styles.actionContent}>
+                    <Text style={styles.actionText}>
+                      {selectedProduct?.status === 'active' ? 'Pausar anúncio' : 'Ativar anúncio'}
+                    </Text>
+                    <Text style={styles.actionDescription}>
+                      {selectedProduct?.status === 'active' ? 'Ocultar da listagem' : 'Voltar para listagem'}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               )}
 
@@ -313,13 +426,23 @@ export default function MyStoreScreen({ navigation }: Props) {
                   navigation.navigate('ItemDetail', { itemId: selectedProduct.id });
                 }
               }}>
-                <Ionicons name="eye-outline" size={22} color={COLORS.textPrimary} />
-                <Text style={styles.actionMenuText}>Ver como comprador</Text>
+                <View style={[styles.actionIcon, { backgroundColor: '#D1FAE5' }]}>
+                  <Ionicons name="eye-outline" size={20} color="#10B981" />
+                </View>
+                <View style={styles.actionContent}>
+                  <Text style={styles.actionText}>Ver como comprador</Text>
+                  <Text style={styles.actionDescription}>Visualizar anúncio</Text>
+                </View>
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.actionMenuItem, styles.actionMenuItemDanger]} onPress={handleDelete}>
-                <Ionicons name="trash-outline" size={22} color={COLORS.error} />
-                <Text style={[styles.actionMenuText, styles.actionMenuTextDanger]}>Remover produto</Text>
+              <TouchableOpacity style={styles.actionMenuItem} onPress={handleDelete}>
+                <View style={[styles.actionIcon, { backgroundColor: '#FEE2E2' }]}>
+                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                </View>
+                <View style={styles.actionContent}>
+                  <Text style={[styles.actionText, { color: '#EF4444' }]}>Remover produto</Text>
+                  <Text style={styles.actionDescription}>Excluir permanentemente</Text>
+                </View>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -342,122 +465,260 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
+    paddingBottom: SPACING.lg,
+    paddingHorizontal: SPACING.md,
+  },
+  headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
+    marginBottom: SPACING.lg,
   },
   backButton: {
-    padding: SPACING.xs,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: TYPOGRAPHY.weights.bold,
-    color: COLORS.textPrimary,
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.white,
   },
-  statsCard: {
+  addButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dashboardStats: {
     flexDirection: 'row',
-    backgroundColor: COLORS.white,
-    margin: SPACING.md,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    ...SHADOWS.xs,
   },
-  statBox: {
+  dashboardStatItem: {
     flex: 1,
     alignItems: 'center',
   },
-  statValue: {
-    fontSize: TYPOGRAPHY.sizes.xl,
-    fontWeight: TYPOGRAPHY.weights.bold,
-    color: COLORS.primary,
+  dashboardStatIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
   },
-  statLabel: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    color: COLORS.textSecondary,
+  dashboardStatValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.white,
+  },
+  dashboardStatLabel: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.7)',
     marginTop: 2,
+  },
+  dashboardStatDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginVertical: 4,
+  },
+  tabsContainer: {
+    backgroundColor: COLORS.white,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    ...SHADOWS.sm,
+  },
+  tabsWrapper: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
+    borderRadius: BORDER_RADIUS.lg,
+    backgroundColor: COLORS.gray[100],
+    gap: 4,
+  },
+  tabActive: {
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.gray[200],
+    ...SHADOWS.sm,
+  },
+  tabLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.gray[500],
+  },
+  tabBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: COLORS.gray[200],
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  tabBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.gray[600],
   },
   content: {
     padding: SPACING.md,
   },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING['3xl'],
+  },
+  loadingText: {
+    marginTop: SPACING.md,
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  productsList: {
+    gap: SPACING.md,
+  },
   productCard: {
     flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: COLORS.white,
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.sm,
-    ...SHADOWS.xs,
+    borderRadius: BORDER_RADIUS.xl,
+    overflow: 'hidden',
+    ...SHADOWS.md,
   },
   productCardContent: {
     flexDirection: 'row',
     flex: 1,
+    padding: SPACING.sm,
+  },
+  productImageContainer: {
+    position: 'relative',
   },
   productImage: {
-    width: 80,
-    height: 80,
+    width: 90,
+    height: 90,
+    borderRadius: BORDER_RADIUS.lg,
     backgroundColor: COLORS.gray[100],
-    borderRadius: BORDER_RADIUS.sm,
-    marginRight: SPACING.md,
   },
   productImagePlaceholder: {
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  statusActive: {
+    backgroundColor: COLORS.success,
+  },
+  statusPaused: {
+    backgroundColor: '#F59E0B',
+  },
+  statusSold: {
+    backgroundColor: COLORS.primary,
+  },
+  statusText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: COLORS.white,
+    textTransform: 'uppercase',
   },
   productInfo: {
     flex: 1,
+    marginLeft: SPACING.md,
     justifyContent: 'center',
   },
   productTitle: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+    fontSize: 14,
+    fontWeight: '600',
     color: COLORS.textPrimary,
     marginBottom: 4,
   },
   productPrice: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: TYPOGRAPHY.weights.bold,
+    fontSize: 18,
+    fontWeight: '800',
     color: COLORS.primary,
-    marginBottom: SPACING.sm,
+    marginBottom: 8,
   },
   statsRow: {
     flexDirection: 'row',
     gap: SPACING.md,
   },
-  stat: {
+  statItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
   statText: {
-    fontSize: TYPOGRAPHY.sizes.xs,
+    fontSize: 12,
     color: COLORS.textSecondary,
   },
   menuButton: {
-    padding: SPACING.xs,
+    width: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderLeftWidth: 1,
+    borderLeftColor: COLORS.gray[100],
   },
   emptyState: {
     alignItems: 'center',
+    paddingVertical: SPACING['3xl'],
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.gray[100],
+    alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.xl * 2,
+    marginBottom: SPACING.lg,
   },
   emptyTitle: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+    fontSize: 18,
+    fontWeight: '700',
     color: COLORS.textPrimary,
-    marginTop: SPACING.md,
+    marginBottom: 6,
   },
   emptySubtitle: {
-    fontSize: TYPOGRAPHY.sizes.sm,
+    fontSize: 14,
     color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
     textAlign: 'center',
+    marginBottom: SPACING.lg,
   },
-  // Action Menu Styles
+  emptyButton: {
+    borderRadius: BORDER_RADIUS.full,
+    overflow: 'hidden',
+    ...SHADOWS.md,
+  },
+  emptyButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    gap: SPACING.sm,
+  },
+  emptyButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.white,
+  },
+  // Action Menu
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -469,47 +730,62 @@ const styles = StyleSheet.create({
   },
   actionMenu: {
     backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.lg,
+    borderRadius: BORDER_RADIUS['2xl'],
     overflow: 'hidden',
   },
   actionMenuHeader: {
-    padding: SPACING.md,
+    padding: SPACING.lg,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
+    borderBottomColor: COLORS.gray[100],
     alignItems: 'center',
   },
   actionMenuTitle: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+    fontSize: 16,
+    fontWeight: '700',
     color: COLORS.textPrimary,
+    marginBottom: 4,
+  },
+  actionMenuPrice: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
   actionMenuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: SPACING.md,
-    gap: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
+    borderBottomColor: COLORS.gray[100],
+    gap: SPACING.md,
   },
-  actionMenuItemDanger: {
-    borderBottomWidth: 0,
+  actionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  actionMenuText: {
-    fontSize: TYPOGRAPHY.sizes.base,
+  actionContent: {
+    flex: 1,
+  },
+  actionText: {
+    fontSize: 15,
+    fontWeight: '600',
     color: COLORS.textPrimary,
+    marginBottom: 2,
   },
-  actionMenuTextDanger: {
-    color: COLORS.error,
+  actionDescription: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
   },
   actionMenuCancel: {
     padding: SPACING.lg,
     alignItems: 'center',
     backgroundColor: COLORS.gray[50],
-    marginTop: SPACING.xs,
   },
   actionMenuCancelText: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+    fontSize: 15,
+    fontWeight: '600',
     color: COLORS.textSecondary,
   },
 });
