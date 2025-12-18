@@ -234,8 +234,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
               <View style={styles.logoCircle}>
                 <Ionicons name="leaf" size={40} color={COLORS.primary} />
               </View>
-              <Text style={styles.loginBrandName}>Apega Desapega</Text>
-              <Text style={styles.loginBrandTagline}>Moda circular e consciente</Text>
+              <Text style={styles.loginBrandName}>apegadesapega</Text>
             </View>
 
             {/* Decorative elements */}

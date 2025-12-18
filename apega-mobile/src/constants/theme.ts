@@ -218,9 +218,8 @@ export const LAYOUT = {
 
 // Informações da marca
 export const BRAND = {
-  name: 'Apega Desapega',
+  name: 'apegadesapega',
   slogan: 'MODA SUSTENTÁVEL É NOSSO\nMODO DE MUDAR O MUNDO',
-  tagline: 'Moda circular que transforma',
   city: 'Passo Fundo - RS',
   phone: '(54) 9.9609-6202',
   phoneFormatted: '+5554996096202',
