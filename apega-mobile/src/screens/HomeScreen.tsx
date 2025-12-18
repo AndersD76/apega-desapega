@@ -28,21 +28,16 @@ const CARD_LARGE = width - 32;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
-// Premium Categories with gradient colors
-const CATEGORIES: Array<{
-  id: string;
-  name: string;
-  icon: string;
-  gradient: readonly [string, string];
-}> = [
-  { id: 'all', name: 'Tudo', icon: 'sparkles', gradient: ['#6B9080', '#527363'] as const },
-  { id: 'vestidos', name: 'Vestidos', icon: 'woman', gradient: ['#E8B4BC', '#D4919B'] as const },
-  { id: 'blusas', name: 'Blusas', icon: 'shirt', gradient: ['#B5C7E3', '#92ADD6'] as const },
-  { id: 'calcas', name: 'Calças', icon: 'analytics', gradient: ['#C5B3D3', '#A890BA'] as const },
-  { id: 'saias', name: 'Saias', icon: 'flower', gradient: ['#F5D5CB', '#E8BFB1'] as const },
-  { id: 'calcados', name: 'Calçados', icon: 'footsteps', gradient: ['#D4C5A9', '#C4B393'] as const },
-  { id: 'bolsas', name: 'Bolsas', icon: 'bag-handle', gradient: ['#B8D4CE', '#9AC5BC'] as const },
-  { id: 'acessorios', name: 'Acessórios', icon: 'diamond', gradient: ['#E5D1B8', '#D4BC9C'] as const },
+// Premium Categories - elegant chips
+const CATEGORIES = [
+  { id: 'all', name: 'Tudo' },
+  { id: 'vestidos', name: 'Vestidos' },
+  { id: 'blusas', name: 'Blusas' },
+  { id: 'calcas', name: 'Calças' },
+  { id: 'saias', name: 'Saias' },
+  { id: 'calcados', name: 'Calçados' },
+  { id: 'bolsas', name: 'Bolsas' },
+  { id: 'acessorios', name: 'Acessórios' },
 ];
 
 interface DisplayItem {
@@ -149,34 +144,39 @@ export default function HomeScreen({ navigation }: Props) {
     extrapolate: 'clamp',
   });
 
-  const renderCategoryCircle = (cat: typeof CATEGORIES[0]) => (
-    <TouchableOpacity
-      key={cat.id}
-      style={styles.categoryItem}
-      onPress={() => setSelectedCategory(cat.id)}
-      activeOpacity={0.8}
-    >
-      <LinearGradient
-        colors={selectedCategory === cat.id ? cat.gradient : ['#F5F5F5', '#EBEBEB']}
-        style={[
-          styles.categoryCircle,
-          selectedCategory === cat.id && styles.categoryCircleActive,
-        ]}
+  const renderCategoryChip = (cat: typeof CATEGORIES[0]) => {
+    const isActive = selectedCategory === cat.id;
+
+    if (isActive) {
+      return (
+        <TouchableOpacity
+          key={cat.id}
+          onPress={() => setSelectedCategory(cat.id)}
+          activeOpacity={0.8}
+        >
+          <LinearGradient
+            colors={[COLORS.primary, '#1a1a1a']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.categoryChipGradient}
+          >
+            <Text style={styles.categoryChipTextActive}>{cat.name}</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <TouchableOpacity
+        key={cat.id}
+        style={styles.categoryChip}
+        onPress={() => setSelectedCategory(cat.id)}
+        activeOpacity={0.8}
       >
-        <Ionicons
-          name={cat.icon as any}
-          size={22}
-          color={selectedCategory === cat.id ? '#FFF' : COLORS.gray[600]}
-        />
-      </LinearGradient>
-      <Text style={[
-        styles.categoryLabel,
-        selectedCategory === cat.id && styles.categoryLabelActive
-      ]}>
-        {cat.name}
-      </Text>
-    </TouchableOpacity>
-  );
+        <Text style={styles.categoryChipText}>{cat.name}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   const renderFeaturedCard = (item: DisplayItem) => {
     const discount = item.originalPrice && item.originalPrice > item.price
@@ -397,7 +397,7 @@ export default function HomeScreen({ navigation }: Props) {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoriesScroll}
           >
-            {CATEGORIES.map((cat) => renderCategoryCircle(cat))}
+            {CATEGORIES.map((cat) => renderCategoryChip(cat))}
           </ScrollView>
         </View>
 
@@ -619,43 +619,38 @@ const styles = StyleSheet.create({
     ...SHADOWS.sm,
   },
 
-  // Categories
+  // Categories - Premium Chips
   categoriesSection: {
     backgroundColor: COLORS.white,
-    paddingVertical: 16,
+    paddingVertical: 12,
     marginBottom: 8,
   },
   categoriesScroll: {
     paddingHorizontal: 16,
-    gap: 16,
   },
-  categoryItem: {
-    alignItems: 'center',
-    marginRight: 16,
+  categoryChip: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 24,
+    backgroundColor: COLORS.white,
+    marginRight: 10,
+    borderWidth: 1.5,
+    borderColor: COLORS.gray[200],
   },
-  categoryCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-    borderWidth: 2,
-    borderColor: 'transparent',
+  categoryChipGradient: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 24,
+    marginRight: 10,
   },
-  categoryCircleActive: {
-    borderWidth: 2,
-    borderColor: COLORS.white,
-    ...SHADOWS.md,
-  },
-  categoryLabel: {
-    fontSize: 12,
+  categoryChipText: {
+    fontSize: 14,
     fontWeight: '500',
-    color: COLORS.gray[600],
-    textAlign: 'center',
+    color: COLORS.gray[700],
+    letterSpacing: 0.2,
   },
-  categoryLabelActive: {
-    color: COLORS.gray[900],
+  categoryChipTextActive: {
+    color: COLORS.white,
     fontWeight: '600',
   },
 
