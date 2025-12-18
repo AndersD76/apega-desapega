@@ -1,4 +1,4 @@
-// Sistema de Design Completo - Apega Desapega Brechó
+// Sistema de Design Completo - Apega Desapega
 // Design moderno e profissional superior ao Enjoei
 
 export const COLORS = {
@@ -218,7 +218,7 @@ export const LAYOUT = {
 
 // Informações da marca
 export const BRAND = {
-  name: 'Apega Desapega Brechó',
+  name: 'Apega Desapega',
   slogan: 'MODA SUSTENTÁVEL É NOSSO\nMODO DE MUDAR O MUNDO',
   tagline: 'Moda circular que transforma',
   city: 'Passo Fundo - RS',

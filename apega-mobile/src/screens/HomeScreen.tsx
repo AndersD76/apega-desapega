@@ -335,7 +335,7 @@ export default function HomeScreen({ navigation }: Props) {
         <Ionicons name="sparkles" size={48} color="rgba(255,255,255,0.8)" />
         <Text style={styles.emptyHeroTitle}>Bem-vinda ao Apega Desapega!</Text>
         <Text style={styles.emptyHeroSubtitle}>
-          O brechó online de moda circular
+          Marketplace de moda circular
         </Text>
       </LinearGradient>
 

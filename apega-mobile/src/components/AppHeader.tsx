@@ -22,12 +22,12 @@ export function BrandLogo({ size = 'medium', color = 'light' }: { size?: 'small'
     light: {
       apega: COLORS.white,
       desapega: 'rgba(255,255,255,0.8)',
-      brecho: 'rgba(255,255,255,0.65)',
+      tagline: 'rgba(255,255,255,0.65)',
     },
     dark: {
       apega: COLORS.primary,
       desapega: COLORS.primaryLight,
-      brecho: COLORS.textSecondary,
+      tagline: COLORS.textSecondary,
     },
   };
 
@@ -44,8 +44,8 @@ export function BrandLogo({ size = 'medium', color = 'light' }: { size?: 'small'
           desapega
         </Text>
       </View>
-      <Text style={[brandStyles.brecho, { fontSize: currentSize.sub, color: currentColor.brecho }]}>
-        brechó
+      <Text style={[brandStyles.tagline, { fontSize: currentSize.sub, color: currentColor.tagline }]}>
+        moda circular
       </Text>
     </View>
   );
@@ -70,7 +70,7 @@ const brandStyles = StyleSheet.create({
     fontWeight: '300',
     letterSpacing: -0.3,
   },
-  brecho: {
+  tagline: {
     fontWeight: '600',
     letterSpacing: 3,
     textTransform: 'uppercase',

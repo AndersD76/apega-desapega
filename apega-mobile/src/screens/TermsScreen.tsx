@@ -27,15 +27,15 @@ const LEGAL_SECTIONS: Section[] = [
     id: 'terms',
     title: 'Termos de Uso',
     icon: 'document-text',
-    content: `TERMOS DE USO - APEGA DESAPEGA BRECHÓ
+    content: `TERMOS DE USO - APEGA DESAPEGA
 
 Última atualização: Dezembro de 2024
 
 1. ACEITAÇÃO DOS TERMOS
-Ao acessar e usar o aplicativo Apega Desapega Brechó, você concorda com estes Termos de Uso. Se você não concordar com qualquer parte destes termos, não poderá usar nossos serviços.
+Ao acessar e usar o aplicativo Apega Desapega, você concorda com estes Termos de Uso. Se você não concordar com qualquer parte destes termos, não poderá usar nossos serviços.
 
 2. DESCRIÇÃO DO SERVIÇO
-O Apega Desapega é uma plataforma de marketplace para compra e venda de roupas, acessórios e artigos de moda usados (brechó online). Conectamos vendedoras independentes a compradores interessados em moda sustentável.
+O Apega Desapega é uma plataforma de marketplace para compra e venda de roupas, acessórios e artigos de moda circular. Conectamos vendedoras independentes a compradores interessados em moda sustentável.
 
 3. CADASTRO E CONTA
 - Você deve ter pelo menos 18 anos para criar uma conta
@@ -82,7 +82,7 @@ ${BRAND.address}, ${BRAND.city}`,
     id: 'privacy',
     title: 'Política de Privacidade',
     icon: 'shield-checkmark',
-    content: `POLÍTICA DE PRIVACIDADE - APEGA DESAPEGA BRECHÓ
+    content: `POLÍTICA DE PRIVACIDADE - APEGA DESAPEGA
 
 Última atualização: Dezembro de 2024
 
@@ -142,7 +142,7 @@ ${BRAND.email}`,
     id: 'cookies',
     title: 'Política de Cookies',
     icon: 'information-circle',
-    content: `POLÍTICA DE COOKIES - APEGA DESAPEGA BRECHÓ
+    content: `POLÍTICA DE COOKIES - APEGA DESAPEGA
 
 1. O QUE SÃO COOKIES?
 Cookies são pequenos arquivos de texto armazenados em seu dispositivo quando você acessa nosso aplicativo. Eles nos ajudam a melhorar sua experiência.
@@ -187,7 +187,7 @@ Esta política pode ser atualizada. Verifique periodicamente para mudanças.`,
     id: 'community',
     title: 'Regras da Comunidade',
     icon: 'people',
-    content: `REGRAS DA COMUNIDADE - APEGA DESAPEGA BRECHÓ
+    content: `REGRAS DA COMUNIDADE - APEGA DESAPEGA
 
 Nossa comunidade é baseada em respeito, honestidade e sustentabilidade. Siga estas diretrizes:
 
@@ -242,7 +242,7 @@ Encontrou algo irregular? Use o botão "Denunciar" ou entre em contato conosco.`
     id: 'returns',
     title: 'Política de Devolução',
     icon: 'return-down-back',
-    content: `POLÍTICA DE DEVOLUÇÃO - APEGA DESAPEGA BRECHÓ
+    content: `POLÍTICA DE DEVOLUÇÃO - APEGA DESAPEGA
 
 1. PRAZO PARA DEVOLUÇÃO
 Você tem até 7 (sete) dias corridos após o recebimento para solicitar devolução, conforme o Código de Defesa do Consumidor.
@@ -297,7 +297,7 @@ Não resolveu? Abra uma disputa e nossa equipe mediará a situação.`,
     id: 'fees',
     title: 'Taxas e Comissões',
     icon: 'cash',
-    content: `TAXAS E COMISSÕES - APEGA DESAPEGA BRECHÓ
+    content: `TAXAS E COMISSÕES - APEGA DESAPEGA
 
 1. COMISSÃO POR VENDA
 Taxa padrão: ${FEES.commissionPercentage}% sobre o valor da venda
@@ -417,7 +417,7 @@ export default function TermsScreen({ navigation }: Props) {
           <Ionicons name="document-text" size={40} color={COLORS.primary} />
           <Text style={styles.introTitle}>documentos legais</Text>
           <Text style={styles.introText}>
-            Conheça nossos termos, políticas e diretrizes que regem o uso da plataforma Apega Desapega Brechó.
+            Conheça nossos termos, políticas e diretrizes que regem o uso da plataforma Apega Desapega.
           </Text>
         </View>
 
