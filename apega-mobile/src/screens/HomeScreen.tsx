@@ -376,83 +376,83 @@ export default function HomeScreen({ navigation }: Props) {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FAF9F7" />
 
-      {/* Popup de Promoção de Lançamento */}
+      {/* Popup de Promoção - Estilo Home */}
       <Modal
         visible={showPromoPopup}
-        transparent
-        animationType="none"
+        transparent={false}
+        animationType="fade"
         onRequestClose={closePromoPopup}
       >
-        <View style={styles.promoOverlay}>
-          <Animated.View
-            style={[
-              styles.promoPopup,
-              {
-                opacity: promoOpacityAnim,
-                transform: [{ scale: promoScaleAnim }],
-              },
-            ]}
+        <ScrollView style={styles.promoScreen} contentContainerStyle={styles.promoScreenContent}>
+          {/* Header com logo e fechar */}
+          <View style={styles.promoHeader}>
+            <Text style={styles.logo}>apega<Text style={styles.logoLight}>desapega</Text></Text>
+            <TouchableOpacity onPress={closePromoPopup} style={styles.promoSkipBtn}>
+              <Text style={styles.promoSkipText}>Pular</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Hero com imagem grande */}
+          <View style={styles.promoHero}>
+            <View style={styles.promoHeroLeft}>
+              <Text style={styles.promoHeroTitle}>
+                Faça parte do{'\n'}
+                <Text style={styles.promoHeroTitleHighlight}>lançamento</Text>
+              </Text>
+              <Text style={styles.promoHeroSubtitle}>
+                Estamos começando e preparamos ofertas exclusivas para quem entrar agora
+              </Text>
+            </View>
+            <Image
+              source={{ uri: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&q=80' }}
+              style={styles.promoHeroImage}
+            />
+          </View>
+
+          {/* Cards de oferta */}
+          <View style={styles.promoCardsRow}>
+            {/* Card 500 sem comissão */}
+            <View style={styles.promoCard}>
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1558171813-4c088753af8f?w=400&q=80' }}
+                style={styles.promoCardImage}
+              />
+              <View style={styles.promoCardContent}>
+                <Text style={styles.promoCardNumber}>500</Text>
+                <Text style={styles.promoCardLabel}>primeiros usuários</Text>
+                <Text style={styles.promoCardBenefit}>0% de comissão</Text>
+                <Text style={styles.promoCardDetail}>Venda sem taxas</Text>
+              </View>
+            </View>
+
+            {/* Card 50 premium */}
+            <View style={[styles.promoCard, styles.promoCardGold]}>
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&q=80' }}
+                style={styles.promoCardImage}
+              />
+              <View style={styles.promoCardContent}>
+                <Text style={[styles.promoCardNumber, styles.promoCardNumberGold]}>50</Text>
+                <Text style={styles.promoCardLabel}>primeiros cadastros</Text>
+                <Text style={[styles.promoCardBenefit, styles.promoCardBenefitGold]}>Premium grátis</Text>
+                <Text style={styles.promoCardDetail}>Por 1 ano inteiro</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* CTA */}
+          <TouchableOpacity
+            style={styles.promoCTAButton}
+            onPress={() => {
+              closePromoPopup();
+              navigation.navigate('Login');
+            }}
           >
-            {/* Fechar */}
-            <TouchableOpacity style={styles.promoClose} onPress={closePromoPopup}>
-              <Ionicons name="close" size={24} color="#666" />
-            </TouchableOpacity>
+            <Text style={styles.promoCTAButtonText}>Quero participar</Text>
+          </TouchableOpacity>
 
-            {/* Ícone de celebração */}
-            <View style={styles.promoIconContainer}>
-              <Text style={styles.promoEmoji}>🎉</Text>
-            </View>
-
-            {/* Título */}
-            <Text style={styles.promoTitle}>LANÇAMENTO ESPECIAL!</Text>
-            <Text style={styles.promoSubtitle}>
-              Estamos começando e queremos você com a gente
-            </Text>
-
-            {/* Ofertas */}
-            <View style={styles.promoOffers}>
-              <View style={styles.promoOfferCard}>
-                <View style={styles.promoOfferBadge}>
-                  <Text style={styles.promoOfferBadgeText}>500</Text>
-                </View>
-                <Text style={styles.promoOfferTitle}>Primeiros usuários</Text>
-                <Text style={styles.promoOfferDesc}>SEM COMISSÃO nas vendas</Text>
-                <View style={styles.promoOfferHighlight}>
-                  <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                  <Text style={styles.promoOfferHighlightText}>0% de taxa</Text>
-                </View>
-              </View>
-
-              <View style={[styles.promoOfferCard, styles.promoOfferCardPremium]}>
-                <View style={[styles.promoOfferBadge, styles.promoOfferBadgePremium]}>
-                  <Text style={styles.promoOfferBadgeText}>50</Text>
-                </View>
-                <Text style={styles.promoOfferTitle}>Primeiros cadastros</Text>
-                <Text style={styles.promoOfferDesc}>PREMIUM GRÁTIS por 1 ano</Text>
-                <View style={styles.promoOfferHighlight}>
-                  <Ionicons name="diamond" size={16} color="#FFD700" />
-                  <Text style={styles.promoOfferHighlightText}>Acesso VIP</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* CTA */}
-            <TouchableOpacity
-              style={styles.promoCTA}
-              onPress={() => {
-                closePromoPopup();
-                navigation.navigate('Login');
-              }}
-            >
-              <Text style={styles.promoCTAText}>Quero participar!</Text>
-              <Ionicons name="arrow-forward" size={18} color="#fff" />
-            </TouchableOpacity>
-
-            <Text style={styles.promoDisclaimer}>
-              *Válido enquanto durarem as vagas
-            </Text>
-          </Animated.View>
-        </View>
+          <Text style={styles.promoDisclaimer}>*Válido enquanto durarem as vagas</Text>
+        </ScrollView>
       </Modal>
 
       {/* Header */}
@@ -2482,5 +2482,137 @@ const styles = StyleSheet.create({
     color: COLORS.gray[500],
     textAlign: 'center',
     marginBottom: 8,
+  },
+
+  // Promo Screen - Estilo Home
+  promoScreen: {
+    flex: 1,
+    backgroundColor: '#FAF9F7',
+  },
+  promoScreenContent: {
+    paddingBottom: 40,
+  },
+  promoHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: isDesktop ? 60 : 20,
+    paddingTop: 50,
+    paddingBottom: 20,
+  },
+  promoSkipBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  promoSkipText: {
+    fontSize: 16,
+    color: COLORS.gray[500],
+    fontWeight: '500',
+  },
+  promoHero: {
+    flexDirection: isDesktop ? 'row' : 'column',
+    paddingHorizontal: isDesktop ? 60 : 20,
+    paddingVertical: 40,
+    alignItems: 'center',
+    gap: 32,
+  },
+  promoHeroLeft: {
+    flex: 1,
+    maxWidth: isDesktop ? 500 : '100%',
+  },
+  promoHeroTitle: {
+    fontSize: isDesktop ? 52 : 38,
+    fontWeight: '300',
+    color: COLORS.gray[800],
+    lineHeight: isDesktop ? 60 : 46,
+    marginBottom: 20,
+  },
+  promoHeroTitleHighlight: {
+    color: COLORS.primary,
+    fontWeight: '700',
+  },
+  promoHeroSubtitle: {
+    fontSize: 18,
+    color: COLORS.gray[600],
+    lineHeight: 28,
+  },
+  promoHeroImage: {
+    width: isDesktop ? 450 : '100%',
+    height: isDesktop ? 350 : 250,
+    borderRadius: 24,
+  },
+  promoCardsRow: {
+    flexDirection: isDesktop ? 'row' : 'column',
+    paddingHorizontal: isDesktop ? 60 : 20,
+    gap: 20,
+    marginBottom: 40,
+  },
+  promoCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    overflow: 'hidden',
+    ...Platform.select({
+      web: { boxShadow: '0 8px 32px rgba(0,0,0,0.08)' },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.08,
+        shadowRadius: 16,
+        elevation: 8,
+      },
+    }),
+  },
+  promoCardGold: {
+    borderWidth: 3,
+    borderColor: '#FFD700',
+  },
+  promoCardImage: {
+    width: '100%',
+    height: 180,
+  },
+  promoCardContent: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  promoCardNumber: {
+    fontSize: 48,
+    fontWeight: '900',
+    color: COLORS.primary,
+    marginBottom: 4,
+  },
+  promoCardNumberGold: {
+    color: '#B8860B',
+  },
+  promoCardLabel: {
+    fontSize: 14,
+    color: COLORS.gray[500],
+    marginBottom: 12,
+  },
+  promoCardBenefit: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.primary,
+    marginBottom: 4,
+  },
+  promoCardBenefitGold: {
+    color: '#B8860B',
+  },
+  promoCardDetail: {
+    fontSize: 14,
+    color: COLORS.gray[500],
+  },
+  promoCTAButton: {
+    backgroundColor: COLORS.primary,
+    marginHorizontal: isDesktop ? 60 : 20,
+    paddingVertical: 18,
+    borderRadius: 28,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  promoCTAButtonText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
   },
 });

@@ -287,19 +287,32 @@ export default function ProfileScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FAF9F7" />
+
+      {/* Header Padrão */}
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+          <Text style={styles.logo}>apega<Text style={styles.logoLight}>desapega</Text></Text>
+        </TouchableOpacity>
+        {isDesktop && (
+          <View style={styles.navDesktop}>
+            <TouchableOpacity onPress={() => navigation.navigate('Search')}>
+              <Text style={styles.navLink}>Explorar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Favorites')}>
+              <Text style={styles.navLink}>Favoritos</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+          <Ionicons name="settings-outline" size={22} color="#333" />
+        </TouchableOpacity>
+      </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-          <Text style={styles.logo}>apegadesapega</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
-            <Ionicons name="settings-outline" size={22} color="#333" />
-          </TouchableOpacity>
-        </View>
 
         {/* Profile Card */}
         <View style={styles.profileCard}>
