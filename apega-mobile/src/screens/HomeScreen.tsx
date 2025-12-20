@@ -171,14 +171,19 @@ export default function HomeScreen({ navigation }: Props) {
               onPress={() => navigation.navigate('Search')}
             >
               <Text style={styles.heroButtonText}>Explorar peças</Text>
-              <Ionicons name="arrow-forward" size={18} color="#1a1a1a" />
+              <Ionicons name="arrow-forward" size={18} color="#fff" />
             </TouchableOpacity>
           </View>
           <View style={styles.heroImageArea}>
             <View style={styles.heroImageBg} />
-            {allItems[0]?.images[0] && (
-              <Image source={{ uri: allItems[0].images[0] }} style={styles.heroImage} />
-            )}
+            <Image
+              source={{ uri: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600&q=80' }}
+              style={styles.heroImage}
+            />
+            <Image
+              source={{ uri: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=400&q=80' }}
+              style={styles.heroImageSecondary}
+            />
           </View>
         </View>
 
@@ -238,10 +243,10 @@ export default function HomeScreen({ navigation }: Props) {
 
           <View style={styles.categoriesGrid}>
             {[
-              { name: 'Feminino', desc: 'O sonho de toda mulher, armário sempre renovado.', icon: 'woman-outline' },
-              { name: 'Bolsas', desc: 'Bolsas para todos os estilos e ocasiões.', icon: 'bag-handle-outline' },
-              { name: 'Calçados', desc: 'Do casual ao elegante, encontre seu par.', icon: 'footsteps-outline' },
-              { name: 'Acessórios', desc: 'Acessórios para completar seu look.', icon: 'diamond-outline' },
+              { name: 'Feminino', desc: 'O sonho de toda mulher, armário sempre renovado.', image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&q=80' },
+              { name: 'Bolsas', desc: 'Bolsas para todos os estilos e ocasiões.', image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&q=80' },
+              { name: 'Calçados', desc: 'Do casual ao elegante, encontre seu par.', image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400&q=80' },
+              { name: 'Acessórios', desc: 'Acessórios para completar seu look.', image: 'https://images.unsplash.com/photo-1611085583191-a3b181a88401?w=400&q=80' },
             ].map((cat, index) => (
               <TouchableOpacity
                 key={index}
@@ -250,9 +255,7 @@ export default function HomeScreen({ navigation }: Props) {
               >
                 <Text style={styles.categoryTitle}>{cat.name}</Text>
                 <Text style={styles.categoryDesc}>{cat.desc}</Text>
-                <View style={styles.categoryIconContainer}>
-                  <Ionicons name={cat.icon as any} size={48} color={COLORS.primary} />
-                </View>
+                <Image source={{ uri: cat.image }} style={styles.categoryImage} />
               </TouchableOpacity>
             ))}
           </View>
@@ -398,13 +401,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAF9F7',
   },
   logo: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: COLORS.primary,
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#1a1a1a',
+    letterSpacing: -0.5,
   },
   logoLight: {
     fontWeight: '400',
-    color: COLORS.gray[500],
+    color: COLORS.gray[400],
   },
   navDesktop: {
     flexDirection: 'row',
@@ -518,10 +522,21 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     top: 0,
-    width: '70%',
-    height: '85%',
+    width: '65%',
+    height: '80%',
     borderRadius: 20,
     backgroundColor: '#fff',
+  },
+  heroImageSecondary: {
+    position: 'absolute',
+    right: 10,
+    bottom: 0,
+    width: '50%',
+    height: '60%',
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    borderWidth: 4,
+    borderColor: '#FAF9F7',
   },
 
   // Section Title
@@ -636,13 +651,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     lineHeight: 18,
   },
-  categoryIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.primaryExtraLight,
-    justifyContent: 'center',
-    alignItems: 'center',
+  categoryImage: {
+    width: 100,
+    height: 120,
+    borderRadius: 12,
+    backgroundColor: COLORS.gray[100],
   },
 
   // Products
