@@ -26,7 +26,9 @@ import type { RootStackParamList } from '../navigation/AppNavigator';
 
 const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
-const isDesktop = isWeb && width > 900;
+const isDesktop = isWeb && width > 1024;
+const isTablet = isWeb && width > 600 && width <= 1024;
+const isMobile = !isDesktop && !isTablet;
 
 // Imagens do carrossel com informações detalhadas dos produtos
 const CAROUSEL_IMAGES = [
@@ -118,22 +120,22 @@ const FEATURED_PIECES = [
 ];
 
 const BRAND_LOGOS = [
-  { name: 'Zara', logo: 'https://logo.clearbit.com/zara.com' },
-  { name: 'Farm', logo: 'https://logo.clearbit.com/farmrio.com.br' },
-  { name: 'Animale', logo: 'https://logo.clearbit.com/animale.com.br' },
-  { name: 'Renner', logo: 'https://logo.clearbit.com/lojasrenner.com.br' },
-  { name: 'C&A', logo: 'https://logo.clearbit.com/cea.com.br' },
-  { name: 'Forever 21', logo: 'https://logo.clearbit.com/forever21.com' },
-  { name: 'H&M', logo: 'https://logo.clearbit.com/hm.com' },
-  { name: 'Gucci', logo: 'https://logo.clearbit.com/gucci.com' },
-  { name: 'Louis Vuitton', logo: 'https://logo.clearbit.com/louisvuitton.com' },
-  { name: 'Prada', logo: 'https://logo.clearbit.com/prada.com' },
-  { name: 'Chanel', logo: 'https://logo.clearbit.com/chanel.com' },
-  { name: 'Dior', logo: 'https://logo.clearbit.com/dior.com' },
-  { name: 'Michael Kors', logo: 'https://logo.clearbit.com/michaelkors.com' },
-  { name: 'Tommy', logo: 'https://logo.clearbit.com/tommy.com' },
-  { name: 'Calvin Klein', logo: 'https://logo.clearbit.com/calvinklein.com' },
-  { name: 'Lacoste', logo: 'https://logo.clearbit.com/lacoste.com' },
+  { name: 'Zara', initials: 'Z', color: '#000000' },
+  { name: 'Farm', initials: 'F', color: '#2D5A27' },
+  { name: 'Animale', initials: 'A', color: '#8B4513' },
+  { name: 'Renner', initials: 'R', color: '#E31837' },
+  { name: 'C&A', initials: 'C&A', color: '#004990' },
+  { name: 'Forever 21', initials: 'F21', color: '#FFD700' },
+  { name: 'H&M', initials: 'H&M', color: '#E50010' },
+  { name: 'Gucci', initials: 'GG', color: '#1A472A' },
+  { name: 'Louis Vuitton', initials: 'LV', color: '#6B4423' },
+  { name: 'Prada', initials: 'P', color: '#000000' },
+  { name: 'Chanel', initials: 'CC', color: '#000000' },
+  { name: 'Dior', initials: 'D', color: '#1A1A1A' },
+  { name: 'Michael Kors', initials: 'MK', color: '#B8860B' },
+  { name: 'Tommy', initials: 'TH', color: '#002D62' },
+  { name: 'Calvin Klein', initials: 'CK', color: '#000000' },
+  { name: 'Lacoste', initials: 'L', color: '#00693E' },
 ];
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
@@ -520,6 +522,81 @@ export default function HomeScreen({ navigation }: Props) {
         </ScrollView>
       </Modal>
 
+      {/* Premium Popup Modal */}
+      <Modal
+        visible={showPremiumBanner}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={dismissPremiumBanner}
+      >
+        <View style={styles.premiumModalOverlay}>
+          <Animated.View
+            style={[
+              styles.premiumModalContent,
+              {
+                opacity: premiumBannerAnim,
+                transform: [{ scale: premiumBannerAnim }],
+              },
+            ]}
+          >
+            <TouchableOpacity style={styles.premiumModalClose} onPress={dismissPremiumBanner}>
+              <Ionicons name="close" size={20} color="#fff" />
+            </TouchableOpacity>
+
+            <Animated.View
+              style={[
+                styles.premiumModalIcon,
+                {
+                  transform: [{
+                    scale: premiumShineAnim.interpolate({
+                      inputRange: [0, 0.5, 1],
+                      outputRange: [1, 1.15, 1],
+                    }),
+                  }],
+                },
+              ]}
+            >
+              <Ionicons name="diamond" size={40} color="#FFD700" />
+            </Animated.View>
+
+            <Text style={styles.premiumModalTitle}>Seja PREMIUM</Text>
+            <Text style={styles.premiumModalSubtitle}>
+              Acesso exclusivo às melhores peças antes de todo mundo
+            </Text>
+
+            <View style={styles.premiumModalBenefits}>
+              <View style={styles.premiumModalBenefit}>
+                <Ionicons name="flash" size={18} color="#FFD700" />
+                <Text style={styles.premiumModalBenefitText}>Acesso antecipado</Text>
+              </View>
+              <View style={styles.premiumModalBenefit}>
+                <Ionicons name="pricetag" size={18} color="#FFD700" />
+                <Text style={styles.premiumModalBenefitText}>Descontos exclusivos</Text>
+              </View>
+              <View style={styles.premiumModalBenefit}>
+                <Ionicons name="star" size={18} color="#FFD700" />
+                <Text style={styles.premiumModalBenefitText}>Suporte prioritário</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.premiumModalCTA}
+              onPress={() => {
+                dismissPremiumBanner();
+                navigation.navigate('Subscription');
+              }}
+            >
+              <Text style={styles.premiumModalCTAText}>Quero ser Premium</Text>
+              <Ionicons name="arrow-forward" size={18} color="#1a1a1a" />
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={dismissPremiumBanner}>
+              <Text style={styles.premiumModalSkip}>Agora não</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </Modal>
+
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.navigate('Home')}>
@@ -801,13 +878,11 @@ export default function HomeScreen({ navigation }: Props) {
                 style={styles.brandCard}
                 onPress={() => navigation.navigate('Search')}
               >
-                <Animated.View style={styles.brandLogoContainer}>
-                  <Image
-                    source={{ uri: brand.logo }}
-                    style={styles.brandLogo}
-                    resizeMode="contain"
-                  />
-                </Animated.View>
+                <View style={[styles.brandLogoContainer, { backgroundColor: brand.color }]}>
+                  <Text style={[styles.brandInitials, { fontSize: brand.initials.length > 2 ? 14 : 18 }]}>
+                    {brand.initials}
+                  </Text>
+                </View>
                 <Text style={styles.brandName}>{brand.name}</Text>
               </TouchableOpacity>
             ))}
@@ -918,61 +993,6 @@ export default function HomeScreen({ navigation }: Props) {
           </View>
         )}
 
-{/* Banner Premium - Rola com o conteúdo */}
-        {showPremiumBanner && (
-          <Animated.View
-            style={[
-              styles.premiumBannerScroll,
-              {
-                opacity: premiumBannerAnim,
-                transform: [{ scale: premiumBannerAnim }],
-              },
-            ]}
-          >
-            <TouchableOpacity style={styles.premiumDismissScroll} onPress={dismissPremiumBanner}>
-              <Ionicons name="close" size={18} color="#fff" />
-            </TouchableOpacity>
-
-            <Animated.View
-              style={[
-                styles.premiumIconScroll,
-                {
-                  transform: [{
-                    scale: premiumShineAnim.interpolate({
-                      inputRange: [0, 0.5, 1],
-                      outputRange: [1, 1.15, 1],
-                    }),
-                  }],
-                },
-              ]}
-            >
-              <Ionicons name="diamond" size={28} color="#FFD700" />
-            </Animated.View>
-
-            <View style={styles.premiumContentScroll}>
-              <Text style={styles.premiumTitleScroll}>Seja PREMIUM</Text>
-              <Text style={styles.premiumSubtitleScroll}>
-                Acesso exclusivo às melhores peças antes de todo mundo
-              </Text>
-
-              <View style={styles.premiumBenefitsScroll}>
-                <View style={styles.premiumBenefitScroll}>
-                  <Ionicons name="flash" size={14} color="#FFD700" />
-                  <Text style={styles.premiumBenefitTextScroll}>Acesso antecipado</Text>
-                </View>
-                <View style={styles.premiumBenefitScroll}>
-                  <Ionicons name="pricetag" size={14} color="#FFD700" />
-                  <Text style={styles.premiumBenefitTextScroll}>Descontos exclusivos</Text>
-                </View>
-              </View>
-            </View>
-
-            <TouchableOpacity style={styles.premiumCTAScroll} onPress={() => navigation.navigate('Subscription')}>
-              <Text style={styles.premiumCTATextScroll}>Quero ser Premium</Text>
-              <Ionicons name="arrow-forward" size={16} color="#1a1a1a" />
-            </TouchableOpacity>
-          </Animated.View>
-        )}
 
         {/* Footer Estilo Enjoei */}
         <View style={styles.footerEnjoei}>
@@ -1110,8 +1130,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: isDesktop ? 60 : 20,
-    paddingBottom: 16,
+    paddingHorizontal: isDesktop ? 60 : isTablet ? 32 : 16,
+    paddingBottom: 12,
     backgroundColor: '#FAF9F7',
   },
   logo: {
@@ -1390,9 +1410,9 @@ const styles = StyleSheet.create({
   // Legacy hero styles (keeping for compatibility)
   heroImageArea: {
     position: 'relative',
-    width: isDesktop ? 400 : '100%',
-    height: isDesktop ? 400 : 300,
-    marginTop: isDesktop ? 0 : 32,
+    width: isDesktop ? 400 : isTablet ? 350 : '100%',
+    height: isDesktop ? 400 : isTablet ? 350 : 280,
+    marginTop: isDesktop ? 0 : 24,
   },
   heroImageBg: {
     position: 'absolute',
@@ -1634,8 +1654,8 @@ const styles = StyleSheet.create({
 
   // Brands Section - Grande e Impactante
   brandsSection: {
-    paddingHorizontal: isDesktop ? 60 : 20,
-    paddingVertical: 60,
+    paddingHorizontal: isDesktop ? 60 : isTablet ? 32 : 16,
+    paddingVertical: isDesktop ? 60 : isTablet ? 48 : 40,
     backgroundColor: '#fff',
   },
   brandsTitleRow: {
@@ -1671,19 +1691,18 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   brandCard: {
-    width: isDesktop ? 180 : 130,
+    width: isDesktop ? 180 : isTablet ? 150 : 110,
     alignItems: 'center',
   },
   brandLogoContainer: {
-    width: isDesktop ? 140 : 100,
-    height: isDesktop ? 140 : 100,
-    borderRadius: isDesktop ? 70 : 50,
-    backgroundColor: '#fff',
+    width: isDesktop ? 140 : isTablet ? 110 : 80,
+    height: isDesktop ? 140 : isTablet ? 110 : 80,
+    borderRadius: isDesktop ? 70 : isTablet ? 55 : 40,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 14,
     borderWidth: 3,
-    borderColor: COLORS.primaryLight,
+    borderColor: '#fff',
     ...Platform.select({
       web: {
         boxShadow: '0 8px 32px rgba(107,144,128,0.2)',
@@ -1703,7 +1722,7 @@ const styles = StyleSheet.create({
     height: isDesktop ? 100 : 70,
   },
   brandInitials: {
-    fontSize: isDesktop ? 24 : 18,
+    fontSize: isDesktop ? 24 : isTablet ? 20 : 16,
     fontWeight: '800',
     color: '#fff',
     letterSpacing: 1,
@@ -1735,18 +1754,18 @@ const styles = StyleSheet.create({
 
   // Section Title
   sectionTitle: {
-    fontSize: isDesktop ? 36 : 30,
+    fontSize: isDesktop ? 36 : isTablet ? 30 : 24,
     fontWeight: '800',
     color: COLORS.gray[800],
     textAlign: 'center',
     marginBottom: 12,
   },
   sectionSubtitle: {
-    fontSize: 18,
+    fontSize: isDesktop ? 18 : isTablet ? 16 : 14,
     color: COLORS.gray[500],
     textAlign: 'center',
-    marginBottom: 36,
-    lineHeight: 26,
+    marginBottom: isDesktop ? 36 : 24,
+    lineHeight: isDesktop ? 26 : 22,
   },
   textHighlight: {
     color: COLORS.primary,
@@ -1755,17 +1774,21 @@ const styles = StyleSheet.create({
 
   // How It Works
   howItWorks: {
-    paddingHorizontal: isDesktop ? 60 : 20,
-    paddingVertical: 60,
+    paddingHorizontal: isDesktop ? 60 : isTablet ? 32 : 16,
+    paddingVertical: isDesktop ? 60 : isTablet ? 48 : 40,
     backgroundColor: '#fff',
   },
   stepsContainer: {
-    flexDirection: isDesktop ? 'row' : 'column',
+    flexDirection: isDesktop ? 'row' : isTablet ? 'row' : 'column',
+    flexWrap: isTablet ? 'wrap' : 'nowrap',
     gap: 24,
     marginBottom: 32,
+    justifyContent: 'center',
   },
   stepCard: {
-    flex: 1,
+    flex: isDesktop ? 1 : undefined,
+    flexBasis: isTablet ? '45%' : undefined,
+    minWidth: isMobile ? '100%' : 200,
     backgroundColor: '#FAF9F7',
     borderRadius: 24,
     padding: 28,
@@ -1907,7 +1930,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   productCard: {
-    width: isDesktop ? '25%' : '50%',
+    width: isDesktop ? '25%' : isTablet ? '33.33%' : '50%',
     paddingHorizontal: 8,
     marginBottom: 24,
   },
@@ -1998,20 +2021,20 @@ const styles = StyleSheet.create({
 
   // Stats
   statsSection: {
-    paddingHorizontal: isDesktop ? 60 : 20,
-    paddingVertical: 60,
+    paddingHorizontal: isDesktop ? 60 : isTablet ? 32 : 16,
+    paddingVertical: isDesktop ? 60 : isTablet ? 48 : 40,
   },
   statsGrid: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: isDesktop ? 80 : 32,
+    gap: isDesktop ? 80 : isTablet ? 48 : 24,
     flexWrap: 'wrap',
   },
   statItem: {
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: isDesktop ? 48 : 36,
+    fontSize: isDesktop ? 48 : isTablet ? 40 : 32,
     fontWeight: '700',
     color: COLORS.primary,
     marginTop: 8,
@@ -2482,17 +2505,113 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
   },
 
+  // Premium Modal Popup Styles
+  premiumModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  premiumModalContent: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 28,
+    padding: 32,
+    alignItems: 'center',
+    maxWidth: 380,
+    width: '100%',
+    position: 'relative',
+  },
+  premiumModalClose: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  premiumModalIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255,215,0,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  premiumModalTitle: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#FFD700',
+    letterSpacing: 3,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  premiumModalSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.85)',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+    maxWidth: 300,
+  },
+  premiumModalBenefits: {
+    width: '100%',
+    marginBottom: 28,
+    gap: 12,
+  },
+  premiumModalBenefit: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 16,
+  },
+  premiumModalBenefitText: {
+    fontSize: 15,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  premiumModalCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 36,
+    paddingVertical: 16,
+    borderRadius: 28,
+    width: '100%',
+    marginBottom: 16,
+  },
+  premiumModalCTAText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1a1a1a',
+  },
+  premiumModalSkip: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.5)',
+    fontWeight: '500',
+  },
+
   // Footer Enjoei Style
   footerEnjoei: {
     backgroundColor: '#fff',
     marginTop: 40,
   },
   footerAppBanner: {
-    flexDirection: isDesktop ? 'row' : 'column',
+    flexDirection: isDesktop ? 'row' : isTablet ? 'row' : 'column',
     backgroundColor: COLORS.primary,
-    marginHorizontal: isDesktop ? 60 : 16,
+    marginHorizontal: isDesktop ? 60 : isTablet ? 32 : 16,
     borderRadius: 24,
-    padding: isDesktop ? 40 : 24,
+    padding: isDesktop ? 40 : isTablet ? 32 : 24,
     marginBottom: 40,
     overflow: 'hidden',
     alignItems: 'center',
