@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   RefreshControl,
   StatusBar,
   Platform,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +25,31 @@ import type { RootStackParamList } from '../navigation/AppNavigator';
 const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
 const isDesktop = isWeb && width > 900;
+
+// Imagens do carrossel
+const CAROUSEL_IMAGES = [
+  { uri: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=80', label: 'Vestidos' },
+  { uri: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=400&q=80', label: 'Moda' },
+  { uri: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&q=80', label: 'Bolsas' },
+  { uri: 'https://images.unsplash.com/photo-1515347619252-60a4bf4fff4f?w=400&q=80', label: 'Calçados' },
+  { uri: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=400&q=80', label: 'Blusas' },
+];
+
+// Logos das marcas (servirão como filtros)
+const BRAND_LOGOS = [
+  { name: 'Zara', logo: 'https://logo.clearbit.com/zara.com' },
+  { name: 'Farm', logo: 'https://logo.clearbit.com/farmrio.com.br' },
+  { name: 'Animale', logo: 'https://logo.clearbit.com/animale.com.br' },
+  { name: 'Renner', logo: 'https://logo.clearbit.com/lojasrenner.com.br' },
+  { name: 'C&A', logo: 'https://logo.clearbit.com/cea.com.br' },
+  { name: 'Forever21', logo: 'https://logo.clearbit.com/forever21.com' },
+  { name: 'Hering', logo: 'https://logo.clearbit.com/hering.com.br' },
+  { name: 'Marisa', logo: 'https://logo.clearbit.com/marisa.com.br' },
+  { name: 'Shoulder', logo: 'https://logo.clearbit.com/shoulder.com.br' },
+  { name: 'Le Lis', logo: 'https://logo.clearbit.com/lelis.com.br' },
+  { name: 'Arezzo', logo: 'https://logo.clearbit.com/arezzo.com.br' },
+  { name: 'Schutz', logo: 'https://logo.clearbit.com/schutz.com.br' },
+];
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -51,6 +77,29 @@ export default function HomeScreen({ navigation }: Props) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Carousel state
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  // Auto-rotate carousel
+  useEffect(() => {
+    const interval = setInterval(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setCurrentImageIndex((prev) => (prev + 1) % CAROUSEL_IMAGES.length);
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [fadeAnim]);
 
   const handleSellPress = async () => {
     const token = await loadToken();
@@ -186,15 +235,55 @@ export default function HomeScreen({ navigation }: Props) {
           </View>
           <View style={styles.heroImageArea}>
             <View style={styles.heroImageBg} />
-            <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600&q=80' }}
-              style={styles.heroImage}
-            />
+            {/* Imagem principal com carrossel */}
+            <Animated.View style={[styles.heroImageWrapper, { opacity: fadeAnim }]}>
+              <Image
+                source={{ uri: CAROUSEL_IMAGES[currentImageIndex].uri }}
+                style={styles.heroImage}
+              />
+              <View style={styles.carouselLabel}>
+                <Text style={styles.carouselLabelText}>{CAROUSEL_IMAGES[currentImageIndex].label}</Text>
+              </View>
+            </Animated.View>
             <Image
               source={{ uri: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=400&q=80' }}
               style={styles.heroImageSecondary}
             />
+            {/* Dots do carrossel */}
+            <View style={styles.carouselDots}>
+              {CAROUSEL_IMAGES.map((_, index) => (
+                <View
+                  key={index}
+                  style={[styles.dot, currentImageIndex === index && styles.dotActive]}
+                />
+              ))}
+            </View>
           </View>
+        </View>
+
+        {/* Seção de Marcas */}
+        <View style={styles.brandsSection}>
+          <Text style={styles.brandsSectionTitle}>Marcas que você encontra aqui</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.brandsScroll}
+          >
+            {BRAND_LOGOS.map((brand, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.brandCircle}
+                onPress={() => navigation.navigate('Search')}
+              >
+                <Image
+                  source={{ uri: brand.logo }}
+                  style={styles.brandLogo}
+                  resizeMode="contain"
+                />
+                <Text style={styles.brandName}>{brand.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
 
         {/* Como Funciona */}
@@ -554,6 +643,84 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderWidth: 4,
     borderColor: '#FAF9F7',
+  },
+  heroImageWrapper: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+  },
+  carouselLabel: {
+    position: 'absolute',
+    bottom: 10,
+    left: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  carouselLabelText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  carouselDots: {
+    position: 'absolute',
+    bottom: -30,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.gray[300],
+  },
+  dotActive: {
+    backgroundColor: COLORS.primary,
+    width: 20,
+  },
+
+  // Brands Section
+  brandsSection: {
+    paddingHorizontal: isDesktop ? 60 : 20,
+    paddingTop: 50,
+    paddingBottom: 30,
+  },
+  brandsSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.gray[500],
+    textAlign: 'center',
+    marginBottom: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  brandsScroll: {
+    paddingHorizontal: 10,
+    gap: 16,
+    justifyContent: 'center',
+  },
+  brandCircle: {
+    alignItems: 'center',
+    width: 70,
+  },
+  brandLogo: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: COLORS.gray[200],
+  },
+  brandName: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.gray[600],
+    marginTop: 6,
+    textAlign: 'center',
   },
 
   // Section Title
