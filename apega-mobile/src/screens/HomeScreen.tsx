@@ -19,6 +19,7 @@ import { BottomNavigation } from '../components';
 import { COLORS } from '../constants/theme';
 import { getProducts, Product, getCategoryCounts } from '../services/products';
 import { loadToken } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
@@ -157,6 +158,7 @@ const getConditionStyle = (condition: string | undefined) => {
 
 export default function HomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
+  const { user, isAuthenticated } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -359,9 +361,18 @@ export default function HomeScreen({ navigation }: Props) {
             <Ionicons name="pricetag-outline" size={18} color={COLORS.primary} />
             <Text style={styles.headerBtnText}>Venda conosco</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerBtnFilled} onPress={() => navigation.navigate('Profile')}>
-            <Text style={styles.headerBtnFilledText}>Entrar</Text>
-          </TouchableOpacity>
+          {isAuthenticated && user ? (
+            <TouchableOpacity style={styles.headerUserBtn} onPress={() => navigation.navigate('Profile')}>
+              <View style={styles.headerUserAvatar}>
+                <Text style={styles.headerUserInitial}>{user.name?.charAt(0).toUpperCase() || 'U'}</Text>
+              </View>
+              <Text style={styles.headerUserName} numberOfLines={1}>{user.name?.split(' ')[0] || 'Usuário'}</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.headerBtnFilled} onPress={() => navigation.navigate('Profile')}>
+              <Text style={styles.headerBtnFilledText}>Entrar</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -885,6 +896,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
+  },
+  headerUserBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 24,
+    backgroundColor: COLORS.primaryExtraLight,
+  },
+  headerUserAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerUserInitial: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  headerUserName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.gray[700],
+    maxWidth: 100,
   },
 
   // Scroll
