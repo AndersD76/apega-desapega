@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,16 +10,27 @@ import {
   Dimensions,
   ActivityIndicator,
   RefreshControl,
+  Platform,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
+import { COLORS } from '../constants/theme';
 import BottomNavigation from '../components/BottomNavigation';
 import { getFavorites, removeFromFavorites, FavoriteItem } from '../services/favorites';
 import { useAuth } from '../contexts/AuthContext';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - SPACING.md * 3) / 2;
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
+const CARD_WIDTH = isDesktop ? (width - 160) / 4 : (width - 48) / 2;
+
+// Banner images
+const BANNER_IMAGES = [
+  { uri: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&q=80', title: 'SEUS FAVORITOS', subtitle: 'Peças que você ama' },
+  { uri: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80', title: 'ESTILO ÚNICO', subtitle: 'Moda consciente' },
+];
 
 interface FavoritesScreenProps {
   navigation: any;
@@ -31,6 +42,28 @@ export default function FavoritesScreen({ navigation }: FavoritesScreenProps) {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Banner carousel
+  const [currentBanner, setCurrentBanner] = useState(0);
+  const bannerFade = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      Animated.timing(bannerFade, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setCurrentBanner((prev) => (prev + 1) % BANNER_IMAGES.length);
+        Animated.timing(bannerFade, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [bannerFade]);
 
   const fetchFavorites = useCallback(async () => {
     if (!isAuthenticated) {
@@ -55,7 +88,6 @@ export default function FavoritesScreen({ navigation }: FavoritesScreenProps) {
     fetchFavorites();
   }, [fetchFavorites]);
 
-  // Atualizar ao voltar para a tela
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       fetchFavorites();
@@ -84,66 +116,112 @@ export default function FavoritesScreen({ navigation }: FavoritesScreenProps) {
     return `R$ ${numPrice.toFixed(0)}`;
   };
 
-  const renderProductCard = (item: FavoriteItem) => (
-    <TouchableOpacity
-      key={item.id}
-      style={styles.card}
-      onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}
-      activeOpacity={0.8}
-    >
-      <View style={styles.imageContainer}>
-        {item.image_url ? (
-          <Image source={{ uri: item.image_url }} style={styles.cardImage} resizeMode="cover" />
-        ) : (
-          <View style={[styles.cardImage, styles.placeholderImage]}>
-            <Ionicons name="image-outline" size={40} color={COLORS.textTertiary} />
+  const getConditionStyle = (condition: string | undefined) => {
+    const cond = condition?.toLowerCase() || '';
+    if (cond.includes('novo') && !cond.includes('semi')) return { bg: '#10B981', label: 'Novo' };
+    if (cond.includes('seminovo') || cond.includes('semi')) return { bg: COLORS.primary, label: 'Seminovo' };
+    return { bg: '#F59E0B', label: 'Usado' };
+  };
+
+  const renderProductCard = (item: FavoriteItem) => {
+    const conditionInfo = getConditionStyle(item.condition);
+
+    return (
+      <TouchableOpacity
+        key={item.id}
+        style={styles.card}
+        onPress={() => navigation.navigate('ItemDetail', { itemId: item.id })}
+        activeOpacity={0.95}
+      >
+        <View style={styles.imageContainer}>
+          {item.image_url ? (
+            <Image source={{ uri: item.image_url }} style={styles.cardImage} resizeMode="cover" />
+          ) : (
+            <LinearGradient
+              colors={[COLORS.primaryExtraLight, COLORS.primaryLight]}
+              style={[styles.cardImage, styles.placeholderImage]}
+            >
+              <Ionicons name="image-outline" size={40} color={COLORS.primary} />
+            </LinearGradient>
+          )}
+
+          <TouchableOpacity
+            style={styles.favoriteButton}
+            onPress={() => handleRemoveFavorite(item.id)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="heart" size={20} color="#EF4444" />
+          </TouchableOpacity>
+
+          {/* Condition Badge */}
+          <View style={[styles.conditionBadge, { backgroundColor: conditionInfo.bg }]}>
+            <Text style={styles.conditionText}>{conditionInfo.label}</Text>
           </View>
-        )}
+        </View>
 
-        <TouchableOpacity
-          style={styles.favoriteButton}
-          onPress={() => handleRemoveFavorite(item.id)}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="heart" size={18} color="#EF4444" />
-        </TouchableOpacity>
-      </View>
+        <View style={styles.cardInfo}>
+          {item.brand && (
+            <Text style={styles.brandText}>{item.brand}</Text>
+          )}
+          <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
+          <Text style={styles.cardPrice}>{formatPrice(item.price)}</Text>
+          {item.size && (
+            <View style={styles.sizeTag}>
+              <Text style={styles.sizeText}>Tam: {item.size}</Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
-      <View style={styles.cardInfo}>
-        <Text style={styles.cardPrice}>{formatPrice(item.price)}</Text>
-        <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-        <Text style={styles.cardMeta}>
-          {item.brand || 'Sem marca'} {item.size ? `• ${item.size}` : ''}
-        </Text>
-        {item.seller_city && (
-          <Text style={styles.cardLocation}>
-            <Ionicons name="location-outline" size={10} color={COLORS.textTertiary} />
-            {' '}{item.seller_city}
-          </Text>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-
+  // Not authenticated
   if (!isAuthenticated) {
     return (
       <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-        <View style={[styles.header, { paddingTop: insets.top + SPACING.sm }]}>
-          <Text style={styles.headerTitle}>favoritos</Text>
+        <StatusBar barStyle="dark-content" backgroundColor="#FAF9F7" />
+
+        {/* Header */}
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+          <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+            <Text style={styles.logo}>apega<Text style={styles.logoLight}>desapega</Text></Text>
+          </TouchableOpacity>
+          <View style={styles.headerRight}>
+            <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate('Profile')}>
+              <Ionicons name="person-outline" size={18} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
         </View>
 
+        {/* Banner */}
+        <Animated.View style={[styles.heroBanner, { opacity: bannerFade }]}>
+          <Image
+            source={{ uri: BANNER_IMAGES[currentBanner].uri }}
+            style={styles.heroBannerImage}
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.7)']}
+            style={styles.heroBannerOverlay}
+          />
+          <View style={styles.heroBannerContent}>
+            <Text style={styles.heroBannerTitle}>{BANNER_IMAGES[currentBanner].title}</Text>
+            <Text style={styles.heroBannerSubtitle}>{BANNER_IMAGES[currentBanner].subtitle}</Text>
+          </View>
+        </Animated.View>
+
         <View style={styles.emptyState}>
-          <Ionicons name="heart-outline" size={64} color={COLORS.textTertiary} />
-          <Text style={styles.emptyTitle}>faça login para ver seus favoritos</Text>
+          <View style={styles.emptyIcon}>
+            <Ionicons name="heart-outline" size={64} color={COLORS.primaryLight} />
+          </View>
+          <Text style={styles.emptyTitle}>Faça login para ver seus favoritos</Text>
           <Text style={styles.emptySubtitle}>
-            salve suas peças favoritas e acompanhe preços
+            Salve suas peças favoritas e acompanhe preços
           </Text>
           <TouchableOpacity
             style={styles.loginButton}
             onPress={() => navigation.navigate('Login')}
           >
-            <Text style={styles.loginButtonText}>entrar</Text>
+            <Text style={styles.loginButtonText}>Entrar na Conta</Text>
           </TouchableOpacity>
         </View>
 
@@ -154,32 +232,36 @@ export default function FavoritesScreen({ navigation }: FavoritesScreenProps) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
+      <StatusBar barStyle="dark-content" backgroundColor="#FAF9F7" />
 
-      <View style={[styles.header, { paddingTop: insets.top + SPACING.sm }]}>
-        <Text style={styles.headerTitle}>favoritos</Text>
-        {favorites.length > 0 && (
-          <Text style={styles.headerCount}>{favorites.length} {favorites.length === 1 ? 'item' : 'itens'}</Text>
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+          <Text style={styles.logo}>apega<Text style={styles.logoLight}>desapega</Text></Text>
+        </TouchableOpacity>
+
+        {isDesktop && (
+          <View style={styles.navDesktop}>
+            <TouchableOpacity onPress={() => navigation.navigate('Search')}>
+              <Text style={styles.navLink}>Explorar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <Text style={[styles.navLink, styles.navLinkActive]}>Favoritos</Text>
+            </TouchableOpacity>
+          </View>
         )}
+
+        <View style={styles.headerRight}>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate('Profile')}>
+            <Ionicons name="person-outline" size={18} color={COLORS.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
-        </View>
-      ) : favorites.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="heart-outline" size={64} color={COLORS.textTertiary} />
-          <Text style={styles.emptyTitle}>nenhum favorito ainda</Text>
-          <Text style={styles.emptySubtitle}>
-            toque no coração nas peças que você gostar para salvá-las aqui
-          </Text>
-          <TouchableOpacity
-            style={styles.exploreButton}
-            onPress={() => navigation.navigate('Home')}
-          >
-            <Text style={styles.exploreButtonText}>explorar peças</Text>
-          </TouchableOpacity>
+          <Text style={styles.loadingText}>Carregando favoritos...</Text>
         </View>
       ) : (
         <ScrollView
@@ -189,11 +271,61 @@ export default function FavoritesScreen({ navigation }: FavoritesScreenProps) {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
           }
         >
-          <View style={styles.grid}>
-            {favorites.map(renderProductCard)}
+          {/* Banner */}
+          <Animated.View style={[styles.heroBanner, { opacity: bannerFade }]}>
+            <Image
+              source={{ uri: BANNER_IMAGES[currentBanner].uri }}
+              style={styles.heroBannerImage}
+            />
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.7)']}
+              style={styles.heroBannerOverlay}
+            />
+            <View style={styles.heroBannerContent}>
+              <Text style={styles.heroBannerTitle}>{BANNER_IMAGES[currentBanner].title}</Text>
+              <Text style={styles.heroBannerSubtitle}>{BANNER_IMAGES[currentBanner].subtitle}</Text>
+            </View>
+            <View style={styles.bannerDots}>
+              {BANNER_IMAGES.map((_, index) => (
+                <View
+                  key={index}
+                  style={[styles.bannerDot, currentBanner === index && styles.bannerDotActive]}
+                />
+              ))}
+            </View>
+          </Animated.View>
+
+          {/* Count */}
+          <View style={styles.countSection}>
+            <Text style={styles.countText}>
+              {favorites.length} {favorites.length === 1 ? 'peça favorita' : 'peças favoritas'}
+            </Text>
           </View>
 
-          <View style={{ height: 100 }} />
+          {favorites.length === 0 ? (
+            <View style={styles.emptyStateInline}>
+              <View style={styles.emptyIcon}>
+                <Ionicons name="heart-outline" size={64} color={COLORS.primaryLight} />
+              </View>
+              <Text style={styles.emptyTitle}>Nenhum favorito ainda</Text>
+              <Text style={styles.emptySubtitle}>
+                Toque no coração nas peças que você gostar para salvá-las aqui
+              </Text>
+              <TouchableOpacity
+                style={styles.exploreButton}
+                onPress={() => navigation.navigate('Search')}
+              >
+                <Text style={styles.exploreButtonText}>Explorar Peças</Text>
+                <Ionicons name="arrow-forward" size={18} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.grid}>
+              {favorites.map(renderProductCard)}
+            </View>
+          )}
+
+          <View style={{ height: 120 }} />
         </ScrollView>
       )}
 
@@ -205,53 +337,153 @@ export default function FavoritesScreen({ navigation }: FavoritesScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FAF9F7',
   },
+
+  // Header
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.md,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
+    alignItems: 'center',
+    paddingHorizontal: isDesktop ? 60 : 20,
+    paddingBottom: 16,
+    backgroundColor: '#FAF9F7',
   },
-  headerTitle: {
-    fontSize: TYPOGRAPHY.sizes.xl,
-    fontWeight: TYPOGRAPHY.weights.bold,
-    color: COLORS.textPrimary,
+  logo: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#1a1a1a',
+    letterSpacing: -0.5,
   },
-  headerCount: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    color: COLORS.textSecondary,
+  logoLight: {
+    fontWeight: '400',
+    color: COLORS.gray[400],
   },
+  navDesktop: {
+    flexDirection: 'row',
+    gap: 32,
+  },
+  navLink: {
+    fontSize: 15,
+    color: COLORS.gray[700],
+    fontWeight: '500',
+  },
+  navLinkActive: {
+    color: COLORS.primary,
+    fontWeight: '700',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  headerBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.primaryExtraLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // Hero Banner
+  heroBanner: {
+    height: isDesktop ? 250 : 180,
+    marginHorizontal: isDesktop ? 60 : 16,
+    marginBottom: 24,
+    borderRadius: 24,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  heroBannerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroBannerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  heroBannerContent: {
+    position: 'absolute',
+    bottom: 24,
+    left: 24,
+  },
+  heroBannerTitle: {
+    fontSize: isDesktop ? 42 : 32,
+    fontWeight: '900',
+    color: '#fff',
+    letterSpacing: 3,
+  },
+  heroBannerSubtitle: {
+    fontSize: isDesktop ? 18 : 14,
+    color: '#fff',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  bannerDots: {
+    position: 'absolute',
+    bottom: 16,
+    right: 24,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  bannerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+  bannerDotActive: {
+    backgroundColor: '#fff',
+    width: 20,
+  },
+
+  // Scroll
+  scrollContent: {
+    paddingBottom: 40,
+  },
+
+  // Count Section
+  countSection: {
+    paddingHorizontal: isDesktop ? 60 : 20,
+    marginBottom: 20,
+  },
+  countText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.gray[800],
+  },
+
+  // Loading
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  scrollContent: {
-    paddingTop: SPACING.md,
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.gray[500],
   },
+
+  // Grid
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: SPACING.sm,
+    paddingHorizontal: isDesktop ? 52 : 12,
   },
+
+  // Card
   card: {
     width: CARD_WIDTH,
-    marginHorizontal: SPACING.xs,
-    marginBottom: SPACING.md,
-    backgroundColor: COLORS.white,
-    borderRadius: BORDER_RADIUS.md,
+    marginHorizontal: 8,
+    marginBottom: 24,
+    backgroundColor: '#fff',
+    borderRadius: 20,
     overflow: 'hidden',
-    ...SHADOWS.sm,
   },
   imageContainer: {
     position: 'relative',
     width: '100%',
-    aspectRatio: 0.8,
+    aspectRatio: 0.75,
     backgroundColor: COLORS.gray[100],
   },
   cardImage: {
@@ -264,81 +496,125 @@ const styles = StyleSheet.create({
   },
   favoriteButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    top: 12,
+    right: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.95)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cardInfo: {
-    padding: SPACING.sm,
+  conditionBadge: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
-  cardPrice: {
-    fontSize: 18,
-    fontWeight: TYPOGRAPHY.weights.bold,
+  conditionText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
+    textTransform: 'uppercase',
+  },
+  cardInfo: {
+    padding: 16,
+  },
+  brandText: {
+    fontSize: 12,
     color: COLORS.primary,
-    marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+    fontWeight: '700',
   },
   cardTitle: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    color: COLORS.textPrimary,
-    marginBottom: 2,
-    lineHeight: 18,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 8,
+    lineHeight: 20,
   },
-  cardMeta: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    color: COLORS.textSecondary,
+  cardPrice: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: COLORS.gray[900],
+    marginBottom: 8,
   },
-  cardLocation: {
-    fontSize: TYPOGRAPHY.sizes.xs,
-    color: COLORS.textTertiary,
-    marginTop: 2,
+  sizeTag: {
+    backgroundColor: COLORS.primaryExtraLight,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
   },
+  sizeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+
+  // Empty State
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
+    paddingHorizontal: 40,
+  },
+  emptyStateInline: {
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 40,
+  },
+  emptyIcon: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: COLORS.primaryExtraLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
   },
   emptyTitle: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    color: COLORS.textPrimary,
-    marginTop: SPACING.md,
+    fontSize: 22,
+    fontWeight: '700',
+    color: COLORS.gray[800],
+    marginBottom: 8,
     textAlign: 'center',
   },
   emptySubtitle: {
-    fontSize: TYPOGRAPHY.sizes.sm,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
+    fontSize: 16,
+    color: COLORS.gray[500],
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 24,
   },
   loginButton: {
-    marginTop: SPACING.lg,
+    marginTop: 24,
     backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 28,
   },
   loginButtonText: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
   },
   exploreButton: {
-    marginTop: SPACING.lg,
+    marginTop: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
+    paddingHorizontal: 28,
+    paddingVertical: 16,
+    borderRadius: 28,
   },
   exploreButtonText: {
-    fontSize: TYPOGRAPHY.sizes.base,
-    fontWeight: TYPOGRAPHY.weights.semibold,
-    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
   },
 });

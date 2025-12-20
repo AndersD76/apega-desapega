@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,9 @@ import {
   StatusBar,
   ActivityIndicator,
   Image,
+  Platform,
+  Dimensions,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,6 +22,16 @@ import { loadToken, removeToken } from '../services/api';
 import { getCurrentUser } from '../services/authService';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
+
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
+
+// Banner images
+const BANNER_IMAGES = [
+  { uri: 'https://images.unsplash.com/photo-1558171813-4c088753af8f?w=800&q=80', title: 'SUA CONTA', subtitle: 'Gerencie seus dados' },
+  { uri: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80', title: 'VENDA CONOSCO', subtitle: 'Lucre com moda circular' },
+];
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
@@ -37,6 +50,28 @@ export default function ProfileScreen({ navigation }: Props) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Banner carousel
+  const [currentBanner, setCurrentBanner] = useState(0);
+  const bannerFade = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      Animated.timing(bannerFade, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setCurrentBanner((prev) => (prev + 1) % BANNER_IMAGES.length);
+        Animated.timing(bannerFade, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [bannerFade]);
 
   useFocusEffect(
     useCallback(() => {
@@ -94,25 +129,61 @@ export default function ProfileScreen({ navigation }: Props) {
   if (!isAuthenticated || !user) {
     return (
       <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <StatusBar barStyle="dark-content" backgroundColor="#FAF9F7" />
+
+        {/* Header */}
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+          <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+            <Text style={styles.logo}>apega<Text style={styles.logoLight}>desapega</Text></Text>
+          </TouchableOpacity>
+          {isDesktop && (
+            <View style={styles.navDesktop}>
+              <TouchableOpacity onPress={() => navigation.navigate('Search')}>
+                <Text style={styles.navLink}>Explorar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Favorites')}>
+                <Text style={styles.navLink}>Favoritos</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Header */}
-          <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-            <Text style={styles.logo}>apegadesapega</Text>
-          </View>
+          {/* Banner Hero */}
+          <Animated.View style={[styles.heroBanner, { opacity: bannerFade }]}>
+            <Image
+              source={{ uri: BANNER_IMAGES[currentBanner].uri }}
+              style={styles.heroBannerImage}
+            />
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.7)']}
+              style={styles.heroBannerOverlay}
+            />
+            <View style={styles.heroBannerContent}>
+              <Text style={styles.heroBannerTitle}>{BANNER_IMAGES[currentBanner].title}</Text>
+              <Text style={styles.heroBannerSubtitle}>{BANNER_IMAGES[currentBanner].subtitle}</Text>
+            </View>
+            <View style={styles.bannerDots}>
+              {BANNER_IMAGES.map((_, index) => (
+                <View
+                  key={index}
+                  style={[styles.bannerDot, currentBanner === index && styles.bannerDotActive]}
+                />
+              ))}
+            </View>
+          </Animated.View>
 
           {/* Login Hero */}
           <View style={styles.loginHero}>
             <View style={styles.loginIconCircle}>
               <Ionicons name="heart" size={40} color={COLORS.primary} />
             </View>
-            <Text style={styles.loginTitle}>oi, bora desapegar?</Text>
+            <Text style={styles.loginTitle}>Oi, bora desapegar?</Text>
             <Text style={styles.loginSubtitle}>
-              entre pra salvar favoritos, vender suas peças e acompanhar seus pedidos
+              Entre pra salvar favoritos, vender suas peças e acompanhar seus pedidos
             </Text>
           </View>
 
@@ -455,7 +526,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: isDesktop ? 60 : 20,
     paddingBottom: 16,
     backgroundColor: '#FAF9F7',
   },
@@ -464,6 +535,70 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1a1a1a',
     letterSpacing: -0.5,
+  },
+  logoLight: {
+    fontWeight: '400',
+    color: COLORS.gray[400],
+  },
+  navDesktop: {
+    flexDirection: 'row',
+    gap: 32,
+  },
+  navLink: {
+    fontSize: 15,
+    color: COLORS.gray[700],
+    fontWeight: '500',
+  },
+
+  // Hero Banner
+  heroBanner: {
+    height: isDesktop ? 250 : 180,
+    marginHorizontal: isDesktop ? 60 : 16,
+    marginBottom: 24,
+    borderRadius: 24,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  heroBannerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroBannerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  heroBannerContent: {
+    position: 'absolute',
+    bottom: 24,
+    left: 24,
+  },
+  heroBannerTitle: {
+    fontSize: isDesktop ? 42 : 32,
+    fontWeight: '900',
+    color: '#fff',
+    letterSpacing: 3,
+  },
+  heroBannerSubtitle: {
+    fontSize: isDesktop ? 18 : 14,
+    color: '#fff',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  bannerDots: {
+    position: 'absolute',
+    bottom: 16,
+    right: 24,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  bannerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+  bannerDotActive: {
+    backgroundColor: '#fff',
+    width: 20,
   },
 
   // Login Hero
