@@ -29,6 +29,16 @@ const CAROUSEL_IMAGES = [
   { uri: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=400&q=80', label: 'Blusas' },
 ];
 
+// Logos das marcas
+const BRAND_LOGOS = [
+  { name: 'Zara', logo: 'https://logo.clearbit.com/zara.com' },
+  { name: 'Farm', logo: 'https://logo.clearbit.com/farmrio.com.br' },
+  { name: 'Animale', logo: 'https://logo.clearbit.com/animale.com.br' },
+  { name: 'Renner', logo: 'https://logo.clearbit.com/lojasrenner.com.br' },
+  { name: 'C&A', logo: 'https://logo.clearbit.com/cea.com.br' },
+  { name: 'Forever21', logo: 'https://logo.clearbit.com/forever21.com' },
+];
+
 interface LoginScreenProps {
   navigation: any;
 }
@@ -211,6 +221,26 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           <Text style={styles.welcomeSubtitle}>
             Entre para descobrir peças incríveis
           </Text>
+
+          {/* Marcas */}
+          <View style={styles.brandsSection}>
+            <Text style={styles.brandsTitle}>Marcas que você encontra aqui</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.brandsScroll}
+            >
+              {BRAND_LOGOS.map((brand, index) => (
+                <View key={index} style={styles.brandCircle}>
+                  <Image
+                    source={{ uri: brand.logo }}
+                    style={styles.brandLogo}
+                    resizeMode="contain"
+                  />
+                </View>
+              ))}
+            </ScrollView>
+          </View>
 
           {/* Primary Button */}
           <TouchableOpacity
@@ -743,7 +773,44 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#666',
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 16,
+  },
+  brandsSection: {
+    marginBottom: 24,
+  },
+  brandsTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#999',
+    textAlign: 'center',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  brandsScroll: {
+    paddingHorizontal: 10,
+    gap: 12,
+    justifyContent: 'center',
+  },
+  brandCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#eee',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  brandLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 4,
   },
 
   // Primary Button
