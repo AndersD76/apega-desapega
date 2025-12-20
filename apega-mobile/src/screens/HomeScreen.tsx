@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomNavigation } from '../components';
 import { COLORS } from '../constants/theme';
-import { getProducts, Product } from '../services/products';
+import { getProducts, Product, getCategoryCounts } from '../services/products';
 import { loadToken } from '../services/api';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -172,6 +172,9 @@ export default function HomeScreen({ navigation }: Props) {
   const premiumBannerAnim = useRef(new Animated.Value(0)).current;
   const premiumShineAnim = useRef(new Animated.Value(0)).current;
 
+  // Category counts state
+  const [categoryCounts, setCategoryCounts] = useState<{ [key: string]: number }>({});
+
   // Auto-rotate carousel com transição mais suave
   useEffect(() => {
     const interval = setInterval(() => {
@@ -268,8 +271,12 @@ export default function HomeScreen({ navigation }: Props) {
   const fetchProducts = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      const response = await getProducts({ limit: 20, sort: 'recent' });
+      const [response, counts] = await Promise.all([
+        getProducts({ limit: 20, sort: 'recent' }),
+        getCategoryCounts()
+      ]);
       setProducts(response.products || []);
+      setCategoryCounts(counts);
     } catch (error) {
       console.error('Erro ao carregar produtos:', error);
       setProducts([]);
@@ -464,26 +471,31 @@ export default function HomeScreen({ navigation }: Props) {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.featuredPiecesScroll}
           >
-            {FEATURED_PIECES.map((piece, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.featuredPieceCard}
-                onPress={() => navigation.navigate('Search')}
-              >
-                <View style={styles.featuredPieceImageWrapper}>
-                  <Image
-                    source={{ uri: piece.image }}
-                    style={styles.featuredPieceImage}
-                  />
-                  <View style={styles.featuredPieceOverlay}>
-                    <View style={styles.featuredPieceCountBadge}>
-                      <Text style={styles.featuredPieceCount}>{piece.count}</Text>
+            {FEATURED_PIECES.map((piece, index) => {
+              const count = categoryCounts[piece.category] || 0;
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.featuredPieceCard}
+                  onPress={() => navigation.navigate('Search')}
+                >
+                  <View style={styles.featuredPieceImageWrapper}>
+                    <Image
+                      source={{ uri: piece.image }}
+                      style={styles.featuredPieceImage}
+                    />
+                    <View style={styles.featuredPieceOverlay}>
+                      <View style={styles.featuredPieceCountBadge}>
+                        <Text style={styles.featuredPieceCount}>
+                          {count > 0 ? `${count}` : piece.count}
+                        </Text>
+                      </View>
                     </View>
                   </View>
-                </View>
-                <Text style={styles.featuredPieceCategory}>{piece.category}</Text>
-              </TouchableOpacity>
-            ))}
+                  <Text style={styles.featuredPieceCategory}>{piece.category}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
 
           <TouchableOpacity
