@@ -517,12 +517,16 @@ export default function HomeScreen({ navigation }: Props) {
             <View style={styles.stepCard}>
               <Text style={styles.stepNumber}>2</Text>
               <View style={styles.stepIconContainer}>
-                <Ionicons name="shirt-outline" size={32} color={COLORS.primary} />
+                <Ionicons name="sparkles" size={32} color={COLORS.primary} />
               </View>
-              <Text style={styles.stepTitle}>Nós avaliamos</Text>
+              <Text style={styles.stepTitle}>Avaliação Inteligente</Text>
               <Text style={styles.stepText}>
-                Selecionamos as peças de acordo com a demanda e conservação.
+                Nossa IA avalia suas peças automaticamente.
               </Text>
+              <View style={styles.premiumBadgeSmall}>
+                <Ionicons name="diamond" size={12} color="#FFD700" />
+                <Text style={styles.premiumBadgeSmallText}>Premium</Text>
+              </View>
             </View>
 
             <View style={styles.stepCard}>
@@ -540,36 +544,6 @@ export default function HomeScreen({ navigation }: Props) {
           <TouchableOpacity style={styles.secondaryButton} onPress={handleSellPress}>
             <Text style={styles.secondaryButtonText}>Quero vender minhas peças</Text>
           </TouchableOpacity>
-        </View>
-
-        {/* Categorias */}
-        <View style={styles.categoriesSection}>
-          <Text style={styles.sectionTitle}>Pensou em renovar? A gente tem de tudo.</Text>
-          <Text style={styles.sectionSubtitle}>
-            De roupas a acessórios, desapegue e <Text style={styles.textHighlight}>renove aqui</Text>.
-          </Text>
-
-          <View style={styles.categoriesGrid}>
-            {[
-              { name: 'Feminino', desc: 'O sonho de toda mulher, armário sempre renovado.', image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&q=80' },
-              { name: 'Bolsas', desc: 'Bolsas para todos os estilos e ocasiões.', image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&q=80' },
-              { name: 'Calçados', desc: 'Do casual ao elegante, encontre seu par.', image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400&q=80' },
-              { name: 'Acessórios', desc: 'Acessórios para completar seu look.', image: 'https://images.unsplash.com/photo-1611085583191-a3b181a88401?w=400&q=80' },
-            ].map((cat, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.categoryCard}
-                onPress={() => navigation.navigate('Search')}
-              >
-                <Text style={styles.categoryTitle}>{cat.name}</Text>
-                <Text style={styles.categoryDesc}>{cat.desc}</Text>
-                <View style={styles.categoryImageWrapper}>
-                  <View style={styles.categoryGeometry} />
-                  <Image source={{ uri: cat.image }} style={styles.categoryImage} />
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
         </View>
 
         {/* SEÇÃO DE MARCAS - Grande e Impactante */}
@@ -1502,6 +1476,21 @@ const styles = StyleSheet.create({
     color: COLORS.gray[500],
     textAlign: 'center',
     lineHeight: 20,
+  },
+  premiumBadgeSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,215,0,0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    marginTop: 10,
+  },
+  premiumBadgeSmallText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#B8860B',
   },
   secondaryButton: {
     alignSelf: 'center',
