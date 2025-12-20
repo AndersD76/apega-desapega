@@ -23,7 +23,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ItemDetail'>;
 
 const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
-const isDesktop = isWeb && width > 768;
+const isDesktop = isWeb && width > 900;
 
 export default function ItemDetailScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
@@ -37,9 +37,15 @@ export default function ItemDetailScreen({ route, navigation }: Props) {
     return (
       <View style={styles.loading}>
         <View style={styles.emptyIcon}>
-          <Ionicons name="alert-circle-outline" size={48} color="#ddd" />
+          <Ionicons name="bag-outline" size={64} color={COLORS.primary} />
         </View>
         <Text style={styles.errorText}>Item não encontrado</Text>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>Voltar</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -73,51 +79,63 @@ export default function ItemDetailScreen({ route, navigation }: Props) {
     setShowShareModal(true);
   };
 
-  const handleViewSeller = () => {
-    Alert.alert('Perfil do Vendedor', 'Abrindo perfil do vendedor...');
-  };
-
   const imageWidth = isDesktop ? width * 0.5 : width;
-  const imageHeight = isDesktop ? 600 : width * 1.2;
+  const imageHeight = isDesktop ? 650 : width * 1.25;
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      {/* Header Flutuante */}
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity
-          style={styles.headerButton}
+          style={styles.headerBtn}
           onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <LinearGradient
+            colors={['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.9)']}
+            style={styles.headerBtnGradient}
+          >
+            <Ionicons name="arrow-back" size={22} color="#333" />
+          </LinearGradient>
         </TouchableOpacity>
+
         <View style={styles.headerRight}>
           <TouchableOpacity
-            style={styles.headerButton}
+            style={styles.headerBtn}
             onPress={handleShare}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
           >
-            <Ionicons name="share-outline" size={22} color="#fff" />
+            <LinearGradient
+              colors={['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.9)']}
+              style={styles.headerBtnGradient}
+            >
+              <Ionicons name="share-social-outline" size={20} color="#333" />
+            </LinearGradient>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.headerButton, isFavorite && styles.headerButtonFavorite]}
+            style={styles.headerBtn}
             onPress={() => setIsFavorite(!isFavorite)}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
           >
-            <Ionicons
-              name={isFavorite ? 'heart' : 'heart-outline'}
-              size={22}
-              color={isFavorite ? '#FF6B6B' : '#fff'}
-            />
+            <LinearGradient
+              colors={isFavorite ? [COLORS.primary, COLORS.primaryDark] : ['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.9)']}
+              style={styles.headerBtnGradient}
+            >
+              <Ionicons
+                name={isFavorite ? 'heart' : 'heart-outline'}
+                size={20}
+                color={isFavorite ? '#fff' : '#333'}
+              />
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
+      <ScrollView showsVerticalScrollIndicator={false} bounces={true}>
         <View style={[styles.mainLayout, isDesktop && styles.mainLayoutDesktop]}>
-          {/* Images */}
+          {/* Imagens */}
           <View style={[styles.imageSection, isDesktop && styles.imageSectionDesktop]}>
             <View style={styles.imageContainer}>
               <ScrollView
@@ -141,133 +159,192 @@ export default function ItemDetailScreen({ route, navigation }: Props) {
                   ))
                 ) : (
                   <View style={[styles.imagePlaceholder, { width: imageWidth, height: imageHeight }]}>
-                    <Ionicons name="image-outline" size={64} color="#ddd" />
+                    <Ionicons name="image-outline" size={80} color={COLORS.gray[300]} />
+                    <Text style={styles.placeholderText}>Sem imagem</Text>
                   </View>
                 )}
               </ScrollView>
 
+              {/* Indicadores de imagem */}
               {images.length > 1 && (
-                <View style={styles.imageDots}>
+                <View style={styles.imageIndicators}>
                   {images.map((_: string, index: number) => (
                     <View
                       key={index}
                       style={[
-                        styles.dot,
-                        selectedImageIndex === index && styles.dotActive,
+                        styles.indicator,
+                        selectedImageIndex === index && styles.indicatorActive,
                       ]}
                     />
                   ))}
                 </View>
               )}
 
+              {/* Badge de desconto */}
               {discount > 0 && (
-                <View style={[styles.discountBadge, { top: insets.top + 60 }]}>
-                  <Text style={styles.discountText}>-{discount}%</Text>
+                <View style={[styles.discountBadge, { top: insets.top + 70 }]}>
+                  <LinearGradient
+                    colors={['#FF6B6B', '#EE5A5A']}
+                    style={styles.discountGradient}
+                  >
+                    <Text style={styles.discountText}>-{discount}%</Text>
+                  </LinearGradient>
                 </View>
               )}
             </View>
+
+            {/* Thumbnails */}
+            {images.length > 1 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.thumbnails}
+              >
+                {images.map((image: string, index: number) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => setSelectedImageIndex(index)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[
+                      styles.thumbnail,
+                      selectedImageIndex === index && styles.thumbnailActive,
+                    ]}>
+                      <Image source={{ uri: image }} style={styles.thumbnailImage} />
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
           </View>
 
-          {/* Content */}
+          {/* Conteúdo */}
           <View style={[styles.contentSection, isDesktop && styles.contentSectionDesktop]}>
             <View style={styles.content}>
-              {/* Price */}
-              <View style={styles.priceSection}>
-                <Text style={styles.price}>{formatPrice(item.price)}</Text>
-                {item.originalPrice && (
-                  <Text style={styles.originalPrice}>
-                    {formatPrice(item.originalPrice)}
-                  </Text>
+              {/* Preço */}
+              <View style={styles.priceRow}>
+                <View>
+                  <Text style={styles.price}>{formatPrice(item.price)}</Text>
+                  {item.originalPrice && (
+                    <Text style={styles.originalPrice}>
+                      de {formatPrice(item.originalPrice)}
+                    </Text>
+                  )}
+                </View>
+                {discount > 0 && (
+                  <View style={styles.saveBadge}>
+                    <Ionicons name="pricetag" size={14} color={COLORS.success} />
+                    <Text style={styles.saveText}>Você economiza {formatPrice((item.originalPrice || 0) - item.price)}</Text>
+                  </View>
                 )}
               </View>
 
-              {/* Title */}
+              {/* Título e Marca */}
               <View style={styles.titleSection}>
                 {item.brand && (
-                  <Text style={styles.brand}>{item.brand}</Text>
+                  <View style={styles.brandBadge}>
+                    <Ionicons name="diamond-outline" size={14} color={COLORS.primary} />
+                    <Text style={styles.brandText}>{item.brand}</Text>
+                  </View>
                 )}
                 <Text style={styles.title}>{item.title}</Text>
               </View>
 
-              {/* Attributes */}
+              {/* Atributos */}
               <View style={styles.attributes}>
                 {item.size && (
                   <View style={styles.attribute}>
-                    <Ionicons name="resize-outline" size={16} color="#666" />
-                    <Text style={styles.attributeText}>{item.size}</Text>
+                    <Ionicons name="resize-outline" size={18} color={COLORS.primary} />
+                    <View>
+                      <Text style={styles.attrLabel}>Tamanho</Text>
+                      <Text style={styles.attrValue}>{item.size}</Text>
+                    </View>
                   </View>
                 )}
                 {item.condition && (
-                  <View style={[styles.attribute, styles.attributeCondition]}>
-                    <Ionicons name="checkmark-circle" size={16} color={COLORS.primary} />
-                    <Text style={[styles.attributeText, { color: COLORS.primary }]}>
-                      {item.condition === 'novo' ? 'Novo' :
-                       item.condition === 'seminovo' ? 'Seminovo' : 'Usado'}
-                    </Text>
+                  <View style={[styles.attribute, styles.attributeSuccess]}>
+                    <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                    <View>
+                      <Text style={styles.attrLabel}>Condição</Text>
+                      <Text style={[styles.attrValue, { color: COLORS.success }]}>
+                        {item.condition === 'novo' ? 'Novo' :
+                         item.condition === 'seminovo' ? 'Seminovo' : 'Usado'}
+                      </Text>
+                    </View>
                   </View>
                 )}
               </View>
 
-              {/* Desktop CTA */}
+              {/* CTA Desktop */}
               {isDesktop && (
                 <View style={styles.desktopCTA}>
                   <TouchableOpacity
-                    style={styles.primaryButton}
+                    style={styles.mainCTA}
                     activeOpacity={0.9}
                     onPress={handleBuyNow}
                   >
                     <LinearGradient
-                      colors={[COLORS.primary, '#4a7c59']}
+                      colors={[COLORS.primary, COLORS.primaryDark]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
-                      style={styles.primaryButtonGradient}
+                      style={styles.mainCTAGradient}
                     >
-                      <Ionicons name="bag-check" size={20} color="#fff" />
-                      <Text style={styles.primaryButtonText}>Comprar Agora</Text>
+                      <Ionicons name="bag-check" size={22} color="#fff" />
+                      <Text style={styles.mainCTAText}>Comprar Agora</Text>
                     </LinearGradient>
                   </TouchableOpacity>
 
-                  <View style={styles.secondaryButtons}>
+                  <View style={styles.secondaryCTAs}>
                     <TouchableOpacity
-                      style={styles.secondaryButton}
+                      style={styles.secondaryCTA}
                       activeOpacity={0.8}
                       onPress={handleAddToCart}
                     >
-                      <Ionicons name="bag-add-outline" size={18} color={COLORS.primary} />
-                      <Text style={styles.secondaryButtonText}>Sacolinha</Text>
+                      <Ionicons name="bag-add-outline" size={20} color={COLORS.primary} />
+                      <Text style={styles.secondaryCTAText}>Sacolinha</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={styles.secondaryButton}
+                      style={styles.secondaryCTA}
                       activeOpacity={0.8}
                       onPress={handleMakeOffer}
                     >
-                      <Ionicons name="cash-outline" size={18} color={COLORS.primary} />
-                      <Text style={styles.secondaryButtonText}>Fazer Oferta</Text>
+                      <Ionicons name="cash-outline" size={20} color={COLORS.primary} />
+                      <Text style={styles.secondaryCTAText}>Fazer Oferta</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
               )}
 
-              {/* Description */}
+              {/* Descrição */}
               {item.description && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Descrição</Text>
+                  <View style={styles.sectionHeader}>
+                    <Ionicons name="document-text-outline" size={20} color={COLORS.primary} />
+                    <Text style={styles.sectionTitle}>Descrição</Text>
+                  </View>
                   <Text style={styles.description}>{item.description}</Text>
                 </View>
               )}
 
-              {/* Seller */}
+              {/* Vendedor */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Vendedor</Text>
+                <View style={styles.sectionHeader}>
+                  <Ionicons name="person-outline" size={20} color={COLORS.primary} />
+                  <Text style={styles.sectionTitle}>Vendedor</Text>
+                </View>
                 <TouchableOpacity
                   style={styles.sellerCard}
                   activeOpacity={0.8}
-                  onPress={handleViewSeller}
                 >
-                  <View style={styles.sellerAvatar}>
-                    <Ionicons name="person" size={24} color="#fff" />
-                  </View>
+                  <LinearGradient
+                    colors={[COLORS.primary, COLORS.primaryDark]}
+                    style={styles.sellerAvatar}
+                  >
+                    <Text style={styles.sellerInitial}>
+                      {(item.seller?.name || 'A').charAt(0).toUpperCase()}
+                    </Text>
+                  </LinearGradient>
                   <View style={styles.sellerInfo}>
                     <Text style={styles.sellerName}>
                       {item.seller?.name || 'Vendedor Apega'}
@@ -275,90 +352,96 @@ export default function ItemDetailScreen({ route, navigation }: Props) {
                     <View style={styles.sellerMeta}>
                       <Ionicons name="star" size={14} color="#FFD700" />
                       <Text style={styles.sellerStats}>
-                        {item.seller?.sales || 0} vendas
+                        {item.seller?.sales || 0} vendas • Membro desde 2024
                       </Text>
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#ccc" />
+                  <Ionicons name="chevron-forward" size={22} color={COLORS.gray[400]} />
                 </TouchableOpacity>
               </View>
 
-              {/* Guarantees */}
+              {/* Garantias */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Por que comprar aqui?</Text>
+                <View style={styles.sectionHeader}>
+                  <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.primary} />
+                  <Text style={styles.sectionTitle}>Por que comprar aqui</Text>
+                </View>
                 <View style={styles.guarantees}>
                   <View style={styles.guarantee}>
                     <View style={[styles.guaranteeIcon, { backgroundColor: '#E8F5E9' }]}>
-                      <Ionicons name="shield-checkmark" size={20} color="#4CAF50" />
+                      <Ionicons name="shield-checkmark" size={22} color="#4CAF50" />
                     </View>
                     <View style={styles.guaranteeContent}>
                       <Text style={styles.guaranteeTitle}>Compra Protegida</Text>
-                      <Text style={styles.guaranteeText}>Seu dinheiro de volta se não gostar</Text>
+                      <Text style={styles.guaranteeText}>Seu dinheiro de volta se não for como descrito</Text>
                     </View>
                   </View>
                   <View style={styles.guarantee}>
                     <View style={[styles.guaranteeIcon, { backgroundColor: '#E3F2FD' }]}>
-                      <Ionicons name="swap-horizontal" size={20} color="#2196F3" />
+                      <Ionicons name="swap-horizontal" size={22} color="#2196F3" />
                     </View>
                     <View style={styles.guaranteeContent}>
-                      <Text style={styles.guaranteeTitle}>Troca Grátis</Text>
-                      <Text style={styles.guaranteeText}>7 dias para trocar ou devolver</Text>
+                      <Text style={styles.guaranteeTitle}>7 Dias para Devolver</Text>
+                      <Text style={styles.guaranteeText}>Não gostou? Devolva sem complicação</Text>
                     </View>
                   </View>
                   <View style={styles.guarantee}>
                     <View style={[styles.guaranteeIcon, { backgroundColor: '#FFF3E0' }]}>
-                      <Ionicons name="leaf" size={20} color="#FF9800" />
+                      <Ionicons name="leaf" size={22} color="#FF9800" />
                     </View>
                     <View style={styles.guaranteeContent}>
                       <Text style={styles.guaranteeTitle}>Moda Sustentável</Text>
-                      <Text style={styles.guaranteeText}>Peças com história e propósito</Text>
+                      <Text style={styles.guaranteeText}>Cada peça tem história. Cada compra, um impacto.</Text>
                     </View>
                   </View>
                 </View>
               </View>
 
-              <View style={{ height: 180 }} />
+              <View style={{ height: 160 }} />
             </View>
           </View>
         </View>
       </ScrollView>
 
-      {/* Footer (Mobile Only) */}
+      {/* Footer Mobile */}
       {!isDesktop && (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            activeOpacity={0.9}
-            onPress={handleBuyNow}
-          >
-            <LinearGradient
-              colors={[COLORS.primary, '#4a7c59']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.primaryButtonGradient}
-            >
-              <Text style={styles.primaryButtonText}>Comprar por {formatPrice(item.price)}</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <View style={styles.secondaryButtons}>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+          <View style={styles.footerContent}>
             <TouchableOpacity
-              style={styles.secondaryButton}
-              activeOpacity={0.8}
-              onPress={handleAddToCart}
+              style={styles.mainCTA}
+              activeOpacity={0.9}
+              onPress={handleBuyNow}
             >
-              <Ionicons name="bag-add-outline" size={18} color={COLORS.primary} />
-              <Text style={styles.secondaryButtonText}>Sacolinha</Text>
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.primaryDark]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.mainCTAGradient}
+              >
+                <Ionicons name="bag-check" size={20} color="#fff" />
+                <Text style={styles.mainCTAText}>Comprar por {formatPrice(item.price)}</Text>
+              </LinearGradient>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              activeOpacity={0.8}
-              onPress={handleMakeOffer}
-            >
-              <Ionicons name="cash-outline" size={18} color={COLORS.primary} />
-              <Text style={styles.secondaryButtonText}>Oferta</Text>
-            </TouchableOpacity>
+            <View style={styles.footerActions}>
+              <TouchableOpacity
+                style={styles.footerAction}
+                activeOpacity={0.8}
+                onPress={handleAddToCart}
+              >
+                <Ionicons name="bag-add-outline" size={22} color={COLORS.primary} />
+                <Text style={styles.footerActionText}>Sacolinha</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.footerAction}
+                activeOpacity={0.8}
+                onPress={handleMakeOffer}
+              >
+                <Ionicons name="cash-outline" size={22} color={COLORS.primary} />
+                <Text style={styles.footerActionText}>Oferta</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       )}
@@ -394,19 +477,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
+    gap: 16,
   },
   emptyIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#f8f8f8',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: COLORS.primaryExtraLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
   },
   errorText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.gray[700],
+  },
+  backButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 25,
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
   },
 
   // Header
@@ -424,22 +519,28 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
   },
-  headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+  headerBtn: {
+    borderRadius: 25,
+    overflow: 'hidden',
+    ...Platform.select({
+      web: { boxShadow: '0 2px 12px rgba(0,0,0,0.15)' },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 5,
+      },
+    }),
+  },
+  headerBtnGradient: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  headerButtonFavorite: {
-    backgroundColor: 'rgba(255,255,255,0.95)',
-  },
-
-  scrollView: {
-    flex: 1,
   },
 
   // Layout
@@ -448,32 +549,38 @@ const styles = StyleSheet.create({
   },
   mainLayoutDesktop: {
     flexDirection: 'row',
+    paddingHorizontal: 60,
+    paddingTop: 20,
   },
   imageSection: {},
   imageSectionDesktop: {
-    width: '50%',
-    position: 'sticky' as any,
-    top: 0,
+    width: '55%',
+    paddingRight: 40,
   },
   contentSection: {},
   contentSectionDesktop: {
-    width: '50%',
-    paddingLeft: 40,
+    width: '45%',
+    paddingTop: 80,
   },
 
-  // Image
+  // Imagem
   imageContainer: {
     position: 'relative',
   },
   image: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.gray[100],
   },
   imagePlaceholder: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.gray[100],
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 12,
   },
-  imageDots: {
+  placeholderText: {
+    fontSize: 16,
+    color: COLORS.gray[400],
+  },
+  imageIndicators: {
     position: 'absolute',
     bottom: 20,
     left: 0,
@@ -481,25 +588,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
-  dot: {
+  indicator: {
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: 'rgba(255,255,255,0.5)',
   },
-  dotActive: {
-    width: 24,
+  indicatorActive: {
+    width: 28,
     backgroundColor: '#fff',
   },
   discountBadge: {
     position: 'absolute',
     right: 16,
-    backgroundColor: '#FF6B6B',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
     borderRadius: 8,
+    overflow: 'hidden',
+  },
+  discountGradient: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
   discountText: {
     color: '#fff',
@@ -507,67 +616,116 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
+  // Thumbnails
+  thumbnails: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: isDesktop ? 0 : 16,
+    paddingVertical: 16,
+  },
+  thumbnail: {
+    width: 70,
+    height: 90,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  thumbnailActive: {
+    borderColor: COLORS.primary,
+  },
+  thumbnailImage: {
+    width: '100%',
+    height: '100%',
+  },
+
   // Content
   content: {
-    padding: 20,
+    padding: isDesktop ? 0 : 20,
   },
-  priceSection: {
+  priceRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
   price: {
-    fontSize: 32,
+    fontSize: 34,
     fontWeight: '800',
     color: COLORS.primary,
   },
   originalPrice: {
-    fontSize: 18,
-    color: '#999',
+    fontSize: 16,
+    color: COLORS.gray[400],
     textDecorationLine: 'line-through',
+    marginTop: 4,
   },
-  titleSection: {
-    marginBottom: 16,
+  saveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
   },
-  brand: {
+  saveText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#999',
+    color: COLORS.success,
+  },
+  titleSection: {
+    marginBottom: 20,
+  },
+  brandBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  brandText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.primary,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: 6,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    lineHeight: 28,
+    fontSize: 24,
+    fontWeight: '700',
+    color: COLORS.gray[800],
+    lineHeight: 32,
   },
 
-  // Attributes
+  // Atributos
   attributes: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 12,
     marginBottom: 24,
   },
   attribute: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    gap: 6,
+    backgroundColor: COLORS.gray[50],
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 14,
+    gap: 10,
+    flex: 1,
   },
-  attributeCondition: {
+  attributeSuccess: {
     backgroundColor: '#E8F5E9',
   },
-  attributeText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
+  attrLabel: {
+    fontSize: 11,
+    color: COLORS.gray[500],
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  attrValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.gray[800],
   },
 
   // Desktop CTA
@@ -575,22 +733,67 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     paddingBottom: 32,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: COLORS.gray[200],
+  },
+
+  // CTAs
+  mainCTA: {
+    borderRadius: 30,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  mainCTAGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    gap: 10,
+  },
+  mainCTAText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  secondaryCTAs: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  secondaryCTA: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    paddingVertical: 14,
+    borderRadius: 16,
+    gap: 8,
+  },
+  secondaryCTAText: {
+    color: COLORS.primary,
+    fontSize: 15,
+    fontWeight: '600',
   },
 
   // Section
   section: {
-    marginBottom: 24,
+    marginBottom: 28,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 16,
+    color: COLORS.gray[800],
   },
   description: {
     fontSize: 15,
-    color: '#555',
+    color: COLORS.gray[600],
     lineHeight: 24,
   },
 
@@ -598,39 +801,43 @@ const styles = StyleSheet.create({
   sellerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
+    backgroundColor: COLORS.gray[50],
     padding: 16,
     borderRadius: 16,
   },
   sellerAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: COLORS.primary,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
+  },
+  sellerInitial: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '700',
   },
   sellerInfo: {
     flex: 1,
   },
   sellerName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.gray[800],
     marginBottom: 4,
   },
   sellerMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   sellerStats: {
     fontSize: 13,
-    color: '#666',
+    color: COLORS.gray[500],
   },
 
-  // Guarantees
+  // Garantias
   guarantees: {
     gap: 16,
   },
@@ -639,9 +846,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   guaranteeIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -650,14 +857,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   guaranteeTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginBottom: 2,
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.gray[800],
+    marginBottom: 4,
   },
   guaranteeText: {
-    fontSize: 13,
-    color: '#666',
+    fontSize: 14,
+    color: COLORS.gray[500],
   },
 
   // Footer
@@ -668,55 +875,33 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    padding: 16,
+    borderTopColor: COLORS.gray[200],
     ...Platform.select({
-      web: { boxShadow: '0 -4px 20px rgba(0,0,0,0.08)' },
+      web: { boxShadow: '0 -4px 20px rgba(0,0,0,0.1)' },
       default: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 10,
-        elevation: 10,
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 12,
       },
     }),
   },
-  primaryButton: {
-    borderRadius: 28,
-    overflow: 'hidden',
-    marginBottom: 12,
+  footerContent: {
+    padding: 16,
   },
-  primaryButtonGradient: {
+  footerActions: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    gap: 8,
+    gap: 32,
   },
-  primaryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  secondaryButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  secondaryButton: {
-    flex: 1,
-    flexDirection: 'row',
+  footerAction: {
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 1.5,
-    borderColor: COLORS.primary,
-    paddingVertical: 12,
-    borderRadius: 14,
-    gap: 6,
+    gap: 4,
   },
-  secondaryButtonText: {
-    color: COLORS.primary,
-    fontSize: 14,
+  footerActionText: {
+    fontSize: 12,
     fontWeight: '600',
+    color: COLORS.primary,
   },
 });
