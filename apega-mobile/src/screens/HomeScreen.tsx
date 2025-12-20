@@ -35,7 +35,16 @@ interface DisplayItem {
   originalPrice?: number;
   images: string[];
   size?: string;
+  condition?: string;
 }
+
+// Função para estilo da tag de condição
+const getConditionStyle = (condition: string | undefined) => {
+  const cond = condition?.toLowerCase() || '';
+  if (cond.includes('novo') && !cond.includes('semi')) return { bg: '#10B981', label: 'Novo' };
+  if (cond.includes('seminovo') || cond.includes('semi')) return { bg: COLORS.primary, label: 'Seminovo' };
+  return { bg: '#F59E0B', label: 'Usado' };
+};
 
 export default function HomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
@@ -90,6 +99,7 @@ export default function HomeScreen({ navigation }: Props) {
         originalPrice: originalPrice && !isNaN(originalPrice) ? originalPrice : undefined,
         images: product.images?.map(img => img.image_url) || (product.image_url ? [product.image_url] : []),
         size: product.size,
+        condition: product.condition,
       };
     });
   }, [products]);
@@ -289,6 +299,10 @@ export default function HomeScreen({ navigation }: Props) {
                         <Ionicons name="image-outline" size={32} color="#ccc" />
                       </View>
                     )}
+                    {/* Tag de condição */}
+                    <View style={[styles.conditionBadge, { backgroundColor: getConditionStyle(item.condition).bg }]}>
+                      <Text style={styles.conditionText}>{getConditionStyle(item.condition).label}</Text>
+                    </View>
                     {item.size && (
                       <View style={styles.productSizeBadge}>
                         <Text style={styles.productSizeText}>{item.size}</Text>
@@ -471,21 +485,21 @@ const styles = StyleSheet.create({
     maxWidth: isDesktop ? 500 : '100%',
   },
   heroTitle: {
-    fontSize: isDesktop ? 48 : 36,
+    fontSize: isDesktop ? 54 : 42,
     fontWeight: '300',
     color: COLORS.gray[800],
-    lineHeight: isDesktop ? 58 : 44,
-    marginBottom: 20,
+    lineHeight: isDesktop ? 64 : 50,
+    marginBottom: 24,
   },
   heroTitleHighlight: {
     color: COLORS.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   heroSubtitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: COLORS.gray[600],
-    lineHeight: 26,
-    marginBottom: 28,
+    lineHeight: 28,
+    marginBottom: 32,
   },
   heroSubtitleBold: {
     fontWeight: '600',
@@ -544,17 +558,18 @@ const styles = StyleSheet.create({
 
   // Section Title
   sectionTitle: {
-    fontSize: isDesktop ? 32 : 26,
-    fontWeight: '700',
+    fontSize: isDesktop ? 36 : 30,
+    fontWeight: '800',
     color: COLORS.gray[800],
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   sectionSubtitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: COLORS.gray[500],
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 36,
+    lineHeight: 26,
   },
   textHighlight: {
     color: COLORS.primary,
@@ -706,10 +721,10 @@ const styles = StyleSheet.create({
   },
   productImageContainer: {
     aspectRatio: 0.75,
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#f5f5f5',
-    marginBottom: 12,
+    backgroundColor: COLORS.gray[100],
+    marginBottom: 0,
     position: 'relative',
   },
   productImage: {
@@ -734,29 +749,44 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
+  conditionBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  conditionText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
+    textTransform: 'uppercase',
+  },
   productInfo: {
     paddingHorizontal: 4,
+    paddingTop: 8,
   },
   productBrand: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.gray[400],
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.primary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   productTitle: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: COLORS.gray[700],
-    marginBottom: 6,
-    lineHeight: 18,
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.gray[800],
+    marginBottom: 8,
+    lineHeight: 20,
   },
   productPrice: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
     color: COLORS.gray[900],
-    marginBottom: 10,
+    marginBottom: 12,
   },
   buyButton: {
     flexDirection: 'row',

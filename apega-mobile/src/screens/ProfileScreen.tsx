@@ -434,7 +434,7 @@ export default function ProfileScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FAF9F7',
   },
   scrollContent: {
     flexGrow: 1,
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#FAF9F7',
   },
   logo: {
     fontSize: 26,
@@ -527,15 +527,15 @@ const styles = StyleSheet.create({
   featureRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-    backgroundColor: '#f9fafb',
-    padding: 16,
-    borderRadius: 16,
+    marginBottom: 16,
+    backgroundColor: '#fff',
+    padding: 18,
+    borderRadius: 20,
   },
   featureIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
@@ -628,9 +628,12 @@ const styles = StyleSheet.create({
   profileCard: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 24,
-    marginBottom: 8,
+    paddingTop: 24,
+    paddingBottom: 28,
+    marginBottom: 16,
+    marginHorizontal: 20,
+    backgroundColor: '#fff',
+    borderRadius: 24,
   },
   avatarContainer: {
     marginBottom: 16,
@@ -678,9 +681,9 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    borderRadius: 12,
-    paddingVertical: 16,
+    backgroundColor: '#FAF9F7',
+    borderRadius: 20,
+    paddingVertical: 18,
     paddingHorizontal: 40,
   },
   statItem: {
@@ -707,25 +710,29 @@ const styles = StyleSheet.create({
   // Quick Actions
   quickActions: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     marginBottom: 24,
+    gap: 12,
   },
   quickAction: {
     flex: 1,
     alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingVertical: 16,
+    borderRadius: 20,
   },
   quickIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   quickLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#666',
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.gray[700],
   },
 
   // Menu Section
