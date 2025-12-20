@@ -824,17 +824,17 @@ const styles = StyleSheet.create({
   },
   publishButton: {
     backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.lg,
-    borderRadius: BORDER_RADIUS.xl,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
     alignItems: 'center',
-    ...SHADOWS.lg,
+    ...SHADOWS.md,
   },
   publishButtonDisabled: {
     backgroundColor: COLORS.gray[400],
   },
   publishButtonText: {
-    fontSize: TYPOGRAPHY.sizes.lg,
-    fontWeight: TYPOGRAPHY.weights.bold,
+    fontSize: TYPOGRAPHY.sizes.base,
+    fontWeight: TYPOGRAPHY.weights.semibold,
     color: COLORS.white,
   },
   modalOverlay: {
