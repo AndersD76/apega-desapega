@@ -9,6 +9,7 @@ import {
   TextInput,
   Dimensions,
   StatusBar,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
@@ -17,6 +18,8 @@ import BottomNavigation from '../components/BottomNavigation';
 import PremiumCard from '../components/PremiumCard';
 
 const { width, height } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
 
 interface HomeScreenNewProps {
   navigation: any;
@@ -141,7 +144,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     backgroundColor: COLORS.white,
     paddingTop: (StatusBar.currentHeight || 40),
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingBottom: SPACING.sm,
     borderBottomWidth: 0.5,
     borderBottomColor: COLORS.border,
@@ -191,7 +194,7 @@ const styles = StyleSheet.create({
     maxHeight: 60,
   },
   categoriesContent: {
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingVertical: SPACING.sm,
     gap: SPACING.sm,
     height: 60,
@@ -223,11 +226,14 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 8,
+    paddingHorizontal: isDesktop ? 60 : 8,
     paddingTop: 8,
+    maxWidth: isDesktop ? 1200 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   gridItem: {
-    width: (width - 32) / 2,
+    width: isDesktop ? (width - 160) / 4 : (width - 32) / 2,
     marginHorizontal: 4,
     marginBottom: 8,
   },

@@ -10,6 +10,8 @@ import {
   StatusBar,
   Image,
   ActivityIndicator,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +22,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { updateProfile } from '../services/auth';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
+
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EditProfile'>;
 
@@ -354,7 +360,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
@@ -370,6 +376,9 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: SPACING.xl,
+    maxWidth: isDesktop ? 600 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   avatarSection: {
     alignItems: 'center',

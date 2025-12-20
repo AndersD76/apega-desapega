@@ -7,7 +7,13 @@ import {
   TouchableOpacity,
   TextInput as RNTextInput,
   Alert,
+  Platform,
+  Dimensions,
 } from 'react-native';
+
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS, CATEGORIES, FEES } from '../constants/theme';
 import { Input, Button, Pill, Modal } from '../components';
@@ -461,7 +467,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
@@ -473,8 +479,11 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
   },
   content: {
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingTop: SPACING.lg,
+    maxWidth: isDesktop ? 700 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   label: {
     fontSize: TYPOGRAPHY.sizes.sm,
@@ -754,6 +763,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: SPACING.sm,
     padding: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.borderLight,

@@ -183,6 +183,71 @@ export default function HomeScreen({ navigation }: Props) {
   const promoScaleAnim = useRef(new Animated.Value(0)).current;
   const promoOpacityAnim = useRef(new Animated.Value(0)).current;
 
+  // Scroll animations
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Parallax effect for hero
+  const heroTranslateY = scrollY.interpolate({
+    inputRange: [0, 300],
+    outputRange: [0, -50],
+    extrapolate: 'clamp',
+  });
+
+  const heroOpacity = scrollY.interpolate({
+    inputRange: [0, 200],
+    outputRange: [1, 0.3],
+    extrapolate: 'clamp',
+  });
+
+  const heroScale = scrollY.interpolate({
+    inputRange: [-100, 0],
+    outputRange: [1.1, 1],
+    extrapolate: 'clamp',
+  });
+
+  // Fade in effect for sections
+  const featuredOpacity = scrollY.interpolate({
+    inputRange: [100, 250],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
+  const featuredTranslateY = scrollY.interpolate({
+    inputRange: [100, 250],
+    outputRange: [50, 0],
+    extrapolate: 'clamp',
+  });
+
+  const howItWorksOpacity = scrollY.interpolate({
+    inputRange: [400, 550],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
+  const howItWorksTranslateY = scrollY.interpolate({
+    inputRange: [400, 550],
+    outputRange: [50, 0],
+    extrapolate: 'clamp',
+  });
+
+  const brandsOpacity = scrollY.interpolate({
+    inputRange: [700, 850],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
+  const productsOpacity = scrollY.interpolate({
+    inputRange: [900, 1050],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
+  const productsTranslateY = scrollY.interpolate({
+    inputRange: [900, 1050],
+    outputRange: [30, 0],
+    extrapolate: 'clamp',
+  });
+
   // Animar popup de promoção ao abrir
   useEffect(() => {
     if (showPromoPopup) {
@@ -495,7 +560,7 @@ export default function HomeScreen({ navigation }: Props) {
         </View>
       </View>
 
-      <ScrollView
+      <Animated.ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -505,9 +570,23 @@ export default function HomeScreen({ navigation }: Props) {
           />
         }
         contentContainerStyle={styles.scrollContent}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
       >
-        {/* Hero Section */}
-        <View style={styles.hero}>
+        {/* Hero Section with Parallax */}
+        <Animated.View style={[
+          styles.hero,
+          {
+            opacity: heroOpacity,
+            transform: [
+              { translateY: heroTranslateY },
+              { scale: heroScale }
+            ]
+          }
+        ]}>
           <View style={styles.heroContent}>
             <Text style={styles.heroTitle}>
               Renove e{'\n'}desapegue no{'\n'}
@@ -587,10 +666,16 @@ export default function HomeScreen({ navigation }: Props) {
               ))}
             </View>
           </View>
-        </View>
+        </Animated.View>
 
-        {/* Peças em Destaque - Scroll Horizontal */}
-        <View style={styles.featuredPiecesSection}>
+        {/* Peças em Destaque - Scroll Horizontal with Fade In */}
+        <Animated.View style={[
+          styles.featuredPiecesSection,
+          {
+            opacity: featuredOpacity,
+            transform: [{ translateY: featuredTranslateY }]
+          }
+        ]}>
           <Text style={styles.featuredPiecesTitle}>PEÇAS EM DESTAQUE</Text>
           <Text style={styles.featuredPiecesSubtitle}>
             Explore nossas categorias mais procuradas
@@ -635,10 +720,16 @@ export default function HomeScreen({ navigation }: Props) {
             <Text style={styles.featuredPiecesCTAText}>Ver todas as peças</Text>
             <Ionicons name="arrow-forward" size={18} color={COLORS.primary} />
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
-        {/* Como Funciona */}
-        <View style={styles.howItWorks}>
+        {/* Como Funciona with Fade In */}
+        <Animated.View style={[
+          styles.howItWorks,
+          {
+            opacity: howItWorksOpacity,
+            transform: [{ translateY: howItWorksTranslateY }]
+          }
+        ]}>
           <Text style={styles.sectionTitle}>Como funciona</Text>
           <Text style={styles.sectionSubtitle}>
             Venda seus desapegos em <Text style={styles.textHighlight}>3 passos simples:</Text>
@@ -686,10 +777,10 @@ export default function HomeScreen({ navigation }: Props) {
           <TouchableOpacity style={styles.secondaryButton} onPress={handleSellPress}>
             <Text style={styles.secondaryButtonText}>Quero vender minhas peças</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
-        {/* SEÇÃO DE MARCAS - Grande e Impactante */}
-        <View style={styles.brandsSection}>
+        {/* SEÇÃO DE MARCAS - Grande e Impactante with Fade In */}
+        <Animated.View style={[styles.brandsSection, { opacity: brandsOpacity }]}>
           <View style={styles.brandsTitleRow}>
             <Ionicons name="diamond" size={28} color={COLORS.primary} />
             <Text style={styles.brandsSectionTitle}>MARCAS EXCLUSIVAS</Text>
@@ -729,11 +820,17 @@ export default function HomeScreen({ navigation }: Props) {
             <Text style={styles.viewAllBrandsText}>Ver todas as marcas</Text>
             <Ionicons name="arrow-forward" size={18} color={COLORS.primary} />
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
-        {/* Produtos */}
+        {/* Produtos with Fade In */}
         {allItems.length > 0 && (
-          <View style={styles.productsSection}>
+          <Animated.View style={[
+            styles.productsSection,
+            {
+              opacity: productsOpacity,
+              transform: [{ translateY: productsTranslateY }]
+            }
+          ]}>
             <View style={styles.productsSectionHeader}>
               <Text style={styles.sectionTitle}>Novidades</Text>
               <TouchableOpacity onPress={() => navigation.navigate('Search')}>
@@ -780,7 +877,7 @@ export default function HomeScreen({ navigation }: Props) {
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
+          </Animated.View>
         )}
 
         {/* Estatísticas */}
@@ -983,7 +1080,7 @@ export default function HomeScreen({ navigation }: Props) {
         </View>
 
         <View style={{ height: 100 }} />
-      </ScrollView>
+      </Animated.ScrollView>
 
       <BottomNavigation navigation={navigation} activeRoute="Home" />
     </View>

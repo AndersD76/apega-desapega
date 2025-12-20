@@ -8,11 +8,17 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 import BottomNavigation from '../components/BottomNavigation';
 import Header from '../components/Header';
+
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
 
 interface MessagesScreenProps {
   navigation: any;
@@ -46,6 +52,7 @@ const MOCK_CONVERSATIONS: Conversation[] = [];
 const MOCK_MESSAGES: Message[] = [];
 
 export default function MessagesScreen({ navigation }: MessagesScreenProps) {
+  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messageText, setMessageText] = useState('');
@@ -302,11 +309,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.gray[100],
-    marginHorizontal: SPACING.md,
+    marginHorizontal: isDesktop ? 60 : SPACING.md,
     marginVertical: SPACING.md,
     paddingHorizontal: SPACING.md,
     height: 44,
     borderRadius: BORDER_RADIUS.lg,
+    maxWidth: isDesktop ? 600 : '100%',
+    alignSelf: isDesktop ? 'center' : undefined,
+    width: isDesktop ? '100%' : undefined,
   },
   searchInput: {
     flex: 1,
@@ -316,12 +326,16 @@ const styles = StyleSheet.create({
   },
   conversationsList: {
     paddingBottom: 80,
+    maxWidth: isDesktop ? 600 : '100%',
+    alignSelf: isDesktop ? 'center' : undefined,
+    width: isDesktop ? '100%' : undefined,
+    paddingHorizontal: isDesktop ? 60 : 0,
   },
   conversationItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    marginHorizontal: SPACING.md,
+    marginHorizontal: isDesktop ? 0 : SPACING.md,
     marginBottom: SPACING.sm,
     padding: SPACING.md,
     borderRadius: BORDER_RADIUS.md,

@@ -11,6 +11,8 @@ import {
   ActivityIndicator,
   Linking,
   Clipboard,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +21,10 @@ import { Button, Modal } from '../components';
 import api from '../services/api';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
+
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Checkout'>;
 
@@ -292,14 +298,30 @@ export default function CheckoutScreen({ route, navigation }: Props) {
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + SPACING.sm }]}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>checkout</Text>
-        <View style={{ width: 24 }} />
+        {isDesktop ? (
+          <>
+            <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+              <Text style={styles.logo}>apega<Text style={styles.logoLight}>desapega</Text></Text>
+            </TouchableOpacity>
+            <View style={styles.navDesktop}>
+              <TouchableOpacity onPress={() => navigation.navigate('Search')}>
+                <Text style={styles.navLink}>Explorar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Favorites')}>
+                <Text style={styles.navLink}>Favoritos</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.headerTitle}>checkout</Text>
+          </>
+        ) : (
+          <>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>checkout</Text>
+            <View style={{ width: 24 }} />
+          </>
+        )}
       </View>
 
       <ScrollView
@@ -610,11 +632,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingBottom: SPACING.md,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
+  },
+  logo: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#1a1a1a',
+    letterSpacing: -0.5,
+  },
+  logoLight: {
+    fontWeight: '400',
+    color: COLORS.gray[400],
+  },
+  navDesktop: {
+    flexDirection: 'row',
+    gap: 32,
+  },
+  navLink: {
+    fontSize: 15,
+    color: COLORS.gray[700],
+    fontWeight: '500',
   },
   backButton: {
     padding: SPACING.xs,
@@ -626,10 +667,13 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: SPACING.xl,
+    maxWidth: isDesktop ? 800 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   section: {
     marginTop: SPACING.lg,
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
   },
   sectionHeader: {
     flexDirection: 'row',

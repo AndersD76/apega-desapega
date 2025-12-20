@@ -6,7 +6,13 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  Platform,
+  Dimensions,
 } from 'react-native';
+
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
@@ -136,7 +142,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
@@ -153,9 +159,13 @@ const styles = StyleSheet.create({
   summaryCard: {
     backgroundColor: COLORS.white,
     margin: SPACING.md,
+    marginHorizontal: isDesktop ? 60 : SPACING.md,
     padding: SPACING.lg,
     borderRadius: BORDER_RADIUS.md,
     alignItems: 'center',
+    maxWidth: isDesktop ? 700 : undefined,
+    alignSelf: isDesktop ? 'center' : undefined,
+    width: isDesktop ? '100%' : undefined,
     ...SHADOWS.xs,
   },
   averageRating: {
@@ -175,7 +185,11 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingBottom: SPACING.xl,
+    maxWidth: isDesktop ? 700 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   reviewCard: {
     backgroundColor: COLORS.white,

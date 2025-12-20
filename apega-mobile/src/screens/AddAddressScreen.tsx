@@ -11,7 +11,12 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Dimensions,
 } from 'react-native';
+
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
@@ -330,7 +335,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
@@ -346,6 +351,10 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
+    maxWidth: isDesktop ? 700 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   label: {
     fontSize: TYPOGRAPHY.sizes.sm,
@@ -435,6 +444,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.borderLight,

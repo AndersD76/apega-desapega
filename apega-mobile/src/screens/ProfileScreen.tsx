@@ -108,7 +108,10 @@ export default function ProfileScreen({ navigation }: Props) {
     await removeToken();
     setUser(null);
     setIsAuthenticated(false);
-    navigation.navigate('Login');
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Home' }],
+    });
   };
 
   // Loading state

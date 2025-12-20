@@ -12,6 +12,7 @@ import {
   Modal,
   Alert,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,6 +24,8 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
 const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MyStore'>;
 
@@ -466,7 +469,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingBottom: SPACING.lg,
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
   },
   headerTop: {
     flexDirection: 'row',
@@ -530,7 +533,7 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     backgroundColor: COLORS.white,
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingVertical: SPACING.sm,
     ...SHADOWS.sm,
   },
@@ -576,6 +579,10 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
+    maxWidth: isDesktop ? 900 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   loadingContainer: {
     flex: 1,
@@ -590,12 +597,15 @@ const styles = StyleSheet.create({
   },
   productsList: {
     gap: SPACING.md,
+    flexDirection: isDesktop ? 'row' : 'column',
+    flexWrap: isDesktop ? 'wrap' : 'nowrap',
   },
   productCard: {
     flexDirection: 'row',
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.xl,
     overflow: 'hidden',
+    width: isDesktop ? 'calc(50% - 8px)' : '100%',
     ...SHADOWS.md,
   },
   productCardContent: {

@@ -8,12 +8,18 @@ import {
   StatusBar,
   Linking,
   Alert,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
+
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Help'>;
 
@@ -185,7 +191,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
@@ -201,6 +207,10 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
+    maxWidth: isDesktop ? 700 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   sectionTitle: {
     fontSize: TYPOGRAPHY.sizes.sm,

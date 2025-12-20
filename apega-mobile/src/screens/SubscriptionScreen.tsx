@@ -9,6 +9,8 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +20,10 @@ import { Modal, Button } from '../components';
 import api from '../services/api';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
+
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Subscription'>;
 
@@ -497,7 +503,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: COLORS.premium,
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: isDesktop ? 60 : SPACING.lg,
     paddingBottom: SPACING.xl,
   },
   backButton: {
@@ -535,7 +541,11 @@ const styles = StyleSheet.create({
   planToggle: {
     flexDirection: 'row',
     padding: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     gap: SPACING.md,
+    maxWidth: isDesktop ? 600 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   toggleButton: {
     flex: 1,
@@ -593,8 +603,12 @@ const styles = StyleSheet.create({
   benefitsSection: {
     padding: SPACING.lg,
     backgroundColor: COLORS.white,
-    margin: SPACING.md,
+    marginVertical: SPACING.md,
+    marginHorizontal: isDesktop ? 60 : SPACING.md,
     borderRadius: BORDER_RADIUS.xl,
+    maxWidth: isDesktop ? 600 : '100%',
+    alignSelf: 'center',
+    width: isDesktop ? '100%' : undefined,
     ...SHADOWS.md,
   },
   benefitsTitle: {
@@ -625,6 +639,10 @@ const styles = StyleSheet.create({
   },
   ctaSection: {
     padding: SPACING.lg,
+    paddingHorizontal: isDesktop ? 60 : SPACING.lg,
+    maxWidth: isDesktop ? 600 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   subscribeButton: {
     backgroundColor: COLORS.premium,

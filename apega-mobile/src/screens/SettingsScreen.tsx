@@ -7,13 +7,20 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 import Header from '../components/Header';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
+
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
 
 interface SettingsScreenProps {
   navigation: any;
@@ -570,6 +577,9 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: SPACING.xl,
+    maxWidth: isDesktop ? 700 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   sectionTitle: {
     fontSize: TYPOGRAPHY.sizes.xs,
@@ -577,7 +587,7 @@ const styles = StyleSheet.create({
     color: COLORS.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: isDesktop ? 60 : SPACING.lg,
     marginBottom: SPACING.md,
     marginTop: SPACING.md,
   },
@@ -585,11 +595,11 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: COLORS.borderLight,
     marginVertical: SPACING.lg,
-    marginHorizontal: SPACING.lg,
+    marginHorizontal: isDesktop ? 60 : SPACING.lg,
   },
   card: {
     backgroundColor: COLORS.white,
-    marginHorizontal: SPACING.lg,
+    marginHorizontal: isDesktop ? 60 : SPACING.lg,
     borderRadius: BORDER_RADIUS.md,
     padding: SPACING.md,
     ...SHADOWS.xs,
@@ -639,7 +649,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    marginHorizontal: SPACING.lg,
+    marginHorizontal: isDesktop ? 60 : SPACING.lg,
     marginBottom: SPACING.sm,
     padding: SPACING.md,
     borderRadius: BORDER_RADIUS.md,

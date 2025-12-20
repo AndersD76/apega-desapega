@@ -11,7 +11,13 @@ import {
   ActivityIndicator,
   StatusBar,
   Modal,
+  Platform,
+  Dimensions,
 } from 'react-native';
+
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -647,7 +653,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingBottom: SPACING.md,
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: isDesktop ? 60 : SPACING.lg,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
@@ -666,7 +672,11 @@ const styles = StyleSheet.create({
   section: {
     backgroundColor: COLORS.white,
     padding: SPACING.lg,
+    paddingHorizontal: isDesktop ? 60 : SPACING.lg,
     marginTop: SPACING.md,
+    maxWidth: isDesktop ? 800 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   sectionTitle: {
     fontSize: TYPOGRAPHY.sizes.lg,
@@ -843,6 +853,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: SPACING.lg,
+    paddingHorizontal: isDesktop ? 60 : SPACING.lg,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,

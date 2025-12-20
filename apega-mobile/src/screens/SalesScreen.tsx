@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Image,
   StatusBar,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +16,10 @@ import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS, FEES } from '../co
 import { BottomNavigation, Tab, Button, Modal } from '../components';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
+
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Sales'>;
 type TabItem = { id: string; label: string };
@@ -335,7 +341,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
@@ -351,12 +357,15 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: SPACING.xl,
+    maxWidth: isDesktop ? 800 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   commissionBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#EFF6FF',
-    marginHorizontal: SPACING.md,
+    marginHorizontal: isDesktop ? 60 : SPACING.md,
     marginTop: SPACING.md,
     padding: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
@@ -372,7 +381,8 @@ const styles = StyleSheet.create({
   },
   revenueCard: {
     backgroundColor: COLORS.primary,
-    margin: SPACING.md,
+    marginVertical: SPACING.md,
+    marginHorizontal: isDesktop ? 60 : SPACING.md,
     padding: SPACING.lg,
     borderRadius: BORDER_RADIUS.xl,
     ...SHADOWS.md,
@@ -416,7 +426,7 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     marginBottom: SPACING.md,
     gap: SPACING.sm,
   },
@@ -440,6 +450,7 @@ const styles = StyleSheet.create({
   },
   salesList: {
     padding: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
   },
   saleCard: {
     backgroundColor: COLORS.white,

@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   SectionList,
   StatusBar,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +16,10 @@ import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../constant
 import { BottomNavigation, Tab, EmptyState } from '../components';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
+
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Notifications'>;
 type TabItem = { id: string; label: string };
@@ -167,7 +173,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: COLORS.white,
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingBottom: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
@@ -188,10 +194,13 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 80,
+    maxWidth: isDesktop ? 700 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   sectionHeader: {
     backgroundColor: COLORS.background,
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingVertical: SPACING.sm,
   },
   sectionTitle: {
@@ -205,7 +214,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    marginHorizontal: SPACING.md,
+    marginHorizontal: isDesktop ? 60 : SPACING.md,
     marginBottom: SPACING.sm,
     padding: SPACING.md,
     borderRadius: BORDER_RADIUS.md,

@@ -11,6 +11,8 @@ import {
   ActivityIndicator,
   StatusBar,
   Modal,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +21,10 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useAuth } from '../contexts/AuthContext';
 import { createProduct, uploadProductImages } from '../services/products';
+
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NewItem'>;
 
@@ -237,14 +243,30 @@ export default function NewItemScreen({ navigation }: Props) {
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + SPACING.sm }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backIcon}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Nova Peça</Text>
-        <View style={{ width: 40 }} />
+        {isDesktop ? (
+          <>
+            <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+              <Text style={styles.logo}>apega<Text style={styles.logoLight}>desapega</Text></Text>
+            </TouchableOpacity>
+            <View style={styles.navDesktop}>
+              <TouchableOpacity onPress={() => navigation.navigate('Search')}>
+                <Text style={styles.navLink}>Explorar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Favorites')}>
+                <Text style={styles.navLink}>Favoritos</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.headerTitle}>Nova Peça</Text>
+          </>
+        ) : (
+          <>
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+              <Text style={styles.backIcon}>←</Text>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Nova Peça</Text>
+            <View style={{ width: 40 }} />
+          </>
+        )}
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -629,10 +651,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingBottom: SPACING.md,
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: isDesktop ? 60 : SPACING.lg,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+  },
+  logo: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#1a1a1a',
+    letterSpacing: -0.5,
+  },
+  logoLight: {
+    fontWeight: '400',
+    color: COLORS.gray[400],
+  },
+  navDesktop: {
+    flexDirection: 'row',
+    gap: 32,
+  },
+  navLink: {
+    fontSize: 15,
+    color: COLORS.gray[700],
+    fontWeight: '500',
   },
   backButton: {
     width: 40,
@@ -655,6 +696,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     padding: SPACING.lg,
     marginTop: SPACING.md,
+    maxWidth: isDesktop ? 700 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   sectionTitle: {
     fontSize: TYPOGRAPHY.sizes.xl,
@@ -817,6 +861,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: SPACING.lg,
+    paddingHorizontal: isDesktop ? 60 : SPACING.lg,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
@@ -827,6 +872,9 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
     alignItems: 'center',
+    maxWidth: isDesktop ? 400 : '100%',
+    alignSelf: isDesktop ? 'center' : undefined,
+    width: '100%',
     ...SHADOWS.md,
   },
   publishButtonDisabled: {

@@ -6,13 +6,19 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Platform,
+  Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 import { Button } from '../components';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
+
+const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && width > 768;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Cart'>;
 
@@ -30,6 +36,7 @@ interface CartItem {
 const MOCK_CART: CartItem[] = [];
 
 export default function CartScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
   const [cartItems, setCartItems] = useState<CartItem[]>(MOCK_CART);
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price, 0);
@@ -84,19 +91,40 @@ export default function CartScreen({ navigation }: Props) {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={handleGoBack}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>minha sacola</Text>
-        <View style={styles.cartBadge}>
-          <Text style={styles.cartBadgeText}>{cartItems.length}</Text>
-        </View>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        {isDesktop ? (
+          <>
+            <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+              <Text style={styles.logo}>apega<Text style={styles.logoLight}>desapega</Text></Text>
+            </TouchableOpacity>
+            <View style={styles.navDesktop}>
+              <TouchableOpacity onPress={() => navigation.navigate('Search')}>
+                <Text style={styles.navLink}>Explorar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Favorites')}>
+                <Text style={styles.navLink}>Favoritos</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.headerActions}>
+              <Text style={styles.headerTitle}>minha sacola</Text>
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>{cartItems.length}</Text>
+              </View>
+            </View>
+          </>
+        ) : (
+          <>
+            <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>minha sacola</Text>
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>{cartItems.length}</Text>
+            </View>
+          </>
+        )}
       </View>
 
       {cartItems.length > 0 ? (
@@ -105,47 +133,61 @@ export default function CartScreen({ navigation }: Props) {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.content}
           >
-            {/* Cart Items */}
-            <View style={styles.itemsContainer}>
-              {cartItems.map(renderCartItem)}
-            </View>
-
-            {/* Summary */}
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>resumo do pedido</Text>
-
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Subtotal ({cartItems.length} itens)</Text>
-                <Text style={styles.summaryValue}>R$ {subtotal.toFixed(2)}</Text>
+            <View style={styles.mainContent}>
+              {/* Cart Items */}
+              <View style={styles.itemsContainer}>
+                {cartItems.map(renderCartItem)}
               </View>
 
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Frete estimado</Text>
-                <Text style={styles.summaryValue}>R$ {shipping.toFixed(2)}</Text>
-              </View>
+              {/* Summary */}
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryTitle}>resumo do pedido</Text>
 
-              <View style={styles.divider} />
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Subtotal ({cartItems.length} itens)</Text>
+                  <Text style={styles.summaryValue}>R$ {subtotal.toFixed(2)}</Text>
+                </View>
 
-              <View style={styles.summaryRow}>
-                <Text style={styles.totalLabel}>Total</Text>
-                <Text style={styles.totalValue}>R$ {total.toFixed(2)}</Text>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Frete estimado</Text>
+                  <Text style={styles.summaryValue}>R$ {shipping.toFixed(2)}</Text>
+                </View>
+
+                <View style={styles.divider} />
+
+                <View style={styles.summaryRow}>
+                  <Text style={styles.totalLabel}>Total</Text>
+                  <Text style={styles.totalValue}>R$ {total.toFixed(2)}</Text>
+                </View>
+
+                {isDesktop && (
+                  <Button
+                    label="finalizar compra"
+                    variant="primary"
+                    onPress={handleCheckout}
+                    fullWidth
+                    style={{ marginTop: SPACING.md }}
+                  />
+                )}
               </View>
             </View>
           </ScrollView>
 
-          {/* Footer */}
-          <SafeAreaView edges={['bottom']} style={styles.footer}>
-            <View style={styles.footerInfo}>
-              <Text style={styles.footerLabel}>Total</Text>
-              <Text style={styles.footerTotal}>R$ {total.toFixed(2)}</Text>
-            </View>
-            <Button
-              label="finalizar compra"
-              variant="primary"
-              onPress={handleCheckout}
-              fullWidth
-            />
-          </SafeAreaView>
+          {/* Footer - Mobile only */}
+          {!isDesktop && (
+            <SafeAreaView edges={['bottom']} style={styles.footer}>
+              <View style={styles.footerInfo}>
+                <Text style={styles.footerLabel}>Total</Text>
+                <Text style={styles.footerTotal}>R$ {total.toFixed(2)}</Text>
+              </View>
+              <Button
+                label="finalizar compra"
+                variant="primary"
+                onPress={handleCheckout}
+                fullWidth
+              />
+            </SafeAreaView>
+          )}
         </View>
       ) : (
         <View style={styles.emptyState}>
@@ -162,7 +204,7 @@ export default function CartScreen({ navigation }: Props) {
           />
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -178,11 +220,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
+  },
+  logo: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#1a1a1a',
+    letterSpacing: -0.5,
+  },
+  logoLight: {
+    fontWeight: '400',
+    color: COLORS.gray[400],
+  },
+  navDesktop: {
+    flexDirection: 'row',
+    gap: 32,
+  },
+  navLink: {
+    fontSize: 15,
+    color: COLORS.gray[700],
+    fontWeight: '500',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
   },
   backButton: {
     padding: SPACING.xs,
@@ -207,8 +273,13 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
   content: {
-    padding: SPACING.md,
+    padding: isDesktop ? 60 : SPACING.md,
     paddingBottom: SPACING.lg,
+  },
+  mainContent: {
+    maxWidth: isDesktop ? 800 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   itemsContainer: {
     marginBottom: SPACING.lg,
@@ -222,8 +293,8 @@ const styles = StyleSheet.create({
     ...SHADOWS.xs,
   },
   itemImage: {
-    width: 80,
-    height: 100,
+    width: isDesktop ? 100 : 80,
+    height: isDesktop ? 120 : 100,
     backgroundColor: COLORS.gray[100],
     borderRadius: BORDER_RADIUS.sm,
     justifyContent: 'center',
@@ -275,7 +346,7 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     backgroundColor: COLORS.white,
-    padding: SPACING.md,
+    padding: isDesktop ? SPACING.lg : SPACING.md,
     borderRadius: BORDER_RADIUS.md,
     ...SHADOWS.xs,
   },
