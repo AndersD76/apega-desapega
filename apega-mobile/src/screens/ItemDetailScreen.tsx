@@ -650,9 +650,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   price: {
-    fontSize: 42,
-    fontWeight: '800',
+    fontSize: 48,
+    fontWeight: '900',
     color: COLORS.primary,
+    letterSpacing: -1,
   },
   originalPrice: {
     fontSize: 18,
@@ -684,17 +685,17 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   brandText: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '800',
     color: COLORS.primary,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: 32,
+    fontWeight: '900',
     color: '#1a1a1a',
-    lineHeight: 36,
+    lineHeight: 40,
   },
 
   // Atributos
