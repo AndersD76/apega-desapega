@@ -35,20 +35,24 @@ const CAROUSEL_IMAGES = [
   { uri: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=400&q=80', label: 'Blusas' },
 ];
 
-// Logos das marcas (servirão como filtros)
+// Logos das marcas (servirão como filtros) - usando logos PNG de alta qualidade
 const BRAND_LOGOS = [
-  { name: 'Zara', logo: 'https://logo.clearbit.com/zara.com' },
-  { name: 'Farm', logo: 'https://logo.clearbit.com/farmrio.com.br' },
-  { name: 'Animale', logo: 'https://logo.clearbit.com/animale.com.br' },
-  { name: 'Renner', logo: 'https://logo.clearbit.com/lojasrenner.com.br' },
-  { name: 'C&A', logo: 'https://logo.clearbit.com/cea.com.br' },
-  { name: 'Forever21', logo: 'https://logo.clearbit.com/forever21.com' },
-  { name: 'Hering', logo: 'https://logo.clearbit.com/hering.com.br' },
-  { name: 'Marisa', logo: 'https://logo.clearbit.com/marisa.com.br' },
-  { name: 'Shoulder', logo: 'https://logo.clearbit.com/shoulder.com.br' },
-  { name: 'Le Lis', logo: 'https://logo.clearbit.com/lelis.com.br' },
-  { name: 'Arezzo', logo: 'https://logo.clearbit.com/arezzo.com.br' },
-  { name: 'Schutz', logo: 'https://logo.clearbit.com/schutz.com.br' },
+  { name: 'Zara', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Zara_Logo.svg/800px-Zara_Logo.svg.png' },
+  { name: 'Farm', logo: 'https://www.farmrio.com.br/on/demandware.static/Sites-FarmRio-BR-Site/-/default/dw1f3e0c5a/images/logo-farm.svg' },
+  { name: 'Animale', logo: 'https://www.animale.com.br/on/demandware.static/Sites-animale-Site/-/default/dwcd59cd1e/images/animale.svg' },
+  { name: 'Renner', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Renner_logo.svg/800px-Renner_logo.svg.png' },
+  { name: 'C&A', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/C%26A_logo.svg/800px-C%26A_logo.svg.png' },
+  { name: 'Forever 21', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Forever_21_logo.svg/800px-Forever_21_logo.svg.png' },
+  { name: 'H&M', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/H%26M-Logo.svg/800px-H%26M-Logo.svg.png' },
+  { name: 'Gucci', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/1960s_Gucci_Logo.svg/800px-1960s_Gucci_Logo.svg.png' },
+  { name: 'Louis Vuitton', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Louis_Vuitton_logo_and_wordmark.svg/800px-Louis_Vuitton_logo_and_wordmark.svg.png' },
+  { name: 'Prada', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Prada-Logo.svg/800px-Prada-Logo.svg.png' },
+  { name: 'Chanel', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Chanel_logo-no_words.svg/800px-Chanel_logo-no_words.svg.png' },
+  { name: 'Dior', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Dior_Logo.svg/800px-Dior_Logo.svg.png' },
+  { name: 'Michael Kors', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Michael_Kors_%28brand%29_logo.svg/800px-Michael_Kors_%28brand%29_logo.svg.png' },
+  { name: 'Tommy', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Tommy-hilfiger-logo.svg/800px-Tommy-hilfiger-logo.svg.png' },
+  { name: 'Calvin Klein', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Calvin_klein_logo.svg/800px-Calvin_klein_logo.svg.png' },
+  { name: 'Lacoste', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Logo_Lacoste.svg/800px-Logo_Lacoste.svg.png' },
 ];
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
@@ -261,31 +265,6 @@ export default function HomeScreen({ navigation }: Props) {
           </View>
         </View>
 
-        {/* Seção de Marcas */}
-        <View style={styles.brandsSection}>
-          <Text style={styles.brandsSectionTitle}>Marcas que você encontra aqui</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.brandsScroll}
-          >
-            {BRAND_LOGOS.map((brand, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.brandCircle}
-                onPress={() => navigation.navigate('Search')}
-              >
-                <Image
-                  source={{ uri: brand.logo }}
-                  style={styles.brandLogo}
-                  resizeMode="contain"
-                />
-                <Text style={styles.brandName}>{brand.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
         {/* Como Funciona */}
         <View style={styles.howItWorks}>
           <Text style={styles.sectionTitle}>Como funciona</Text>
@@ -361,6 +340,62 @@ export default function HomeScreen({ navigation }: Props) {
               </TouchableOpacity>
             ))}
           </View>
+        </View>
+
+        {/* SEÇÃO DE MARCAS - Grande e Impactante */}
+        <View style={styles.brandsSection}>
+          <Text style={styles.brandsSectionTitle}>MARCAS EXCLUSIVAS</Text>
+          <Text style={styles.brandsSectionSubtitle}>
+            Encontre peças das melhores marcas do mundo
+          </Text>
+
+          {/* Primeira fileira de marcas */}
+          <View style={styles.brandsGrid}>
+            {BRAND_LOGOS.slice(0, 8).map((brand, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.brandCard}
+                onPress={() => navigation.navigate('Search')}
+              >
+                <View style={styles.brandLogoContainer}>
+                  <Image
+                    source={{ uri: brand.logo }}
+                    style={styles.brandLogo}
+                    resizeMode="contain"
+                  />
+                </View>
+                <Text style={styles.brandName}>{brand.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Segunda fileira de marcas */}
+          <View style={styles.brandsGrid}>
+            {BRAND_LOGOS.slice(8, 16).map((brand, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.brandCard}
+                onPress={() => navigation.navigate('Search')}
+              >
+                <View style={styles.brandLogoContainer}>
+                  <Image
+                    source={{ uri: brand.logo }}
+                    style={styles.brandLogo}
+                    resizeMode="contain"
+                  />
+                </View>
+                <Text style={styles.brandName}>{brand.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TouchableOpacity
+            style={styles.viewAllBrandsBtn}
+            onPress={() => navigation.navigate('Search')}
+          >
+            <Text style={styles.viewAllBrandsText}>Ver todas as marcas</Text>
+            <Ionicons name="arrow-forward" size={18} color={COLORS.primary} />
+          </TouchableOpacity>
         </View>
 
         {/* Produtos */}
@@ -682,44 +717,85 @@ const styles = StyleSheet.create({
     width: 20,
   },
 
-  // Brands Section
+  // Brands Section - Grande e Impactante
   brandsSection: {
     paddingHorizontal: isDesktop ? 60 : 20,
-    paddingTop: 50,
-    paddingBottom: 30,
+    paddingVertical: 60,
+    backgroundColor: '#fff',
   },
   brandsSectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: isDesktop ? 42 : 32,
+    fontWeight: '800',
+    color: COLORS.gray[800],
+    textAlign: 'center',
+    marginBottom: 12,
+    letterSpacing: 2,
+  },
+  brandsSectionSubtitle: {
+    fontSize: 18,
     color: COLORS.gray[500],
     textAlign: 'center',
-    marginBottom: 16,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    marginBottom: 40,
   },
-  brandsScroll: {
-    paddingHorizontal: 10,
-    gap: 16,
+  brandsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center',
+    gap: isDesktop ? 24 : 16,
+    marginBottom: 24,
   },
-  brandCircle: {
+  brandCard: {
+    width: isDesktop ? 140 : 80,
     alignItems: 'center',
-    width: 70,
+  },
+  brandLogoContainer: {
+    width: isDesktop ? 100 : 70,
+    height: isDesktop ? 100 : 70,
+    borderRadius: isDesktop ? 50 : 35,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: COLORS.gray[100],
+    ...Platform.select({
+      web: { boxShadow: '0 4px 16px rgba(0,0,0,0.08)' },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 4,
+      },
+    }),
   },
   brandLogo: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: COLORS.gray[200],
+    width: isDesktop ? 60 : 45,
+    height: isDesktop ? 60 : 45,
   },
   brandName: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.gray[600],
-    marginTop: 6,
+    fontSize: isDesktop ? 14 : 11,
+    fontWeight: '700',
+    color: COLORS.gray[700],
     textAlign: 'center',
+  },
+  viewAllBrandsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 28,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    alignSelf: 'center',
+  },
+  viewAllBrandsText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.primary,
   },
 
   // Section Title
