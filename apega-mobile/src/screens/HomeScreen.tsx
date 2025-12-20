@@ -344,64 +344,113 @@ export default function HomeScreen({ navigation }: Props) {
               <Ionicons name="arrow-forward" size={18} color="#fff" />
             </TouchableOpacity>
           </View>
-          <View style={styles.heroImageArea}>
-            <View style={styles.heroImageBg} />
-            {/* Imagem principal com carrossel */}
-            <Animated.View style={[styles.heroImageWrapper, { opacity: fadeAnim }]}>
-              <Image
-                source={{ uri: CAROUSEL_IMAGES[currentImageIndex].uri }}
-                style={styles.heroImage}
-              />
-              <View style={styles.carouselLabel}>
-                <Text style={styles.carouselLabelText}>{CAROUSEL_IMAGES[currentImageIndex].label}</Text>
-              </View>
-            </Animated.View>
 
-            {/* Painel de informações animado ao lado direito */}
-            <Animated.View
-              style={[
-                styles.carouselInfoPanel,
-                {
-                  opacity: infoOpacityAnim,
-                  transform: [{ translateY: infoSlideAnim }],
-                },
-              ]}
-            >
-              <View style={styles.carouselInfoHighlight}>
-                <Ionicons name="flash" size={12} color="#fff" />
-                <Text style={styles.carouselInfoHighlightText}>
-                  {CAROUSEL_IMAGES[currentImageIndex].highlight}
-                </Text>
+          {/* Grid de produtos à direita */}
+          <View style={styles.heroProductsArea}>
+            {/* Coluna principal - imagem grande com carrossel */}
+            <View style={styles.heroMainColumn}>
+              <Animated.View style={[styles.heroMainImageWrapper, { opacity: fadeAnim }]}>
+                <Image
+                  source={{ uri: CAROUSEL_IMAGES[currentImageIndex].uri }}
+                  style={styles.heroMainImage}
+                />
+                <View style={styles.heroMainLabel}>
+                  <View style={styles.heroMainLabelBadge}>
+                    <Ionicons name="flash" size={10} color="#fff" />
+                    <Text style={styles.heroMainLabelBadgeText}>
+                      {CAROUSEL_IMAGES[currentImageIndex].highlight}
+                    </Text>
+                  </View>
+                  <Text style={styles.heroMainLabelTitle}>
+                    {CAROUSEL_IMAGES[currentImageIndex].title}
+                  </Text>
+                </View>
+              </Animated.View>
+              {/* Dots do carrossel */}
+              <View style={styles.carouselDots}>
+                {CAROUSEL_IMAGES.map((_, index) => (
+                  <View
+                    key={index}
+                    style={[styles.dot, currentImageIndex === index && styles.dotActive]}
+                  />
+                ))}
               </View>
-              <Text style={styles.carouselInfoTitle}>
-                {CAROUSEL_IMAGES[currentImageIndex].title}
-              </Text>
-              <Text style={styles.carouselInfoDescription}>
-                {CAROUSEL_IMAGES[currentImageIndex].description}
-              </Text>
-              <View style={styles.carouselInfoStats}>
-                <Ionicons name="layers-outline" size={16} color={COLORS.primary} />
-                <Text style={styles.carouselInfoPieces}>
-                  {CAROUSEL_IMAGES[currentImageIndex].pieces}
+            </View>
+
+            {/* Coluna secundária - grid de imagens menores */}
+            <View style={styles.heroSecondaryColumn}>
+              {/* Info card no topo */}
+              <Animated.View
+                style={[
+                  styles.heroInfoCard,
+                  {
+                    opacity: infoOpacityAnim,
+                    transform: [{ translateY: infoSlideAnim }],
+                  },
+                ]}
+              >
+                <Text style={styles.heroInfoTitle}>
+                  {CAROUSEL_IMAGES[currentImageIndex].title}
                 </Text>
+                <Text style={styles.heroInfoDesc}>
+                  {CAROUSEL_IMAGES[currentImageIndex].description}
+                </Text>
+                <View style={styles.heroInfoStats}>
+                  <Ionicons name="layers-outline" size={14} color={COLORS.primary} />
+                  <Text style={styles.heroInfoPieces}>
+                    {CAROUSEL_IMAGES[currentImageIndex].pieces}
+                  </Text>
+                </View>
+              </Animated.View>
+
+              {/* Grid de 4 imagens de produtos */}
+              <View style={styles.heroMiniGrid}>
+                <TouchableOpacity style={styles.heroMiniCard} onPress={() => navigation.navigate('Search')}>
+                  <Image
+                    source={{ uri: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=200&q=80' }}
+                    style={styles.heroMiniImage}
+                  />
+                  <View style={styles.heroMiniOverlay}>
+                    <Text style={styles.heroMiniLabel}>Bolsas</Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.heroMiniCard} onPress={() => navigation.navigate('Search')}>
+                  <Image
+                    source={{ uri: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=200&q=80' }}
+                    style={styles.heroMiniImage}
+                  />
+                  <View style={styles.heroMiniOverlay}>
+                    <Text style={styles.heroMiniLabel}>Calçados</Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.heroMiniCard} onPress={() => navigation.navigate('Search')}>
+                  <Image
+                    source={{ uri: 'https://images.unsplash.com/photo-1591561954557-26941169b49e?w=200&q=80' }}
+                    style={styles.heroMiniImage}
+                  />
+                  <View style={styles.heroMiniOverlay}>
+                    <Text style={styles.heroMiniLabel}>Vestidos</Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.heroMiniCard} onPress={() => navigation.navigate('Search')}>
+                  <Image
+                    source={{ uri: 'https://images.unsplash.com/photo-1611085583191-a3b181a88401?w=200&q=80' }}
+                    style={styles.heroMiniImage}
+                  />
+                  <View style={styles.heroMiniOverlay}>
+                    <Text style={styles.heroMiniLabel}>Acessórios</Text>
+                  </View>
+                </TouchableOpacity>
               </View>
+
+              {/* CTA button */}
               <TouchableOpacity
-                style={styles.carouselInfoButton}
+                style={styles.heroSecCTA}
                 onPress={() => navigation.navigate('Search')}
               >
-                <Text style={styles.carouselInfoButtonText}>Ver coleção</Text>
+                <Text style={styles.heroSecCTAText}>Ver todas as peças</Text>
                 <Ionicons name="arrow-forward" size={14} color={COLORS.primary} />
               </TouchableOpacity>
-            </Animated.View>
-
-            {/* Dots do carrossel */}
-            <View style={styles.carouselDots}>
-              {CAROUSEL_IMAGES.map((_, index) => (
-                <View
-                  key={index}
-                  style={[styles.dot, currentImageIndex === index && styles.dotActive]}
-                />
-              ))}
             </View>
           </View>
         </View>
@@ -877,6 +926,149 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
+
+  // Hero Products Area - Grid de imagens à direita
+  heroProductsArea: {
+    flexDirection: 'row',
+    gap: isDesktop ? 20 : 12,
+    flex: isDesktop ? 1 : undefined,
+    width: isDesktop ? undefined : '100%',
+    marginTop: isDesktop ? 0 : 32,
+  },
+  heroMainColumn: {
+    flex: isDesktop ? 1 : undefined,
+    width: isDesktop ? undefined : '55%',
+  },
+  heroMainImageWrapper: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    aspectRatio: isDesktop ? 0.75 : 0.8,
+    position: 'relative',
+  },
+  heroMainImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroMainLabel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  heroMainLabelBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+    marginBottom: 8,
+  },
+  heroMainLabelBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#fff',
+    textTransform: 'uppercase',
+  },
+  heroMainLabelTitle: {
+    fontSize: isDesktop ? 18 : 14,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  heroSecondaryColumn: {
+    flex: isDesktop ? 0.8 : undefined,
+    width: isDesktop ? undefined : '42%',
+    gap: 12,
+  },
+  heroInfoCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    ...Platform.select({
+      web: { boxShadow: '0 4px 16px rgba(0,0,0,0.08)' },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 4,
+      },
+    }),
+  },
+  heroInfoTitle: {
+    fontSize: isDesktop ? 16 : 14,
+    fontWeight: '800',
+    color: COLORS.gray[800],
+    marginBottom: 4,
+  },
+  heroInfoDesc: {
+    fontSize: isDesktop ? 12 : 11,
+    color: COLORS.gray[500],
+    marginBottom: 8,
+    lineHeight: 16,
+  },
+  heroInfoStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  heroInfoPieces: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  heroMiniGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  heroMiniCard: {
+    width: '48%',
+    aspectRatio: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  heroMiniImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroMiniOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 8,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  heroMiniLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#fff',
+    textAlign: 'center',
+  },
+  heroSecCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    backgroundColor: '#fff',
+  },
+  heroSecCTAText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+
+  // Legacy hero styles (keeping for compatibility)
   heroImageArea: {
     position: 'relative',
     width: isDesktop ? 400 : '100%',
