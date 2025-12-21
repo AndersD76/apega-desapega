@@ -72,63 +72,63 @@ const CAROUSEL_BANNERS = [
 const FEATURED_PIECES = [
   {
     category: 'Vestidos',
-    image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=300&q=80',
+    image: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=400&q=80',
     count: '+150'
   },
   {
     category: 'Bolsas',
-    image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=300&q=80',
+    image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&q=80',
     count: '+80'
   },
   {
     category: 'Calçados',
-    image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=300&q=80',
+    image: 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=400&q=80',
     count: '+200'
   },
   {
     category: 'Blusas',
-    image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=300&q=80',
+    image: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?w=400&q=80',
     count: '+250'
   },
   {
     category: 'Acessórios',
-    image: 'https://images.unsplash.com/photo-1611085583191-a3b181a88401?w=300&q=80',
+    image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400&q=80',
     count: '+120'
   },
   {
     category: 'Jaquetas',
-    image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=300&q=80',
+    image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80',
     count: '+90'
   },
   {
     category: 'Saias',
-    image: 'https://images.unsplash.com/photo-1583496661160-fb5886a0uj1a4?w=300&q=80',
+    image: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaee?w=400&q=80',
     count: '+70'
   },
   {
     category: 'Casacos',
-    image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=300&q=80',
+    image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400&q=80',
     count: '+60'
   },
 ];
 
 const BRAND_LOGOS = [
-  { name: 'Zara', initials: 'Z', color: '#000000' },
-  { name: 'Farm', initials: 'F', color: '#2D5A27' },
-  { name: 'Animale', initials: 'A', color: '#8B4513' },
-  { name: 'Renner', initials: 'R', color: '#E31837' },
-  { name: 'C&A', initials: 'C&A', color: '#004990' },
-  { name: 'Forever 21', initials: 'F21', color: '#FFD700' },
-  { name: 'H&M', initials: 'H&M', color: '#E50010' },
-  { name: 'Gucci', initials: 'GG', color: '#1A472A' },
-  { name: 'Louis Vuitton', initials: 'LV', color: '#6B4423' },
-  { name: 'Prada', initials: 'P', color: '#000000' },
-  { name: 'Chanel', initials: 'CC', color: '#000000' },
-  { name: 'Dior', initials: 'D', color: '#1A1A1A' },
-  { name: 'Michael Kors', initials: 'MK', color: '#B8860B' },
-  { name: 'Tommy', initials: 'TH', color: '#002D62' },
-  { name: 'Calvin Klein', initials: 'CK', color: '#000000' },
-  { name: 'Lacoste', initials: 'L', color: '#00693E' },
+  { name: 'Zara', logo: 'https://logo.clearbit.com/zara.com' },
+  { name: 'Farm', logo: 'https://logo.clearbit.com/farmrio.com.br' },
+  { name: 'Animale', logo: 'https://logo.clearbit.com/animale.com.br' },
+  { name: 'Renner', logo: 'https://logo.clearbit.com/lojasrenner.com.br' },
+  { name: 'C&A', logo: 'https://logo.clearbit.com/cea.com.br' },
+  { name: 'Forever 21', logo: 'https://logo.clearbit.com/forever21.com' },
+  { name: 'H&M', logo: 'https://logo.clearbit.com/hm.com' },
+  { name: 'Gucci', logo: 'https://logo.clearbit.com/gucci.com' },
+  { name: 'Louis Vuitton', logo: 'https://logo.clearbit.com/louisvuitton.com' },
+  { name: 'Prada', logo: 'https://logo.clearbit.com/prada.com' },
+  { name: 'Chanel', logo: 'https://logo.clearbit.com/chanel.com' },
+  { name: 'Michael Kors', logo: 'https://logo.clearbit.com/michaelkors.com' },
+  { name: 'Tommy Hilfiger', logo: 'https://logo.clearbit.com/tommy.com' },
+  { name: 'Calvin Klein', logo: 'https://logo.clearbit.com/calvinklein.com' },
+  { name: 'Lacoste', logo: 'https://logo.clearbit.com/lacoste.com' },
+  { name: 'Nike', logo: 'https://logo.clearbit.com/nike.com' },
 ];
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
@@ -843,10 +843,12 @@ export default function HomeScreen({ navigation }: Props) {
                 style={styles.brandCard}
                 onPress={() => navigation.navigate('Search')}
               >
-                <View style={[styles.brandLogoContainer, { backgroundColor: brand.color }]}>
-                  <Text style={[styles.brandInitials, { fontSize: brand.initials.length > 2 ? 14 : 18 }]}>
-                    {brand.initials}
-                  </Text>
+                <View style={styles.brandLogoContainer}>
+                  <Image
+                    source={{ uri: brand.logo }}
+                    style={styles.brandLogoImage}
+                    resizeMode="contain"
+                  />
                 </View>
                 <Text style={styles.brandName}>{brand.name}</Text>
               </TouchableOpacity>
@@ -1548,7 +1550,7 @@ const styles = StyleSheet.create({
   // Featured Pieces Section - Scroll horizontal de peças
   featuredPiecesSection: {
     paddingVertical: 50,
-    backgroundColor: '#fff',
+    backgroundColor: '#FAF9F7',
   },
   featuredPiecesTitle: {
     fontSize: isDesktop ? 36 : 28,
@@ -1720,7 +1722,7 @@ const styles = StyleSheet.create({
   brandsSection: {
     paddingHorizontal: isDesktop ? 60 : isTablet ? 32 : 16,
     paddingVertical: isDesktop ? 60 : isTablet ? 48 : 40,
-    backgroundColor: '#fff',
+    backgroundColor: '#F5F3F0',
   },
   brandsTitleRow: {
     flexDirection: 'row',
@@ -1759,37 +1761,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   brandLogoContainer: {
-    width: isDesktop ? 140 : isTablet ? 110 : 80,
-    height: isDesktop ? 140 : isTablet ? 110 : 80,
-    borderRadius: isDesktop ? 70 : isTablet ? 55 : 40,
+    width: isDesktop ? 100 : isTablet ? 80 : 70,
+    height: isDesktop ? 100 : isTablet ? 80 : 70,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 14,
-    borderWidth: 3,
-    borderColor: '#fff',
+    marginBottom: 12,
+    backgroundColor: '#fff',
+    padding: 12,
     ...Platform.select({
       web: {
-        boxShadow: '0 8px 32px rgba(107,144,128,0.2)',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
         transition: 'all 0.3s ease',
       },
       default: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.2,
-        shadowRadius: 16,
-        elevation: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 4,
       },
     }),
   },
-  brandLogo: {
-    width: isDesktop ? 100 : 70,
-    height: isDesktop ? 100 : 70,
-  },
-  brandInitials: {
-    fontSize: isDesktop ? 24 : isTablet ? 20 : 16,
-    fontWeight: '800',
-    color: '#fff',
-    letterSpacing: 1,
+  brandLogoImage: {
+    width: '100%',
+    height: '100%',
   },
   brandName: {
     fontSize: isDesktop ? 14 : 11,
@@ -1839,55 +1835,72 @@ const styles = StyleSheet.create({
   // How It Works
   howItWorks: {
     paddingHorizontal: isDesktop ? 60 : isTablet ? 32 : 16,
-    paddingVertical: isDesktop ? 60 : isTablet ? 48 : 40,
+    paddingVertical: isDesktop ? 70 : isTablet ? 56 : 48,
     backgroundColor: '#fff',
   },
   stepsContainer: {
     flexDirection: isDesktop ? 'row' : isTablet ? 'row' : 'column',
     flexWrap: isTablet ? 'wrap' : 'nowrap',
-    gap: 24,
-    marginBottom: 32,
+    gap: isDesktop ? 32 : 20,
+    marginBottom: 40,
     justifyContent: 'center',
+    maxWidth: 1200,
+    alignSelf: 'center',
+    width: '100%',
   },
   stepCard: {
     flex: isDesktop ? 1 : undefined,
     flexBasis: isTablet ? '45%' : undefined,
-    minWidth: isMobile ? '100%' : 200,
-    backgroundColor: '#FAF9F7',
-    borderRadius: 24,
-    padding: 28,
+    minWidth: isMobile ? '100%' : 220,
+    maxWidth: isDesktop ? 360 : undefined,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: isDesktop ? 32 : 24,
     alignItems: 'center',
     position: 'relative',
+    borderWidth: 1,
+    borderColor: '#E8E5E1',
+    ...Platform.select({
+      web: { boxShadow: '0 4px 20px rgba(0,0,0,0.06)' },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 10,
+        elevation: 3,
+      },
+    }),
   },
   stepNumber: {
     position: 'absolute',
-    top: 16,
-    left: 20,
-    fontSize: 24,
-    fontWeight: '700',
-    color: COLORS.primary,
+    top: 20,
+    left: 24,
+    fontSize: 28,
+    fontWeight: '800',
+    color: COLORS.primaryLight,
   },
   stepIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#fff',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: COLORS.primaryExtraLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+    marginTop: 8,
   },
   stepTitle: {
-    fontSize: 16,
+    fontSize: isDesktop ? 18 : 16,
     fontWeight: '700',
     color: COLORS.gray[800],
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   stepText: {
-    fontSize: 14,
+    fontSize: isDesktop ? 15 : 14,
     color: COLORS.gray[500],
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
   },
   premiumBadgeSmall: {
     flexDirection: 'row',
