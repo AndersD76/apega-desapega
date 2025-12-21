@@ -443,83 +443,96 @@ export default function HomeScreen({ navigation }: Props) {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FAF9F7" />
 
-      {/* Popup de Promoção - Estilo Home */}
+      {/* Modal de Lançamento - Popup Centralizado */}
       <Modal
         visible={showPromoPopup}
-        transparent={false}
+        transparent={true}
         animationType="fade"
         onRequestClose={closePromoPopup}
       >
-        <ScrollView style={styles.promoScreen} contentContainerStyle={styles.promoScreenContent}>
-          {/* Header com logo e fechar */}
-          <View style={styles.promoHeader}>
-            <Text style={styles.logo}>apega<Text style={styles.logoLight}>desapega</Text></Text>
-            <TouchableOpacity onPress={closePromoPopup} style={styles.promoSkipBtn}>
-              <Text style={styles.promoSkipText}>Pular</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Hero com imagem grande */}
-          <View style={styles.promoHero}>
-            <View style={styles.promoHeroLeft}>
-              <Text style={styles.promoHeroTitle}>
-                Faça parte do{'\n'}
-                <Text style={styles.promoHeroTitleHighlight}>lançamento</Text>
-              </Text>
-              <Text style={styles.promoHeroSubtitle}>
-                Estamos começando e preparamos ofertas exclusivas para quem entrar agora
-              </Text>
-            </View>
-            <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&q=80' }}
-              style={styles.promoHeroImage}
-            />
-          </View>
-
-          {/* Cards de oferta */}
-          <View style={styles.promoCardsRow}>
-            {/* Card 500 sem comissão */}
-            <View style={styles.promoCard}>
-              <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1558171813-4c088753af8f?w=400&q=80' }}
-                style={styles.promoCardImage}
-              />
-              <View style={styles.promoCardContent}>
-                <Text style={styles.promoCardNumber}>500</Text>
-                <Text style={styles.promoCardLabel}>primeiros usuários</Text>
-                <Text style={styles.promoCardBenefit}>0% de comissão</Text>
-                <Text style={styles.promoCardDetail}>Venda sem taxas</Text>
-              </View>
-            </View>
-
-            {/* Card 50 premium */}
-            <View style={[styles.promoCard, styles.promoCardGold]}>
-              <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&q=80' }}
-                style={styles.promoCardImage}
-              />
-              <View style={styles.promoCardContent}>
-                <Text style={[styles.promoCardNumber, styles.promoCardNumberGold]}>50</Text>
-                <Text style={styles.promoCardLabel}>primeiros cadastros</Text>
-                <Text style={[styles.promoCardBenefit, styles.promoCardBenefitGold]}>Premium grátis</Text>
-                <Text style={styles.promoCardDetail}>Por 1 ano inteiro</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* CTA */}
-          <TouchableOpacity
-            style={styles.promoCTAButton}
-            onPress={() => {
-              closePromoPopup();
-              navigation.navigate('Login');
-            }}
+        <View style={styles.launchModalOverlay}>
+          <Animated.View
+            style={[
+              styles.launchModalContent,
+              {
+                opacity: promoOpacityAnim,
+                transform: [{ scale: promoScaleAnim }],
+              },
+            ]}
           >
-            <Text style={styles.promoCTAButtonText}>Quero participar</Text>
-          </TouchableOpacity>
+            {/* Botão fechar */}
+            <TouchableOpacity style={styles.launchModalClose} onPress={closePromoPopup}>
+              <Ionicons name="close" size={22} color="#666" />
+            </TouchableOpacity>
 
-          <Text style={styles.promoDisclaimer}>*Válido enquanto durarem as vagas</Text>
-        </ScrollView>
+            {/* Badge de lançamento */}
+            <View style={styles.launchBadge}>
+              <Ionicons name="rocket" size={14} color="#fff" />
+              <Text style={styles.launchBadgeText}>LANÇAMENTO</Text>
+            </View>
+
+            {/* Título */}
+            <Text style={styles.launchModalTitle}>
+              Faça parte do{'\n'}
+              <Text style={styles.launchModalTitleHighlight}>início!</Text>
+            </Text>
+
+            <Text style={styles.launchModalSubtitle}>
+              Ofertas exclusivas para quem entrar agora
+            </Text>
+
+            {/* Benefícios */}
+            <View style={styles.launchBenefits}>
+              <View style={styles.launchBenefitItem}>
+                <View style={[styles.launchBenefitIcon, { backgroundColor: '#E8F5E9' }]}>
+                  <Ionicons name="pricetag" size={20} color="#4CAF50" />
+                </View>
+                <View style={styles.launchBenefitText}>
+                  <Text style={styles.launchBenefitTitle}>0% de comissão</Text>
+                  <Text style={styles.launchBenefitDesc}>Para os 500 primeiros</Text>
+                </View>
+              </View>
+
+              <View style={styles.launchBenefitItem}>
+                <View style={[styles.launchBenefitIcon, { backgroundColor: '#FFF8E1' }]}>
+                  <Ionicons name="diamond" size={20} color="#FFB300" />
+                </View>
+                <View style={styles.launchBenefitText}>
+                  <Text style={styles.launchBenefitTitle}>Premium grátis</Text>
+                  <Text style={styles.launchBenefitDesc}>1 ano para os 50 primeiros</Text>
+                </View>
+              </View>
+
+              <View style={styles.launchBenefitItem}>
+                <View style={[styles.launchBenefitIcon, { backgroundColor: '#E3F2FD' }]}>
+                  <Ionicons name="shield-checkmark" size={20} color="#2196F3" />
+                </View>
+                <View style={styles.launchBenefitText}>
+                  <Text style={styles.launchBenefitTitle}>Compra garantida</Text>
+                  <Text style={styles.launchBenefitDesc}>100% seguro</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* CTA Buttons */}
+            <TouchableOpacity
+              style={styles.launchModalCTA}
+              onPress={() => {
+                closePromoPopup();
+                navigation.navigate('Login');
+              }}
+            >
+              <Text style={styles.launchModalCTAText}>Quero participar</Text>
+              <Ionicons name="arrow-forward" size={18} color="#fff" />
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={closePromoPopup}>
+              <Text style={styles.launchModalSkip}>Explorar primeiro</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.launchModalDisclaimer}>*Válido enquanto durarem as vagas</Text>
+          </Animated.View>
+        </View>
       </Modal>
 
       {/* Premium Popup Modal */}
@@ -2700,7 +2713,131 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  // Promo Screen - Estilo Home
+  // Launch Modal - Popup Centralizado
+  launchModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  launchModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 28,
+    padding: isDesktop ? 40 : 28,
+    alignItems: 'center',
+    maxWidth: 420,
+    width: '100%',
+    position: 'relative',
+  },
+  launchModalClose: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  launchBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 20,
+  },
+  launchBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: 1,
+  },
+  launchModalTitle: {
+    fontSize: isDesktop ? 36 : 28,
+    fontWeight: '800',
+    color: COLORS.gray[900],
+    textAlign: 'center',
+    lineHeight: isDesktop ? 44 : 36,
+    marginBottom: 12,
+  },
+  launchModalTitleHighlight: {
+    color: COLORS.primary,
+  },
+  launchModalSubtitle: {
+    fontSize: 16,
+    color: COLORS.gray[500],
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  launchBenefits: {
+    width: '100%',
+    gap: 16,
+    marginBottom: 28,
+  },
+  launchBenefitItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    backgroundColor: '#FAFAFA',
+    padding: 16,
+    borderRadius: 16,
+  },
+  launchBenefitIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  launchBenefitText: {
+    flex: 1,
+  },
+  launchBenefitTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.gray[800],
+    marginBottom: 2,
+  },
+  launchBenefitDesc: {
+    fontSize: 13,
+    color: COLORS.gray[500],
+  },
+  launchModalCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 36,
+    paddingVertical: 16,
+    borderRadius: 28,
+    width: '100%',
+    marginBottom: 16,
+  },
+  launchModalCTAText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  launchModalSkip: {
+    fontSize: 15,
+    color: COLORS.gray[500],
+    fontWeight: '500',
+    marginBottom: 16,
+  },
+  launchModalDisclaimer: {
+    fontSize: 11,
+    color: COLORS.gray[400],
+    fontStyle: 'italic',
+  },
+
+  // Promo Screen styles (legacy, keeping for compatibility)
   promoScreen: {
     flex: 1,
     backgroundColor: '#FAF9F7',
