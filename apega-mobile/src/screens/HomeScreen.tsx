@@ -439,7 +439,7 @@ export default function HomeScreen({ navigation }: Props) {
           <View style={styles.launchFullScreen}>
             {/* Background Image */}
             <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80' }}
+              source={{ uri: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1600&q=80' }}
               style={styles.launchBgImage}
             />
             <LinearGradient
