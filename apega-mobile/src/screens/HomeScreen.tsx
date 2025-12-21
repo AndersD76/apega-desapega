@@ -30,47 +30,39 @@ const isDesktop = isWeb && width > 1024;
 const isTablet = isWeb && width > 600 && width <= 1024;
 const isMobile = !isDesktop && !isTablet;
 
-// Imagens do carrossel com informações detalhadas dos produtos
-const CAROUSEL_IMAGES = [
+// Banners full-width do carrossel
+const CAROUSEL_BANNERS = [
   {
-    uri: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=80',
-    label: 'Vestidos',
-    title: 'Vestidos Elegantes',
-    description: 'Peças únicas para todas as ocasiões',
-    highlight: 'Até 70% OFF',
-    pieces: '+150 peças'
+    uri: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1600&q=80',
+    title: 'Moda Circular',
+    subtitle: 'Renove seu guarda-roupa com peças únicas',
+    highlight: 'ATÉ 70% OFF',
+    cta: 'Explorar',
+    gradient: ['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.7)'],
   },
   {
-    uri: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=400&q=80',
-    label: 'Moda',
-    title: 'Tendências 2024',
-    description: 'As melhores marcas do mercado',
-    highlight: 'Novidades',
-    pieces: '+300 peças'
+    uri: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80',
+    title: 'Peças Premium',
+    subtitle: 'Farm, Animale, Zara e muito mais',
+    highlight: 'EXCLUSIVO',
+    cta: 'Ver coleção',
+    gradient: ['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.7)'],
   },
   {
-    uri: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&q=80',
-    label: 'Bolsas',
+    uri: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1600&q=80',
+    title: 'Sustentabilidade',
+    subtitle: 'Moda consciente que faz a diferença',
+    highlight: 'ECO-FRIENDLY',
+    cta: 'Saiba mais',
+    gradient: ['rgba(45,90,39,0.3)', 'rgba(0,0,0,0.7)'],
+  },
+  {
+    uri: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=1600&q=80',
     title: 'Bolsas de Grife',
-    description: 'Louis Vuitton, Gucci, Prada e mais',
-    highlight: 'Premium',
-    pieces: '+80 peças'
-  },
-  {
-    uri: 'https://images.unsplash.com/photo-1515347619252-60a4bf4fff4f?w=400&q=80',
-    label: 'Calçados',
-    title: 'Sapatos & Tênis',
-    description: 'Do casual ao sofisticado',
-    highlight: 'Exclusivo',
-    pieces: '+200 peças'
-  },
-  {
-    uri: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=400&q=80',
-    label: 'Blusas',
-    title: 'Blusas & Tops',
-    description: 'Peças para compor seu look perfeito',
-    highlight: 'Imperdível',
-    pieces: '+250 peças'
+    subtitle: 'Louis Vuitton, Gucci, Prada',
+    highlight: 'IMPERDÍVEL',
+    cta: 'Conferir',
+    gradient: ['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.8)'],
   },
 ];
 
@@ -483,12 +475,12 @@ export default function HomeScreen({ navigation }: Props) {
             {/* Contador de vagas */}
             <View style={styles.launchCounter}>
               <View style={styles.launchCounterItem}>
-                <Text style={styles.launchCounterNumber}>500</Text>
+                <Text style={styles.launchCounterNumber}>100</Text>
                 <Text style={styles.launchCounterLabel}>vagas sem comissão</Text>
               </View>
               <View style={styles.launchCounterDivider} />
               <View style={styles.launchCounterItem}>
-                <Text style={[styles.launchCounterNumber, { color: '#FFB300' }]}>50</Text>
+                <Text style={[styles.launchCounterNumber, { color: '#FFB300' }]}>10</Text>
                 <Text style={styles.launchCounterLabel}>Premium grátis</Text>
               </View>
             </View>
@@ -659,97 +651,68 @@ export default function HomeScreen({ navigation }: Props) {
         )}
         scrollEventThrottle={16}
       >
-        {/* Hero Section with Parallax */}
-        <Animated.View style={[
-          styles.hero,
-          {
-            opacity: heroOpacity,
-            transform: [
-              { translateY: heroTranslateY },
-              { scale: heroScale }
-            ]
-          }
-        ]}>
-          <View style={styles.heroContent}>
-            <Text style={styles.heroTitle}>
-              Renove e{'\n'}desapegue no{'\n'}
-              <Text style={styles.heroTitleHighlight}>Apega{'\n'}Desapega</Text>
-            </Text>
-            <Text style={styles.heroSubtitle}>
-              O Apega Desapega nasceu do sonho de pessoas que acreditam na possibilidade de{' '}
-              <Text style={styles.heroSubtitleBold}>construir um mundo melhor</Text> através da economia e moda circular!
-            </Text>
-            <TouchableOpacity
-              style={styles.heroButton}
-              onPress={() => navigation.navigate('Search')}
-            >
-              <Text style={styles.heroButtonText}>Explorar peças</Text>
-              <Ionicons name="arrow-forward" size={18} color="#fff" />
-            </TouchableOpacity>
-          </View>
+        {/* Hero Banner Carousel - Full Width */}
+        <View style={styles.heroBannerContainer}>
+          <Animated.View style={[styles.heroBannerWrapper, { opacity: fadeAnim }]}>
+            <Image
+              source={{ uri: CAROUSEL_BANNERS[currentImageIndex % CAROUSEL_BANNERS.length].uri }}
+              style={styles.heroBannerImage}
+            />
+            <LinearGradient
+              colors={CAROUSEL_BANNERS[currentImageIndex % CAROUSEL_BANNERS.length].gradient as [string, string]}
+              style={styles.heroBannerGradient}
+            />
 
-          {/* Área do carrossel */}
-          <View style={styles.heroImageArea}>
-            <View style={styles.heroImageBg} />
-            {/* Imagem principal com carrossel */}
-            <Animated.View style={[styles.heroImageWrapper, { opacity: fadeAnim }]}>
-              <Image
-                source={{ uri: CAROUSEL_IMAGES[currentImageIndex].uri }}
-                style={styles.heroImage}
-              />
-              <View style={styles.carouselLabel}>
-                <Text style={styles.carouselLabelText}>{CAROUSEL_IMAGES[currentImageIndex].label}</Text>
-              </View>
-            </Animated.View>
-
-            {/* Painel de informações animado */}
+            {/* Conteúdo do Banner */}
             <Animated.View
               style={[
-                styles.carouselInfoPanel,
+                styles.heroBannerContent,
                 {
                   opacity: infoOpacityAnim,
                   transform: [{ translateY: infoSlideAnim }],
                 },
               ]}
             >
-              <View style={styles.carouselInfoHighlight}>
-                <Ionicons name="flash" size={12} color="#fff" />
-                <Text style={styles.carouselInfoHighlightText}>
-                  {CAROUSEL_IMAGES[currentImageIndex].highlight}
+              <View style={styles.heroBannerBadge}>
+                <Ionicons name="flash" size={14} color="#fff" />
+                <Text style={styles.heroBannerBadgeText}>
+                  {CAROUSEL_BANNERS[currentImageIndex % CAROUSEL_BANNERS.length].highlight}
                 </Text>
               </View>
-              <Text style={styles.carouselInfoTitle}>
-                {CAROUSEL_IMAGES[currentImageIndex].title}
+
+              <Text style={styles.heroBannerTitle}>
+                {CAROUSEL_BANNERS[currentImageIndex % CAROUSEL_BANNERS.length].title}
               </Text>
-              <Text style={styles.carouselInfoDescription}>
-                {CAROUSEL_IMAGES[currentImageIndex].description}
+
+              <Text style={styles.heroBannerSubtitle}>
+                {CAROUSEL_BANNERS[currentImageIndex % CAROUSEL_BANNERS.length].subtitle}
               </Text>
-              <View style={styles.carouselInfoStats}>
-                <Ionicons name="layers-outline" size={16} color={COLORS.primary} />
-                <Text style={styles.carouselInfoPieces}>
-                  {CAROUSEL_IMAGES[currentImageIndex].pieces}
-                </Text>
-              </View>
+
               <TouchableOpacity
-                style={styles.carouselInfoButton}
+                style={styles.heroBannerButton}
                 onPress={() => navigation.navigate('Search')}
               >
-                <Text style={styles.carouselInfoButtonText}>Ver coleção</Text>
-                <Ionicons name="arrow-forward" size={14} color={COLORS.primary} />
+                <Text style={styles.heroBannerButtonText}>
+                  {CAROUSEL_BANNERS[currentImageIndex % CAROUSEL_BANNERS.length].cta}
+                </Text>
+                <Ionicons name="arrow-forward" size={18} color="#fff" />
               </TouchableOpacity>
             </Animated.View>
+          </Animated.View>
 
-            {/* Dots do carrossel */}
-            <View style={styles.carouselDots}>
-              {CAROUSEL_IMAGES.map((_, index) => (
-                <View
-                  key={index}
-                  style={[styles.dot, currentImageIndex === index && styles.dotActive]}
-                />
-              ))}
-            </View>
+          {/* Dots do carrossel */}
+          <View style={styles.heroBannerDots}>
+            {CAROUSEL_BANNERS.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.heroBannerDot,
+                  currentImageIndex % CAROUSEL_BANNERS.length === index && styles.heroBannerDotActive
+                ]}
+              />
+            ))}
           </View>
-        </Animated.View>
+        </View>
 
         {/* Peças em Destaque - Scroll Horizontal with Fade In */}
         <Animated.View style={[
@@ -1141,7 +1104,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAF9F7',
   },
   logo: {
-    fontSize: 26,
+    fontSize: isDesktop ? 34 : 28,
     fontWeight: '800',
     color: '#1a1a1a',
     letterSpacing: -0.5,
@@ -1224,7 +1187,106 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
-  // Hero
+  // Hero Banner Carousel - Full Width
+  heroBannerContainer: {
+    width: '100%',
+    height: isDesktop ? 500 : isTablet ? 400 : 320,
+    position: 'relative',
+    marginBottom: 0,
+  },
+  heroBannerWrapper: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  heroBannerImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  heroBannerGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  heroBannerContent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: isDesktop ? 60 : isTablet ? 40 : 24,
+    paddingBottom: isDesktop ? 80 : isTablet ? 60 : 50,
+  },
+  heroBannerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 16,
+  },
+  heroBannerBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: 1,
+  },
+  heroBannerTitle: {
+    fontSize: isDesktop ? 48 : isTablet ? 38 : 32,
+    fontWeight: '800',
+    color: '#fff',
+    marginBottom: 8,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  heroBannerSubtitle: {
+    fontSize: isDesktop ? 20 : isTablet ? 18 : 16,
+    color: 'rgba(255,255,255,0.9)',
+    marginBottom: 20,
+    maxWidth: 500,
+  },
+  heroBannerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 8,
+    backgroundColor: '#fff',
+    paddingHorizontal: isDesktop ? 28 : 22,
+    paddingVertical: isDesktop ? 16 : 14,
+    borderRadius: 28,
+  },
+  heroBannerButtonText: {
+    fontSize: isDesktop ? 16 : 15,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  heroBannerDots: {
+    position: 'absolute',
+    bottom: isDesktop ? 30 : 20,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  heroBannerDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: 'rgba(255,255,255,0.4)',
+  },
+  heroBannerDotActive: {
+    backgroundColor: '#fff',
+    width: 28,
+  },
+
+  // Hero (legacy - keeping for compatibility)
   hero: {
     flexDirection: isDesktop ? 'row' : 'column',
     paddingHorizontal: isDesktop ? 60 : 20,
