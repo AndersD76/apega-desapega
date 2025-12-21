@@ -1,8 +1,12 @@
 /**
  * Rotas de IA para análise de roupas
- * Acesso restrito a:
- * - Assinantes Premium
- * - 10 primeiros usuários cadastrados (vagas grátis)
+ * Acesso restrito a assinantes Premium
+ *
+ * Funcionalidades:
+ * - Análise de roupa (1 imagem por produto)
+ * - Sugestão de preço
+ * - Remoção de fundo
+ * - Melhoria de imagem
  */
 
 const express = require('express');
@@ -39,20 +43,16 @@ const upload = multer({
 
 /**
  * Middleware para verificar se usuário tem acesso à IA
- * Critérios:
- * 1. Assinante Premium ativo
- * 2. Um dos 10 primeiros usuários cadastrados
+ * Apenas assinantes Premium ativos têm acesso
  */
 async function checkAIAccess(req, res, next) {
   try {
     const userId = req.user.id;
 
-    // Verificar se é Premium
     const user = await sql`
       SELECT
         subscription_type,
-        subscription_expires_at,
-        created_at
+        subscription_expires_at
       FROM users
       WHERE id = ${userId}
     `;
@@ -72,24 +72,10 @@ async function checkAIAccess(req, res, next) {
       return next();
     }
 
-    // Verificar se é um dos 10 primeiros usuários
-    const earlyUsers = await sql`
-      SELECT id FROM users
-      ORDER BY created_at ASC
-      LIMIT 10
-    `;
-
-    const isEarlyUser = earlyUsers.some(u => u.id === userId);
-
-    if (isEarlyUser) {
-      req.aiAccessType = 'early_user';
-      return next();
-    }
-
-    // Não tem acesso
+    // Não tem acesso (apenas Premium)
     return res.status(403).json({
       error: true,
-      message: 'Acesso à IA exclusivo para assinantes Premium',
+      message: 'Recursos de IA exclusivos para assinantes Premium',
       code: 'AI_ACCESS_DENIED',
       upgradeUrl: '/premium'
     });
@@ -103,6 +89,7 @@ async function checkAIAccess(req, res, next) {
 /**
  * GET /api/ai/status
  * Verifica status de acesso à IA do usuário
+ * Apenas Premium tem acesso a todos os recursos de IA
  */
 router.get('/status', authenticate, async (req, res) => {
   try {
@@ -111,8 +98,7 @@ router.get('/status', authenticate, async (req, res) => {
     const user = await sql`
       SELECT
         subscription_type,
-        subscription_expires_at,
-        created_at
+        subscription_expires_at
       FROM users
       WHERE id = ${userId}
     `;
@@ -123,34 +109,21 @@ router.get('/status', authenticate, async (req, res) => {
 
     const userData = user[0];
 
-    // Verificar Premium
+    // Verificar Premium ativo
     const isPremium = userData.subscription_type === 'premium' &&
       (!userData.subscription_expires_at || new Date(userData.subscription_expires_at) > new Date());
 
-    // Verificar early user
-    const earlyUsers = await sql`
-      SELECT id FROM users
-      ORDER BY created_at ASC
-      LIMIT 10
-    `;
-    const isEarlyUser = earlyUsers.some(u => u.id === userId);
-
-    // Contar quantas vagas grátis restam
-    const userCount = await sql`SELECT COUNT(*) as count FROM users`;
-    const freeSlots = Math.max(0, 10 - parseInt(userCount[0].count));
-
     res.json({
-      hasAccess: isPremium || isEarlyUser,
-      accessType: isPremium ? 'premium' : isEarlyUser ? 'early_user' : 'none',
+      hasAccess: isPremium,
+      accessType: isPremium ? 'premium' : 'free',
       isPremium,
-      isEarlyUser,
-      freeSlots,
       features: {
-        analyzeClothing: isPremium || isEarlyUser,
-        suggestPrice: isPremium || isEarlyUser,
-        improveDescription: isPremium || isEarlyUser,
-        virtualTryOn: isPremium, // Só premium
-        enhanceImage: isPremium, // Só premium
+        analyzeClothing: isPremium,      // Análise com IA (1 imagem)
+        suggestPrice: isPremium,          // Sugestão de preço
+        improveDescription: isPremium,    // Melhorar descrição
+        removeBackground: isPremium,      // Remover fundo
+        enhanceImage: isPremium,          // Melhorar imagem
+        virtualTryOn: isPremium,          // Prova virtual
       }
     });
 
@@ -185,13 +158,38 @@ router.post('/analyze', authenticate, checkAIAccess, upload.single('image'), asy
     }
 
     // Analisar com IA
-    const analysis = await analyzeClothing(imageUrl);
+    const rawAnalysis = await analyzeClothing(imageUrl);
+
+    // Normalizar resposta para o formato esperado pelo frontend
+    const analysis = {
+      tipo: rawAnalysis.tipo || '',
+      marca: rawAnalysis.marca || 'Não identificada',
+      condicao: rawAnalysis.condicao || 'bom_estado',
+      cores: rawAnalysis.cores || (rawAnalysis.cor ? [rawAnalysis.cor] : []),
+      materiais: rawAnalysis.materiais || (rawAnalysis.material ? [rawAnalysis.material] : []),
+      tamanho: rawAnalysis.tamanhoEstimado || rawAnalysis.tamanho || '',
+      estilo: rawAnalysis.estilo || 'casual',
+      precoSugerido: {
+        minimo: rawAnalysis.precoSugerido?.minimo || 0,
+        maximo: rawAnalysis.precoSugerido?.maximo || 0,
+        recomendado: rawAnalysis.precoSugerido?.ideal || rawAnalysis.precoSugerido?.recomendado || 0
+      },
+      descricaoSugerida: rawAnalysis.descricaoSugerida || '',
+      tituloSugerido: rawAnalysis.tituloSugerido || '',
+      caracteristicas: rawAnalysis.pontosFavoraveis || [],
+      palavrasChave: rawAnalysis.hashtags || [],
+      // Campos extras do Claude
+      condicaoDetalhes: rawAnalysis.condicaoDetalhes || '',
+      estacao: rawAnalysis.estacao || '',
+      dicasVenda: rawAnalysis.dicasVenda || [],
+      pontosAtencao: rawAnalysis.pontosAtencao || []
+    };
 
     // Buscar categorias disponíveis
     const categories = await sql`SELECT slug, name FROM categories WHERE is_active = true`;
 
     // Sugerir categoria
-    const suggestedCategory = suggestCategory(analysis, categories);
+    const suggestedCategory = suggestCategory(rawAnalysis, categories);
 
     res.json({
       success: true,
@@ -238,46 +236,41 @@ router.post('/improve-description', authenticate, checkAIAccess, async (req, res
 });
 
 /**
- * GET /api/ai/free-slots
- * Retorna quantas vagas grátis de IA restam
+ * GET /api/ai/pricing
+ * Retorna informações sobre planos e preços da IA
  */
-router.get('/free-slots', async (req, res) => {
-  try {
-    const userCount = await sql`SELECT COUNT(*) as count FROM users`;
-    const totalUsers = parseInt(userCount[0].count);
-    const freeSlots = Math.max(0, 10 - totalUsers);
-
-    res.json({
-      freeSlots,
-      totalSlots: 10,
-      usedSlots: Math.min(10, totalUsers),
-      message: freeSlots > 0
-        ? `Restam ${freeSlots} vagas com IA Premium grátis!`
-        : 'Todas as vagas grátis foram preenchidas'
-    });
-
-  } catch (error) {
-    console.error('Erro ao buscar vagas:', error);
-    res.status(500).json({ error: true, message: 'Erro ao buscar vagas' });
-  }
+router.get('/pricing', async (req, res) => {
+  res.json({
+    plans: {
+      free: {
+        name: 'Grátis',
+        aiFeatures: false,
+        description: 'Publique produtos manualmente'
+      },
+      premium: {
+        name: 'Premium',
+        aiFeatures: true,
+        price: 19.90,
+        description: 'Análise com IA, sugestão de preço, remoção de fundo e mais',
+        features: [
+          'Análise automática de roupas',
+          'Sugestão de preço inteligente',
+          'Remoção de fundo das fotos',
+          'Melhoria automática de imagens',
+          'Prova virtual (em breve)'
+        ]
+      }
+    }
+  });
 });
 
 /**
  * POST /api/ai/virtual-tryon
  * Gera virtual try-on (roupa no modelo)
- * Apenas Premium
+ * Apenas Premium (verificado pelo middleware)
  */
 router.post('/virtual-tryon', authenticate, checkAIAccess, async (req, res) => {
   try {
-    // Verificar se é Premium (virtual try-on só para premium)
-    if (req.aiAccessType !== 'premium') {
-      return res.status(403).json({
-        error: true,
-        message: 'Virtual Try-On disponível apenas para assinantes Premium',
-        code: 'PREMIUM_ONLY'
-      });
-    }
-
     const { clothingImageUrl, modelImageUrl } = req.body;
 
     if (!clothingImageUrl) {
@@ -304,19 +297,10 @@ router.post('/virtual-tryon', authenticate, checkAIAccess, async (req, res) => {
 /**
  * POST /api/ai/enhance-image
  * Melhora a imagem (remove fundo, etc)
- * Apenas Premium
+ * Apenas Premium (verificado pelo middleware)
  */
 router.post('/enhance-image', authenticate, checkAIAccess, upload.single('image'), async (req, res) => {
   try {
-    // Verificar se é Premium
-    if (req.aiAccessType !== 'premium') {
-      return res.status(403).json({
-        error: true,
-        message: 'Melhoria de imagem disponível apenas para assinantes Premium',
-        code: 'PREMIUM_ONLY'
-      });
-    }
-
     let imageUrl = req.body.imageUrl;
 
     // Se enviou arquivo, fazer upload para Cloudinary
@@ -351,18 +335,10 @@ router.post('/enhance-image', authenticate, checkAIAccess, upload.single('image'
 /**
  * POST /api/ai/remove-background
  * Remove fundo da imagem
- * Apenas Premium
+ * Apenas Premium (verificado pelo middleware)
  */
 router.post('/remove-background', authenticate, checkAIAccess, upload.single('image'), async (req, res) => {
   try {
-    if (req.aiAccessType !== 'premium') {
-      return res.status(403).json({
-        error: true,
-        message: 'Remoção de fundo disponível apenas para assinantes Premium',
-        code: 'PREMIUM_ONLY'
-      });
-    }
-
     let imageUrl = req.body.imageUrl;
 
     if (req.file) {

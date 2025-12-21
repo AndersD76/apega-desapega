@@ -14,25 +14,45 @@ export interface AIAnalysisResult {
     recomendado: number;
   };
   descricaoSugerida: string;
+  tituloSugerido?: string;
   caracteristicas: string[];
   palavrasChave: string[];
+  // Campos extras
+  condicaoDetalhes?: string;
+  estacao?: string;
+  dicasVenda?: string[];
+  pontosAtencao?: string[];
 }
 
 export interface AIAccessStatus {
   hasAccess: boolean;
   isPremium: boolean;
-  isEarlyUser: boolean;
+  accessType: 'premium' | 'free';
   features: {
-    analysis: boolean;
+    analyzeClothing: boolean;
+    suggestPrice: boolean;
+    improveDescription: boolean;
+    removeBackground: boolean;
+    enhanceImage: boolean;
     virtualTryOn: boolean;
-    imageEnhancement: boolean;
   };
 }
 
-export interface FreeSlotsInfo {
-  totalSlots: number;
-  usedSlots: number;
-  remainingSlots: number;
+export interface AIPricingInfo {
+  plans: {
+    free: {
+      name: string;
+      aiFeatures: boolean;
+      description: string;
+    };
+    premium: {
+      name: string;
+      aiFeatures: boolean;
+      price: number;
+      description: string;
+      features: string[];
+    };
+  };
 }
 
 // Verificar status de acesso do usuário
@@ -46,11 +66,11 @@ export const checkAIAccess = async (): Promise<AIAccessStatus> => {
   }
 };
 
-// Analisar roupa com IA
+// Analisar roupa com IA (apenas 1 imagem por produto)
 export const analyzeClothing = async (imageUrl: string): Promise<AIAnalysisResult> => {
   try {
     const response = await api.post('/ai/analyze', { imageUrl });
-    return response.data || response;
+    return response.analysis || response.data?.analysis || response;
   } catch (error: any) {
     console.error('Erro ao analisar roupa:', error);
     throw error;
@@ -59,26 +79,52 @@ export const analyzeClothing = async (imageUrl: string): Promise<AIAnalysisResul
 
 // Melhorar descrição
 export const improveDescription = async (
-  description: string,
-  productInfo?: { brand?: string; size?: string; condition?: string }
-): Promise<{ improvedDescription: string }> => {
+  analysis: AIAnalysisResult,
+  userDescription?: string
+): Promise<{ titulo: string; descricao: string; hashtags: string[] }> => {
   try {
     const response = await api.post('/ai/improve-description', {
-      description,
-      productInfo,
+      analysis,
+      userDescription,
     });
-    return response.data || response;
+    return response.improved || response.data?.improved || response;
   } catch (error: any) {
     console.error('Erro ao melhorar descrição:', error);
     throw error;
   }
 };
 
-// Prova virtual (Premium only)
+// Remover fundo da imagem (Premium only)
+export const removeBackground = async (
+  imageUrl: string
+): Promise<{ success: boolean; imageBase64: string; provider: string }> => {
+  try {
+    const response = await api.post('/ai/remove-background', { imageUrl });
+    return response.data || response;
+  } catch (error: any) {
+    console.error('Erro ao remover fundo:', error);
+    throw error;
+  }
+};
+
+// Melhorar imagem (Premium only)
+export const enhanceImage = async (
+  imageUrl: string
+): Promise<{ success: boolean; imageBase64: string; provider: string }> => {
+  try {
+    const response = await api.post('/ai/enhance-image', { imageUrl });
+    return response.data || response;
+  } catch (error: any) {
+    console.error('Erro ao melhorar imagem:', error);
+    throw error;
+  }
+};
+
+// Prova virtual (Premium only - em breve)
 export const virtualTryOn = async (
   clothingImageUrl: string,
   modelImageUrl?: string
-): Promise<{ resultUrl: string }> => {
+): Promise<{ success: boolean; outputUrl: string; provider: string }> => {
   try {
     const response = await api.post('/ai/virtual-tryon', {
       clothingImageUrl,
@@ -91,43 +137,13 @@ export const virtualTryOn = async (
   }
 };
 
-// Melhorar imagem (Premium only)
-export const enhanceImage = async (
-  imageUrl: string,
-  options?: { removeBackground?: boolean; enhance?: boolean }
-): Promise<{ enhancedUrl: string }> => {
+// Obter informações de preços/planos
+export const getAIPricing = async (): Promise<AIPricingInfo> => {
   try {
-    const response = await api.post('/ai/enhance-image', {
-      imageUrl,
-      ...options,
-    });
+    const response = await api.get('/ai/pricing');
     return response.data || response;
   } catch (error: any) {
-    console.error('Erro ao melhorar imagem:', error);
-    throw error;
-  }
-};
-
-// Remover fundo (Premium only)
-export const removeBackground = async (
-  imageUrl: string
-): Promise<{ resultUrl: string }> => {
-  try {
-    const response = await api.post('/ai/remove-background', { imageUrl });
-    return response.data || response;
-  } catch (error: any) {
-    console.error('Erro ao remover fundo:', error);
-    throw error;
-  }
-};
-
-// Verificar vagas gratuitas restantes
-export const checkFreeSlots = async (): Promise<FreeSlotsInfo> => {
-  try {
-    const response = await api.get('/ai/free-slots');
-    return response.data || response;
-  } catch (error: any) {
-    console.error('Erro ao verificar vagas:', error);
+    console.error('Erro ao buscar preços:', error);
     throw error;
   }
 };

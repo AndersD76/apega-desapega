@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   StatusBar,
   Platform,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,9 +16,7 @@ import { Button } from '../components';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
-const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
-const isDesktop = isWeb && width > 768;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Balance'>;
 
@@ -34,6 +32,10 @@ const MOCK_TRANSACTIONS: Transaction[] = [];
 
 export default function BalanceScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isDesktop = isWeb && width > 768;
+  const isTablet = isWeb && width > 480 && width <= 768;
+
   // Dados serão carregados da API
   const balance = 0;
   const cashback = 0;
@@ -59,34 +61,60 @@ export default function BalanceScreen({ navigation }: Props) {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + SPACING.sm }]}>
+      <View style={[
+        styles.header,
+        {
+          paddingTop: insets.top + SPACING.sm,
+          paddingHorizontal: isDesktop ? 60 : isTablet ? 40 : SPACING.md,
+        }
+      ]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>saldo e cashback</Text>
+        <Text style={[styles.headerTitle, isDesktop && { fontSize: TYPOGRAPHY.sizes.xl }]}>
+          saldo e cashback
+        </Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingHorizontal: isDesktop ? 60 : isTablet ? 40 : SPACING.md,
+            maxWidth: isDesktop ? 800 : isTablet ? 600 : '100%',
+          }
+        ]}
       >
         {/* Balance Card */}
-        <View style={styles.balanceCard}>
+        <View style={[
+          styles.balanceCard,
+          isDesktop && { padding: SPACING.xl }
+        ]}>
           <Text style={styles.balanceLabel}>saldo disponível</Text>
-          <Text style={styles.balanceAmount}>R$ {balance.toFixed(2)}</Text>
+          <Text style={[
+            styles.balanceAmount,
+            isDesktop && { fontSize: 48 }
+          ]}>R$ {balance.toFixed(2)}</Text>
 
           <View style={styles.balanceRow}>
             <View style={styles.balanceItem}>
               <Text style={styles.balanceItemLabel}>cashback acumulado</Text>
-              <Text style={styles.balanceItemValue}>R$ {cashback.toFixed(2)}</Text>
+              <Text style={[
+                styles.balanceItemValue,
+                isDesktop && { fontSize: TYPOGRAPHY.sizes.xl }
+              ]}>R$ {cashback.toFixed(2)}</Text>
             </View>
             <View style={styles.balanceItem}>
               <Text style={styles.balanceItemLabel}>a liberar</Text>
-              <Text style={styles.balanceItemValue}>R$ {pending.toFixed(2)}</Text>
+              <Text style={[
+                styles.balanceItemValue,
+                isDesktop && { fontSize: TYPOGRAPHY.sizes.xl }
+              ]}>R$ {pending.toFixed(2)}</Text>
             </View>
           </View>
 
@@ -100,67 +128,140 @@ export default function BalanceScreen({ navigation }: Props) {
         </View>
 
         {/* Commission Info */}
-        <View style={styles.commissionCard}>
+        <View style={[
+          styles.commissionCard,
+          isDesktop && { padding: SPACING.lg }
+        ]}>
           <View style={styles.commissionHeader}>
-            <Ionicons name="calculator" size={24} color={COLORS.textPrimary} />
-            <Text style={styles.commissionTitle}>taxas de venda</Text>
+            <Ionicons name="calculator" size={isDesktop ? 28 : 24} color={COLORS.textPrimary} />
+            <Text style={[
+              styles.commissionTitle,
+              isDesktop && { fontSize: TYPOGRAPHY.sizes.lg }
+            ]}>taxas de venda</Text>
           </View>
           <View style={styles.commissionRow}>
-            <Text style={styles.commissionLabel}>comissão por venda</Text>
-            <Text style={styles.commissionValue}>{FEES.commissionPercentage}%</Text>
+            <Text style={[
+              styles.commissionLabel,
+              isDesktop && { fontSize: TYPOGRAPHY.sizes.base }
+            ]}>comissão por venda</Text>
+            <Text style={[
+              styles.commissionValue,
+              isDesktop && { fontSize: TYPOGRAPHY.sizes.lg }
+            ]}>{FEES.commissionPercentage}%</Text>
           </View>
           <View style={styles.commissionRow}>
-            <Text style={styles.commissionLabel}>assinantes premium</Text>
-            <Text style={[styles.commissionValue, { color: COLORS.primary }]}>{FEES.premiumCommissionPercentage}%</Text>
+            <Text style={[
+              styles.commissionLabel,
+              isDesktop && { fontSize: TYPOGRAPHY.sizes.base }
+            ]}>assinantes premium</Text>
+            <Text style={[
+              styles.commissionValue,
+              { color: COLORS.primary },
+              isDesktop && { fontSize: TYPOGRAPHY.sizes.lg }
+            ]}>{FEES.premiumCommissionPercentage}%</Text>
           </View>
           <TouchableOpacity
             style={styles.premiumLink}
             onPress={() => navigation.navigate('Subscription')}
           >
-            <Text style={styles.premiumLinkText}>veja os benefícios do plano premium</Text>
-            <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
+            <Text style={[
+              styles.premiumLinkText,
+              isDesktop && { fontSize: TYPOGRAPHY.sizes.base }
+            ]}>veja os benefícios do plano premium</Text>
+            <Ionicons name="chevron-forward" size={isDesktop ? 18 : 16} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
 
         {/* Info Cards */}
-        <View style={styles.infoRow}>
-          <View style={styles.infoCard}>
-            <Ionicons name="gift" size={24} color={COLORS.primary} />
-            <Text style={styles.infoTitle}>cashback</Text>
-            <Text style={styles.infoText}>ganhe 5% de volta em todas as compras</Text>
+        <View style={[
+          styles.infoRow,
+          isDesktop && { gap: SPACING.md }
+        ]}>
+          <View style={[
+            styles.infoCard,
+            isDesktop && { padding: SPACING.lg }
+          ]}>
+            <Ionicons name="gift" size={isDesktop ? 32 : 24} color={COLORS.primary} />
+            <Text style={[
+              styles.infoTitle,
+              isDesktop && { fontSize: TYPOGRAPHY.sizes.base }
+            ]}>cashback</Text>
+            <Text style={[
+              styles.infoText,
+              isDesktop && { fontSize: TYPOGRAPHY.sizes.sm, lineHeight: 20 }
+            ]}>ganhe 5% de volta em todas as compras</Text>
           </View>
-          <View style={styles.infoCard}>
-            <Ionicons name="time" size={24} color={COLORS.warning} />
-            <Text style={styles.infoTitle}>liberação</Text>
-            <Text style={styles.infoText}>saldo liberado após entrega confirmada</Text>
+          <View style={[
+            styles.infoCard,
+            isDesktop && { padding: SPACING.lg }
+          ]}>
+            <Ionicons name="time" size={isDesktop ? 32 : 24} color={COLORS.warning} />
+            <Text style={[
+              styles.infoTitle,
+              isDesktop && { fontSize: TYPOGRAPHY.sizes.base }
+            ]}>liberação</Text>
+            <Text style={[
+              styles.infoText,
+              isDesktop && { fontSize: TYPOGRAPHY.sizes.sm, lineHeight: 20 }
+            ]}>saldo liberado após entrega confirmada</Text>
           </View>
         </View>
 
         {/* Transactions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>movimentações</Text>
+        <View style={[
+          styles.section,
+          isDesktop && { padding: SPACING.lg }
+        ]}>
+          <Text style={[
+            styles.sectionTitle,
+            isDesktop && { fontSize: TYPOGRAPHY.sizes.lg }
+          ]}>movimentações</Text>
 
-          {MOCK_TRANSACTIONS.map(transaction => (
-            <View key={transaction.id} style={styles.transactionItem}>
-              <View style={[styles.transactionIcon, { backgroundColor: getTransactionColor(transaction.type) + '20' }]}>
-                <Ionicons
-                  name={getTransactionIcon(transaction.type)}
-                  size={20}
-                  color={getTransactionColor(transaction.type)}
-                />
-              </View>
-              <View style={styles.transactionInfo}>
-                <Text style={styles.transactionDescription}>{transaction.description}</Text>
-                <Text style={styles.transactionDate}>{transaction.date}</Text>
-              </View>
+          {MOCK_TRANSACTIONS.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="receipt-outline" size={isDesktop ? 56 : 48} color={COLORS.textTertiary} />
               <Text style={[
-                styles.transactionAmount,
-                { color: transaction.amount >= 0 ? COLORS.success : COLORS.error }
-              ]}>
-                {transaction.amount >= 0 ? '+' : ''}R$ {Math.abs(transaction.amount).toFixed(2)}
-              </Text>
+                styles.emptyText,
+                isDesktop && { fontSize: TYPOGRAPHY.sizes.base }
+              ]}>Nenhuma movimentação ainda</Text>
             </View>
-          ))}
+          ) : (
+            MOCK_TRANSACTIONS.map(transaction => (
+              <View key={transaction.id} style={[
+                styles.transactionItem,
+                isDesktop && { paddingVertical: SPACING.md }
+              ]}>
+                <View style={[
+                  styles.transactionIcon,
+                  { backgroundColor: getTransactionColor(transaction.type) + '20' },
+                  isDesktop && { width: 48, height: 48, borderRadius: 24 }
+                ]}>
+                  <Ionicons
+                    name={getTransactionIcon(transaction.type)}
+                    size={isDesktop ? 24 : 20}
+                    color={getTransactionColor(transaction.type)}
+                  />
+                </View>
+                <View style={styles.transactionInfo}>
+                  <Text style={[
+                    styles.transactionDescription,
+                    isDesktop && { fontSize: TYPOGRAPHY.sizes.base }
+                  ]}>{transaction.description}</Text>
+                  <Text style={[
+                    styles.transactionDate,
+                    isDesktop && { fontSize: TYPOGRAPHY.sizes.sm }
+                  ]}>{transaction.date}</Text>
+                </View>
+                <Text style={[
+                  styles.transactionAmount,
+                  { color: transaction.amount >= 0 ? COLORS.success : COLORS.error },
+                  isDesktop && { fontSize: TYPOGRAPHY.sizes.lg }
+                ]}>
+                  {transaction.amount >= 0 ? '+' : ''}R$ {Math.abs(transaction.amount).toFixed(2)}
+                </Text>
+              </View>
+            ))
+          )}
         </View>
       </ScrollView>
     </View>
@@ -176,7 +277,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
@@ -192,8 +292,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.md,
-    paddingHorizontal: isDesktop ? 60 : SPACING.md,
-    maxWidth: isDesktop ? 700 : '100%',
     alignSelf: 'center',
     width: '100%',
   },
@@ -348,5 +446,15 @@ const styles = StyleSheet.create({
   transactionAmount: {
     fontSize: TYPOGRAPHY.sizes.base,
     fontWeight: TYPOGRAPHY.weights.semibold,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.xl,
+  },
+  emptyText: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    color: COLORS.textTertiary,
+    marginTop: SPACING.sm,
   },
 });

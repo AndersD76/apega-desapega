@@ -9,7 +9,7 @@ import {
   Linking,
   Alert,
   Platform,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,9 +17,7 @@ import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../constant
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
-const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
-const isDesktop = isWeb && width > 768;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Help'>;
 
@@ -59,6 +57,9 @@ const FAQS: FAQ[] = [
 
 export default function HelpScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isDesktop = isWeb && width > 768;
+  const isTablet = isWeb && width > 480 && width <= 768;
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const toggleExpand = (id: string) => {
@@ -90,20 +91,29 @@ export default function HelpScreen({ navigation }: Props) {
   const renderFAQItem = (faq: FAQ) => (
     <TouchableOpacity
       key={faq.id}
-      style={styles.faqItem}
+      style={[
+        styles.faqItem,
+        isDesktop && { padding: SPACING.lg }
+      ]}
       onPress={() => toggleExpand(faq.id)}
       activeOpacity={0.7}
     >
       <View style={styles.faqHeader}>
-        <Text style={styles.faqQuestion}>{faq.question}</Text>
+        <Text style={[
+          styles.faqQuestion,
+          isDesktop && { fontSize: TYPOGRAPHY.sizes.lg }
+        ]}>{faq.question}</Text>
         <Ionicons
           name={expandedId === faq.id ? 'chevron-up' : 'chevron-down'}
-          size={20}
+          size={isDesktop ? 24 : 20}
           color={COLORS.textSecondary}
         />
       </View>
       {expandedId === faq.id && (
-        <Text style={styles.faqAnswer}>{faq.answer}</Text>
+        <Text style={[
+          styles.faqAnswer,
+          isDesktop && { fontSize: TYPOGRAPHY.sizes.base, lineHeight: 26 }
+        ]}>{faq.answer}</Text>
       )}
     </TouchableOpacity>
   );
@@ -112,69 +122,135 @@ export default function HelpScreen({ navigation }: Props) {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + SPACING.sm }]}>
+      <View style={[
+        styles.header,
+        {
+          paddingTop: insets.top + SPACING.sm,
+          paddingHorizontal: isDesktop ? 60 : isTablet ? 40 : SPACING.md,
+        }
+      ]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>ajuda e suporte</Text>
+        <Text style={[
+          styles.headerTitle,
+          isDesktop && { fontSize: TYPOGRAPHY.sizes.xl }
+        ]}>ajuda e suporte</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingHorizontal: isDesktop ? 60 : isTablet ? 40 : SPACING.md,
+            maxWidth: isDesktop ? 800 : isTablet ? 600 : '100%',
+          }
+        ]}
       >
         {/* Contact Options */}
         <View style={styles.contactSection}>
-          <Text style={styles.sectionTitle}>fale conosco</Text>
-          <TouchableOpacity style={styles.whatsappCard} onPress={openWhatsApp}>
-            <View style={styles.whatsappIconContainer}>
-              <Ionicons name="logo-whatsapp" size={32} color="#25D366" />
+          <Text style={[
+            styles.sectionTitle,
+            isDesktop && { fontSize: TYPOGRAPHY.sizes.base }
+          ]}>fale conosco</Text>
+          <TouchableOpacity style={[
+            styles.whatsappCard,
+            isDesktop && { padding: SPACING.lg }
+          ]} onPress={openWhatsApp}>
+            <View style={[
+              styles.whatsappIconContainer,
+              isDesktop && { width: 64, height: 64 }
+            ]}>
+              <Ionicons name="logo-whatsapp" size={isDesktop ? 40 : 32} color="#25D366" />
             </View>
             <View style={styles.whatsappInfo}>
-              <Text style={styles.whatsappTitle}>WhatsApp</Text>
-              <Text style={styles.whatsappNumber}>(54) 99964-8368</Text>
-              <Text style={styles.whatsappHint}>Toque para abrir</Text>
+              <Text style={[
+                styles.whatsappTitle,
+                isDesktop && { fontSize: TYPOGRAPHY.sizes.xl }
+              ]}>WhatsApp</Text>
+              <Text style={[
+                styles.whatsappNumber,
+                isDesktop && { fontSize: TYPOGRAPHY.sizes.lg }
+              ]}>(54) 99964-8368</Text>
+              <Text style={[
+                styles.whatsappHint,
+                isDesktop && { fontSize: TYPOGRAPHY.sizes.sm }
+              ]}>Toque para abrir</Text>
             </View>
-            <Ionicons name="chevron-forward" size={24} color={COLORS.textTertiary} />
+            <Ionicons name="chevron-forward" size={isDesktop ? 28 : 24} color={COLORS.textTertiary} />
           </TouchableOpacity>
         </View>
 
         {/* FAQ Section */}
         <View style={styles.faqSection}>
-          <Text style={styles.sectionTitle}>perguntas frequentes</Text>
+          <Text style={[
+            styles.sectionTitle,
+            isDesktop && { fontSize: TYPOGRAPHY.sizes.base }
+          ]}>perguntas frequentes</Text>
           {FAQS.map(renderFAQItem)}
         </View>
 
         {/* Quick Links */}
-        <View style={styles.linksSection}>
-          <Text style={styles.sectionTitle}>links úteis</Text>
+        <View style={[
+          styles.linksSection,
+          isDesktop && { padding: SPACING.lg }
+        ]}>
+          <Text style={[
+            styles.sectionTitle,
+            isDesktop && { fontSize: TYPOGRAPHY.sizes.base }
+          ]}>links úteis</Text>
 
-          <TouchableOpacity style={styles.linkItem}>
-            <Ionicons name="book-outline" size={20} color={COLORS.textSecondary} />
-            <Text style={styles.linkText}>guia do vendedor</Text>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textTertiary} />
+          <TouchableOpacity style={[
+            styles.linkItem,
+            isDesktop && { paddingVertical: SPACING.lg }
+          ]}>
+            <Ionicons name="book-outline" size={isDesktop ? 24 : 20} color={COLORS.textSecondary} />
+            <Text style={[
+              styles.linkText,
+              isDesktop && { fontSize: TYPOGRAPHY.sizes.lg }
+            ]}>guia do vendedor</Text>
+            <Ionicons name="chevron-forward" size={isDesktop ? 24 : 20} color={COLORS.textTertiary} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.linkItem}>
-            <Ionicons name="shield-outline" size={20} color={COLORS.textSecondary} />
-            <Text style={styles.linkText}>política de segurança</Text>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textTertiary} />
+          <TouchableOpacity style={[
+            styles.linkItem,
+            isDesktop && { paddingVertical: SPACING.lg }
+          ]}>
+            <Ionicons name="shield-outline" size={isDesktop ? 24 : 20} color={COLORS.textSecondary} />
+            <Text style={[
+              styles.linkText,
+              isDesktop && { fontSize: TYPOGRAPHY.sizes.lg }
+            ]}>política de segurança</Text>
+            <Ionicons name="chevron-forward" size={isDesktop ? 24 : 20} color={COLORS.textTertiary} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.linkItem}>
-            <Ionicons name="return-down-back-outline" size={20} color={COLORS.textSecondary} />
-            <Text style={styles.linkText}>política de devolução</Text>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textTertiary} />
+          <TouchableOpacity style={[
+            styles.linkItem,
+            isDesktop && { paddingVertical: SPACING.lg }
+          ]}>
+            <Ionicons name="return-down-back-outline" size={isDesktop ? 24 : 20} color={COLORS.textSecondary} />
+            <Text style={[
+              styles.linkText,
+              isDesktop && { fontSize: TYPOGRAPHY.sizes.lg }
+            ]}>política de devolução</Text>
+            <Ionicons name="chevron-forward" size={isDesktop ? 24 : 20} color={COLORS.textTertiary} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.linkItem}>
-            <Ionicons name="help-circle-outline" size={20} color={COLORS.textSecondary} />
-            <Text style={styles.linkText}>central de ajuda completa</Text>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textTertiary} />
+          <TouchableOpacity style={[
+            styles.linkItem,
+            isDesktop && { paddingVertical: SPACING.lg }
+          ]}>
+            <Ionicons name="help-circle-outline" size={isDesktop ? 24 : 20} color={COLORS.textSecondary} />
+            <Text style={[
+              styles.linkText,
+              isDesktop && { fontSize: TYPOGRAPHY.sizes.lg }
+            ]}>central de ajuda completa</Text>
+            <Ionicons name="chevron-forward" size={isDesktop ? 24 : 20} color={COLORS.textTertiary} />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -191,7 +267,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
@@ -207,8 +282,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.md,
-    paddingHorizontal: isDesktop ? 60 : SPACING.md,
-    maxWidth: isDesktop ? 700 : '100%',
     alignSelf: 'center',
     width: '100%',
   },

@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   StatusBar,
   Platform,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,9 +16,7 @@ import { BottomNavigation, AppHeader, Tab, Button } from '../components';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
-const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
-const isDesktop = isWeb && width > 768;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Orders'>;
 
@@ -41,6 +39,9 @@ const MOCK_ORDERS: Order[] = [];
 
 export default function OrdersScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isDesktop = isWeb && width > 768;
+  const isTablet = isWeb && width > 480 && width <= 768;
   const [activeTab, setActiveTab] = useState<string>('all');
 
   const tabs = [
@@ -77,36 +78,64 @@ export default function OrdersScreen({ navigation }: Props) {
   const renderOrderCard = (order: Order) => (
     <TouchableOpacity
       key={order.id}
-      style={styles.orderCard}
+      style={[
+        styles.orderCard,
+        isDesktop && { padding: SPACING.lg }
+      ]}
       onPress={() => console.log('Order details', order.id)}
       activeOpacity={0.7}
     >
       <View style={styles.orderHeader}>
-        <Text style={styles.orderId}>pedido #{order.orderId}</Text>
+        <Text style={[
+          styles.orderId,
+          isDesktop && { fontSize: TYPOGRAPHY.sizes.lg }
+        ]}>pedido #{order.orderId}</Text>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '20' }]}>
-          <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
+          <Text style={[
+            styles.statusText,
+            { color: getStatusColor(order.status) },
+            isDesktop && { fontSize: TYPOGRAPHY.sizes.sm }
+          ]}>
             {getStatusLabel(order.status)}
           </Text>
         </View>
       </View>
 
       <View style={styles.orderProduct}>
-        <View style={styles.productImage}>
-          <Ionicons name="image" size={32} color={COLORS.textTertiary} />
+        <View style={[
+          styles.productImage,
+          isDesktop && { width: 80, height: 80 }
+        ]}>
+          <Ionicons name="image" size={isDesktop ? 40 : 32} color={COLORS.textTertiary} />
         </View>
         <View style={styles.productInfo}>
-          <Text style={styles.productName}>{order.product.name}</Text>
+          <Text style={[
+            styles.productName,
+            isDesktop && { fontSize: TYPOGRAPHY.sizes.lg }
+          ]}>{order.product.name}</Text>
           {order.product.size && (
-            <Text style={styles.productSize}>tamanho {order.product.size}</Text>
+            <Text style={[
+              styles.productSize,
+              isDesktop && { fontSize: TYPOGRAPHY.sizes.base }
+            ]}>tamanho {order.product.size}</Text>
           )}
-          <Text style={styles.sellerName}>vendedor: {order.seller}</Text>
+          <Text style={[
+            styles.sellerName,
+            isDesktop && { fontSize: TYPOGRAPHY.sizes.base }
+          ]}>vendedor: {order.seller}</Text>
         </View>
       </View>
 
       <View style={styles.orderFooter}>
         <View>
-          <Text style={styles.orderDate}>{order.date}</Text>
-          <Text style={styles.orderAmount}>R$ {order.amount.toFixed(2)}</Text>
+          <Text style={[
+            styles.orderDate,
+            isDesktop && { fontSize: TYPOGRAPHY.sizes.sm }
+          ]}>{order.date}</Text>
+          <Text style={[
+            styles.orderAmount,
+            isDesktop && { fontSize: TYPOGRAPHY.sizes.xl }
+          ]}>R$ {order.amount.toFixed(2)}</Text>
         </View>
         {order.status === 'in_transit' && order.trackingCode && (
           <Button
@@ -131,14 +160,23 @@ export default function OrdersScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-      <View style={[styles.header, { paddingTop: insets.top + SPACING.sm }]}>
+      <View style={[
+        styles.header,
+        {
+          paddingTop: insets.top + SPACING.sm,
+          paddingHorizontal: isDesktop ? 60 : isTablet ? 40 : SPACING.md,
+        }
+      ]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>meus pedidos</Text>
+        <Text style={[
+          styles.headerTitle,
+          isDesktop && { fontSize: TYPOGRAPHY.sizes.xl }
+        ]}>meus pedidos</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -150,15 +188,27 @@ export default function OrdersScreen({ navigation }: Props) {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingHorizontal: isDesktop ? 60 : isTablet ? 40 : SPACING.md,
+            maxWidth: isDesktop ? 800 : isTablet ? 600 : '100%',
+          }
+        ]}
       >
         {filteredOrders.length > 0 ? (
           filteredOrders.map(renderOrderCard)
         ) : (
           <View style={styles.emptyState}>
-            <Ionicons name="cube-outline" size={64} color={COLORS.textTertiary} />
-            <Text style={styles.emptyTitle}>nenhum pedido</Text>
-            <Text style={styles.emptySubtitle}>
+            <Ionicons name="cube-outline" size={isDesktop ? 80 : 64} color={COLORS.textTertiary} />
+            <Text style={[
+              styles.emptyTitle,
+              isDesktop && { fontSize: TYPOGRAPHY.sizes.xl }
+            ]}>nenhum pedido</Text>
+            <Text style={[
+              styles.emptySubtitle,
+              isDesktop && { fontSize: TYPOGRAPHY.sizes.base }
+            ]}>
               seus pedidos aparecerão aqui
             </Text>
           </View>
@@ -181,7 +231,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
@@ -197,8 +246,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.md,
-    paddingHorizontal: isDesktop ? 60 : SPACING.md,
-    maxWidth: isDesktop ? 800 : '100%',
     alignSelf: 'center',
     width: '100%',
   },

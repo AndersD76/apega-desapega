@@ -123,10 +123,10 @@ async function analyzeClothing(imageUrl) {
  */
 async function virtualTryOn(clothingImageUrl, modelImageUrl = null) {
   try {
-    const REPLICATE_API_KEY = process.env.REPLICATE_API_KEY;
+    const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
 
-    if (!REPLICATE_API_KEY) {
-      throw new Error('REPLICATE_API_KEY não configurada');
+    if (!REPLICATE_API_TOKEN) {
+      throw new Error('REPLICATE_API_TOKEN não configurada');
     }
 
     // Usar modelo padrão se não fornecido
@@ -145,7 +145,7 @@ async function virtualTryOn(clothingImageUrl, modelImageUrl = null) {
       },
       {
         headers: {
-          'Authorization': `Token ${REPLICATE_API_KEY}`,
+          'Authorization': `Token ${REPLICATE_API_TOKEN}`,
           'Content-Type': 'application/json',
         },
       }
@@ -186,10 +186,10 @@ async function virtualTryOn(clothingImageUrl, modelImageUrl = null) {
  */
 async function removeBackground(imageUrl) {
   try {
-    const REMOVEBG_API_KEY = process.env.REMOVEBG_API_KEY;
+    const REMOVE_BG_API_KEY = process.env.REMOVE_BG_API_KEY;
 
-    if (!REMOVEBG_API_KEY) {
-      throw new Error('REMOVEBG_API_KEY não configurada');
+    if (!REMOVE_BG_API_KEY) {
+      throw new Error('REMOVE_BG_API_KEY não configurada');
     }
 
     const response = await axios.post(
@@ -201,7 +201,7 @@ async function removeBackground(imageUrl) {
       },
       {
         headers: {
-          'X-Api-Key': REMOVEBG_API_KEY,
+          'X-Api-Key': REMOVE_BG_API_KEY,
           'Content-Type': 'application/json',
         },
         responseType: 'arraybuffer',
@@ -382,8 +382,8 @@ function suggestCategory(analysis) {
 function getServicesStatus() {
   return {
     claude: !!process.env.ANTHROPIC_API_KEY,
-    replicate: !!process.env.REPLICATE_API_KEY,
-    removebg: !!process.env.REMOVEBG_API_KEY,
+    replicate: !!process.env.REPLICATE_API_TOKEN,
+    removebg: !!process.env.REMOVE_BG_API_KEY,
     photoroom: !!process.env.PHOTOROOM_API_KEY,
   };
 }

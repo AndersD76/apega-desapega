@@ -11,8 +11,8 @@ const router = express.Router();
 
 // Preços das assinaturas
 const SUBSCRIPTION_PRICES = {
-  monthly: 49.90,
-  yearly: 499.90
+  monthly: 19.90,
+  yearly: 199.90  // 10 meses pelo preço de 12
 };
 
 /**
@@ -240,6 +240,170 @@ router.post('/cancel', authenticate, async (req, res, next) => {
       message: 'Assinatura cancelada. Você terá acesso até o fim do período pago.'
     });
   } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/subscriptions/plans
+ * Listar planos disponíveis
+ */
+router.get('/plans', (req, res) => {
+  res.json({
+    success: true,
+    plans: [
+      {
+        id: 'free',
+        name: 'Grátis',
+        price: 0,
+        features: [
+          'Publicar até 10 produtos',
+          'Fotos padrão',
+          'Chat com compradores'
+        ],
+        aiFeatures: false
+      },
+      {
+        id: 'monthly',
+        name: 'Premium Mensal',
+        price: SUBSCRIPTION_PRICES.monthly,
+        period: 'mês',
+        features: [
+          'Produtos ilimitados',
+          'Análise de roupas com IA',
+          'Sugestão automática de preço',
+          'Remoção de fundo das fotos',
+          'Melhoria de imagem com IA',
+          'Destaque nos resultados',
+          'Suporte prioritário'
+        ],
+        aiFeatures: true,
+        popular: true
+      },
+      {
+        id: 'yearly',
+        name: 'Premium Anual',
+        price: SUBSCRIPTION_PRICES.yearly,
+        period: 'ano',
+        monthlyPrice: (SUBSCRIPTION_PRICES.yearly / 12).toFixed(2),
+        savings: 'Economize R$ ' + ((SUBSCRIPTION_PRICES.monthly * 12) - SUBSCRIPTION_PRICES.yearly).toFixed(2),
+        features: [
+          'Todos os benefícios do mensal',
+          'Economia de 2 meses',
+          'Prova virtual com IA (em breve)'
+        ],
+        aiFeatures: true
+      }
+    ]
+  });
+});
+
+/**
+ * GET /api/subscriptions/check-expired
+ * Verificar e desativar assinaturas vencidas
+ * Esta rota deve ser chamada por um cron job diário
+ */
+router.get('/check-expired', async (req, res, next) => {
+  try {
+    // Buscar e atualizar usuários com assinatura vencida
+    const expiredUsers = await sql`
+      UPDATE users
+      SET subscription_type = 'free'
+      WHERE subscription_type = 'premium'
+        AND subscription_expires_at IS NOT NULL
+        AND subscription_expires_at < NOW()
+      RETURNING id, email, name
+    `;
+
+    // Atualizar assinaturas na tabela subscriptions
+    await sql`
+      UPDATE subscriptions
+      SET status = 'expired'
+      WHERE status = 'active'
+        AND expires_at < NOW()
+    `;
+
+    // Criar notificações para usuários expirados
+    for (const user of expiredUsers) {
+      await sql`
+        INSERT INTO notifications (user_id, type, title, message, data)
+        VALUES (
+          ${user.id},
+          'subscription_expired',
+          'Sua assinatura Premium expirou',
+          'Renove sua assinatura para continuar usando os recursos de IA.',
+          ${JSON.stringify({ action: 'renew_subscription' })}
+        )
+      `;
+    }
+
+    console.log(`🔄 ${expiredUsers.length} assinaturas vencidas processadas`);
+
+    res.json({
+      success: true,
+      processedCount: expiredUsers.length,
+      expiredUsers: expiredUsers.map(u => ({ id: u.id, email: u.email }))
+    });
+
+  } catch (error) {
+    console.error('Erro ao verificar assinaturas vencidas:', error);
+    next(error);
+  }
+});
+
+/**
+ * GET /api/subscriptions/notify-expiring
+ * Notificar usuários com assinatura prestes a expirar
+ * Esta rota deve ser chamada por um cron job diário
+ */
+router.get('/notify-expiring', async (req, res, next) => {
+  try {
+    // Buscar usuários com assinatura expirando em 3 dias
+    const expiringUsers = await sql`
+      SELECT id, email, name, subscription_expires_at
+      FROM users
+      WHERE subscription_type = 'premium'
+        AND subscription_expires_at IS NOT NULL
+        AND subscription_expires_at BETWEEN NOW() AND NOW() + INTERVAL '3 days'
+    `;
+
+    // Criar notificações
+    for (const user of expiringUsers) {
+      const daysLeft = Math.ceil(
+        (new Date(user.subscription_expires_at) - new Date()) / (1000 * 60 * 60 * 24)
+      );
+
+      // Verificar se já foi notificado hoje
+      const existingNotification = await sql`
+        SELECT id FROM notifications
+        WHERE user_id = ${user.id}
+          AND type = 'subscription_expiring'
+          AND created_at > NOW() - INTERVAL '1 day'
+      `;
+
+      if (existingNotification.length === 0) {
+        await sql`
+          INSERT INTO notifications (user_id, type, title, message, data)
+          VALUES (
+            ${user.id},
+            'subscription_expiring',
+            'Sua assinatura está expirando',
+            ${`Sua assinatura Premium expira em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}. Renove para não perder o acesso!`},
+            ${JSON.stringify({ action: 'renew_subscription', daysLeft })}
+          )
+        `;
+      }
+    }
+
+    console.log(`📧 ${expiringUsers.length} notificações de expiração enviadas`);
+
+    res.json({
+      success: true,
+      notifiedCount: expiringUsers.length
+    });
+
+  } catch (error) {
+    console.error('Erro ao notificar assinaturas expirando:', error);
     next(error);
   }
 });

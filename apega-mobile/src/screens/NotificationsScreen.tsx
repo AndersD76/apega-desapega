@@ -8,7 +8,7 @@ import {
   SectionList,
   StatusBar,
   Platform,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,9 +17,7 @@ import { BottomNavigation, Tab, EmptyState } from '../components';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
-const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
-const isDesktop = isWeb && width > 768;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Notifications'>;
 type TabItem = { id: string; label: string };
@@ -44,6 +42,9 @@ const MOCK_NOTIFICATIONS: NotificationSection[] = [];
 
 export default function NotificationsScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isDesktop = isWeb && width > 768;
+  const isTablet = isWeb && width > 480 && width <= 768;
   const [activeTab, setActiveTab] = useState<string>('all');
   const [notifications, setNotifications] = useState<NotificationSection[]>(MOCK_NOTIFICATIONS);
 
@@ -79,30 +80,50 @@ export default function NotificationsScreen({ navigation }: Props) {
       style={[
         styles.notificationCard,
         !item.read && styles.notificationUnread,
+        {
+          marginHorizontal: isDesktop ? 60 : isTablet ? 40 : SPACING.md,
+          padding: isDesktop ? SPACING.lg : SPACING.md,
+        }
       ]}
       onPress={() => handleNotificationPress(item)}
       activeOpacity={0.7}
     >
-      <Text style={styles.notificationIcon}>{item.icon}</Text>
+      <Text style={[
+        styles.notificationIcon,
+        isDesktop && { fontSize: 40 }
+      ]}>{item.icon}</Text>
       <View style={styles.notificationContent}>
         <Text
           style={[
             styles.notificationTitle,
             !item.read && styles.notificationTitleUnread,
+            isDesktop && { fontSize: TYPOGRAPHY.sizes.lg }
           ]}
         >
           {item.title}
         </Text>
-        <Text style={styles.notificationDescription}>{item.description}</Text>
-        <Text style={styles.notificationTime}>{item.time}</Text>
+        <Text style={[
+          styles.notificationDescription,
+          isDesktop && { fontSize: TYPOGRAPHY.sizes.base, lineHeight: 22 }
+        ]}>{item.description}</Text>
+        <Text style={[
+          styles.notificationTime,
+          isDesktop && { fontSize: TYPOGRAPHY.sizes.sm }
+        ]}>{item.time}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color={COLORS.textTertiary} />
+      <Ionicons name="chevron-forward" size={isDesktop ? 24 : 20} color={COLORS.textTertiary} />
     </TouchableOpacity>
   );
 
   const renderSectionHeader = ({ section }: { section: NotificationSection }) => (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{section.title}</Text>
+    <View style={[
+      styles.sectionHeader,
+      { paddingHorizontal: isDesktop ? 60 : isTablet ? 40 : SPACING.md }
+    ]}>
+      <Text style={[
+        styles.sectionTitle,
+        isDesktop && { fontSize: TYPOGRAPHY.sizes.sm }
+      ]}>{section.title}</Text>
     </View>
   );
 
@@ -117,18 +138,29 @@ export default function NotificationsScreen({ navigation }: Props) {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
 
-      <View style={[styles.header, { paddingTop: insets.top + SPACING.sm }]}>
+      <View style={[
+        styles.header,
+        {
+          paddingTop: insets.top + SPACING.sm,
+          paddingHorizontal: isDesktop ? 60 : isTablet ? 40 : SPACING.md,
+        }
+      ]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>notificações</Text>
-        {hasNotifications && (
+        <Text style={[
+          styles.headerTitle,
+          isDesktop && { fontSize: TYPOGRAPHY.sizes.xl }
+        ]}>notificações</Text>
+        {hasNotifications ? (
           <TouchableOpacity onPress={handleMarkAllRead} style={styles.markAllButton}>
             <Ionicons name="checkmark-done-outline" size={24} color={COLORS.primary} />
           </TouchableOpacity>
+        ) : (
+          <View style={{ width: 40 }} />
         )}
       </View>
 
@@ -145,7 +177,10 @@ export default function NotificationsScreen({ navigation }: Props) {
           keyExtractor={(item) => item.id}
           renderItem={renderNotification}
           renderSectionHeader={renderSectionHeader}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            { maxWidth: isDesktop ? 800 : isTablet ? 600 : '100%' }
+          ]}
           stickySectionHeadersEnabled
         />
       ) : (
@@ -173,7 +208,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: COLORS.white,
-    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingBottom: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
@@ -194,13 +228,11 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 80,
-    maxWidth: isDesktop ? 700 : '100%',
     alignSelf: 'center',
     width: '100%',
   },
   sectionHeader: {
     backgroundColor: COLORS.background,
-    paddingHorizontal: isDesktop ? 60 : SPACING.md,
     paddingVertical: SPACING.sm,
   },
   sectionTitle: {
@@ -214,9 +246,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    marginHorizontal: isDesktop ? 60 : SPACING.md,
     marginBottom: SPACING.sm,
-    padding: SPACING.md,
     borderRadius: BORDER_RADIUS.md,
     ...SHADOWS.xs,
   },
