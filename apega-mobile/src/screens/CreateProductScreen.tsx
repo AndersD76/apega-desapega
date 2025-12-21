@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,9 @@ import {
   Alert,
   Platform,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
@@ -18,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS, CATEGORIES, FEES } from '../constants/theme';
 import { Input, Button, Pill, Modal } from '../components';
 import { createProduct } from '../services/products';
+import { analyzeClothing, checkAIAccess, AIAnalysisResult, AIAccessStatus } from '../services/ai';
 
 interface CreateProductScreenProps {
   navigation: any;
@@ -45,11 +48,103 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // AI States
+  const [aiAccess, setAiAccess] = useState<AIAccessStatus | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiResult, setAiResult] = useState<AIAnalysisResult | null>(null);
+  const [showAiResult, setShowAiResult] = useState(false);
+
+  // Check AI access on mount
+  useEffect(() => {
+    const checkAccess = async () => {
+      try {
+        const access = await checkAIAccess();
+        setAiAccess(access);
+      } catch (error) {
+        console.log('Usuário não tem acesso à IA');
+      }
+    };
+    checkAccess();
+  }, []);
+
   const handleAddPhoto = () => {
     if (photos.length < 8) {
       // Placeholder - integrate with image picker
       setPhotos([...photos, `photo-${photos.length + 1}`]);
     }
+  };
+
+  // AI Analysis function
+  const handleAIAnalysis = async () => {
+    if (photos.length === 0) {
+      Alert.alert('Atenção', 'Adicione pelo menos uma foto para análise');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      // For now, using a placeholder URL - in production, use the actual uploaded image URL
+      const imageUrl = photos[0]; // This should be the actual image URL
+      const result = await analyzeClothing(imageUrl);
+      setAiResult(result);
+      setShowAiResult(true);
+    } catch (error: any) {
+      Alert.alert('Erro', error.message || 'Falha ao analisar imagem');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Apply AI suggestions to form
+  const applyAISuggestions = () => {
+    if (!aiResult) return;
+
+    // Apply title/type
+    if (aiResult.tipo && !title) {
+      setTitle(aiResult.tipo);
+    }
+
+    // Apply description
+    if (aiResult.descricaoSugerida && !description) {
+      setDescription(aiResult.descricaoSugerida);
+    }
+
+    // Apply brand
+    if (aiResult.marca && !brand) {
+      const marcaLower = aiResult.marca.toLowerCase();
+      if (BRANDS.includes(marcaLower)) {
+        setBrand(marcaLower);
+      }
+    }
+
+    // Apply size
+    if (aiResult.tamanho && !selectedSize) {
+      const tamanhoUpper = aiResult.tamanho.toUpperCase();
+      if (SIZES.includes(tamanhoUpper)) {
+        setSelectedSize(tamanhoUpper);
+      }
+    }
+
+    // Apply condition
+    if (aiResult.condicao && !condition) {
+      const condicaoLower = aiResult.condicao.toLowerCase();
+      if (CONDITIONS.includes(condicaoLower)) {
+        setCondition(condicaoLower);
+      }
+    }
+
+    // Apply suggested price
+    if (aiResult.precoSugerido?.recomendado && !price) {
+      setPrice(aiResult.precoSugerido.recomendado.toString());
+    }
+
+    // Apply materials to composition
+    if (aiResult.materiais?.length > 0 && !composition) {
+      setComposition(aiResult.materiais.join(', '));
+    }
+
+    setShowAiResult(false);
+    Alert.alert('Sucesso', 'Sugestões aplicadas! Revise e ajuste se necessário.');
   };
 
   const handleRemovePhoto = (index: number) => {
@@ -165,6 +260,55 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
         </ScrollView>
 
         <Text style={styles.photoHint}>↓ arraste para ordenar</Text>
+
+        {/* AI Analysis Button */}
+        {aiAccess?.hasAccess && photos.length > 0 && (
+          <TouchableOpacity
+            style={styles.aiButton}
+            onPress={handleAIAnalysis}
+            disabled={isAnalyzing}
+          >
+            <LinearGradient
+              colors={['#8B5CF6', '#6366F1']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.aiButtonGradient}
+            >
+              {isAnalyzing ? (
+                <>
+                  <ActivityIndicator size="small" color="#FFF" />
+                  <Text style={styles.aiButtonText}>Analisando com IA...</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="sparkles" size={20} color="#FFF" />
+                  <Text style={styles.aiButtonText}>Analisar com IA</Text>
+                  <View style={styles.aiBadge}>
+                    <Text style={styles.aiBadgeText}>
+                      {aiAccess.isPremium ? 'Premium' : 'Grátis'}
+                    </Text>
+                  </View>
+                </>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+
+        {/* AI Access Promo (for users without access) */}
+        {!aiAccess?.hasAccess && photos.length > 0 && (
+          <TouchableOpacity style={styles.aiPromoButton}>
+            <View style={styles.aiPromoContent}>
+              <Ionicons name="sparkles" size={20} color={COLORS.primary} />
+              <View style={styles.aiPromoTextContainer}>
+                <Text style={styles.aiPromoTitle}>IA Premium</Text>
+                <Text style={styles.aiPromoSubtitle}>
+                  Análise automática, sugestão de preço e mais
+                </Text>
+              </View>
+              <Ionicons name="lock-closed" size={16} color={COLORS.textTertiary} />
+            </View>
+          </TouchableOpacity>
+        )}
 
         {/* Tip Banner */}
         <View style={styles.tipBanner}>
@@ -450,6 +594,130 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
             }}
             fullWidth
           />
+        </View>
+      </Modal>
+
+      {/* AI Results Modal */}
+      <Modal
+        visible={showAiResult}
+        onClose={() => setShowAiResult(false)}
+        type="center"
+      >
+        <View style={styles.aiResultModal}>
+          <View style={styles.aiResultHeader}>
+            <LinearGradient
+              colors={['#8B5CF6', '#6366F1']}
+              style={styles.aiResultIcon}
+            >
+              <Ionicons name="sparkles" size={24} color="#FFF" />
+            </LinearGradient>
+            <Text style={styles.aiResultTitle}>Análise da IA</Text>
+            <Text style={styles.aiResultSubtitle}>powered by Claude</Text>
+          </View>
+
+          {aiResult && (
+            <ScrollView style={styles.aiResultContent}>
+              {/* Product Type */}
+              <View style={styles.aiResultItem}>
+                <Text style={styles.aiResultLabel}>Tipo de Peça</Text>
+                <Text style={styles.aiResultValue}>{aiResult.tipo}</Text>
+              </View>
+
+              {/* Brand */}
+              {aiResult.marca && (
+                <View style={styles.aiResultItem}>
+                  <Text style={styles.aiResultLabel}>Marca Identificada</Text>
+                  <Text style={styles.aiResultValue}>{aiResult.marca}</Text>
+                </View>
+              )}
+
+              {/* Condition */}
+              <View style={styles.aiResultItem}>
+                <Text style={styles.aiResultLabel}>Condição</Text>
+                <Text style={styles.aiResultValue}>{aiResult.condicao}</Text>
+              </View>
+
+              {/* Size */}
+              {aiResult.tamanho && (
+                <View style={styles.aiResultItem}>
+                  <Text style={styles.aiResultLabel}>Tamanho</Text>
+                  <Text style={styles.aiResultValue}>{aiResult.tamanho}</Text>
+                </View>
+              )}
+
+              {/* Materials */}
+              {aiResult.materiais?.length > 0 && (
+                <View style={styles.aiResultItem}>
+                  <Text style={styles.aiResultLabel}>Materiais</Text>
+                  <Text style={styles.aiResultValue}>
+                    {aiResult.materiais.join(', ')}
+                  </Text>
+                </View>
+              )}
+
+              {/* Colors */}
+              {aiResult.cores?.length > 0 && (
+                <View style={styles.aiResultItem}>
+                  <Text style={styles.aiResultLabel}>Cores</Text>
+                  <Text style={styles.aiResultValue}>
+                    {aiResult.cores.join(', ')}
+                  </Text>
+                </View>
+              )}
+
+              {/* Suggested Price */}
+              <View style={styles.aiPriceCard}>
+                <Text style={styles.aiPriceLabel}>Preço Sugerido</Text>
+                <Text style={styles.aiPriceValue}>
+                  R$ {aiResult.precoSugerido?.recomendado?.toFixed(2) || '0,00'}
+                </Text>
+                <Text style={styles.aiPriceRange}>
+                  Faixa: R$ {aiResult.precoSugerido?.minimo?.toFixed(2) || '0'} -{' '}
+                  R$ {aiResult.precoSugerido?.maximo?.toFixed(2) || '0'}
+                </Text>
+              </View>
+
+              {/* Suggested Description */}
+              {aiResult.descricaoSugerida && (
+                <View style={styles.aiDescriptionCard}>
+                  <Text style={styles.aiDescriptionLabel}>Descrição Sugerida</Text>
+                  <Text style={styles.aiDescriptionText}>
+                    {aiResult.descricaoSugerida}
+                  </Text>
+                </View>
+              )}
+
+              {/* Keywords */}
+              {aiResult.palavrasChave?.length > 0 && (
+                <View style={styles.aiResultItem}>
+                  <Text style={styles.aiResultLabel}>Palavras-chave</Text>
+                  <View style={styles.aiKeywordsContainer}>
+                    {aiResult.palavrasChave.map((keyword, index) => (
+                      <View key={index} style={styles.aiKeyword}>
+                        <Text style={styles.aiKeywordText}>{keyword}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </ScrollView>
+          )}
+
+          <View style={styles.aiResultActions}>
+            <Button
+              label="Aplicar Sugestões"
+              variant="primary"
+              onPress={applyAISuggestions}
+              fullWidth
+              style={{ marginBottom: SPACING.sm }}
+            />
+            <Button
+              label="Fechar"
+              variant="secondary"
+              onPress={() => setShowAiResult(false)}
+              fullWidth
+            />
+          </View>
         </View>
       </Modal>
     </View>
@@ -788,5 +1056,162 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: SPACING.xl,
     maxWidth: 280,
+  },
+  // AI Styles
+  aiButton: {
+    marginBottom: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    overflow: 'hidden',
+  },
+  aiButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    gap: SPACING.sm,
+  },
+  aiButtonText: {
+    color: '#FFF',
+    fontSize: TYPOGRAPHY.sizes.base,
+    fontWeight: TYPOGRAPHY.weights.semibold,
+  },
+  aiBadge: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 2,
+    borderRadius: BORDER_RADIUS.full,
+  },
+  aiBadgeText: {
+    color: '#FFF',
+    fontSize: TYPOGRAPHY.sizes.xs,
+    fontWeight: TYPOGRAPHY.weights.medium,
+  },
+  aiPromoButton: {
+    marginBottom: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderWidth: 2,
+    borderColor: COLORS.primaryLight,
+    borderRadius: BORDER_RADIUS.md,
+    borderStyle: 'dashed',
+  },
+  aiPromoContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+    gap: SPACING.sm,
+  },
+  aiPromoTextContainer: {
+    flex: 1,
+  },
+  aiPromoTitle: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: TYPOGRAPHY.weights.semibold,
+    color: COLORS.textPrimary,
+  },
+  aiPromoSubtitle: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    color: COLORS.textSecondary,
+  },
+  // AI Results Modal Styles
+  aiResultModal: {
+    maxHeight: '80%',
+  },
+  aiResultHeader: {
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  aiResultIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  aiResultTitle: {
+    fontSize: TYPOGRAPHY.sizes.xl,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textPrimary,
+  },
+  aiResultSubtitle: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    color: COLORS.textTertiary,
+  },
+  aiResultContent: {
+    maxHeight: 400,
+  },
+  aiResultItem: {
+    marginBottom: SPACING.md,
+  },
+  aiResultLabel: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  aiResultValue: {
+    fontSize: TYPOGRAPHY.sizes.base,
+    color: COLORS.textPrimary,
+    fontWeight: TYPOGRAPHY.weights.medium,
+  },
+  aiPriceCard: {
+    backgroundColor: '#F0FDF4',
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  aiPriceLabel: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+  },
+  aiPriceValue: {
+    fontSize: TYPOGRAPHY.sizes['2xl'],
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: '#16A34A',
+  },
+  aiPriceRange: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+  aiDescriptionCard: {
+    backgroundColor: COLORS.gray[50],
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.md,
+  },
+  aiDescriptionLabel: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.sm,
+    textTransform: 'uppercase',
+  },
+  aiDescriptionText: {
+    fontSize: TYPOGRAPHY.sizes.sm,
+    color: COLORS.textPrimary,
+    lineHeight: 20,
+  },
+  aiKeywordsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.xs,
+    marginTop: 4,
+  },
+  aiKeyword: {
+    backgroundColor: COLORS.primaryLight,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+    borderRadius: BORDER_RADIUS.full,
+  },
+  aiKeywordText: {
+    fontSize: TYPOGRAPHY.sizes.xs,
+    color: COLORS.primary,
+  },
+  aiResultActions: {
+    marginTop: SPACING.lg,
   },
 });
