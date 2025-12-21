@@ -10,7 +10,15 @@ const multer = require('multer');
 const { sql } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { uploadToCloudinary } = require('../config/cloudinary');
-const { analyzeClothing, improveDescription, suggestCategory } = require('../services/ai');
+const {
+  analyzeClothing,
+  improveDescription,
+  suggestCategory,
+  virtualTryOn,
+  enhanceImage,
+  removeBackground,
+  getServicesStatus,
+} = require('../services/ai');
 
 const router = express.Router();
 
@@ -252,6 +260,152 @@ router.get('/free-slots', async (req, res) => {
     console.error('Erro ao buscar vagas:', error);
     res.status(500).json({ error: true, message: 'Erro ao buscar vagas' });
   }
+});
+
+/**
+ * POST /api/ai/virtual-tryon
+ * Gera virtual try-on (roupa no modelo)
+ * Apenas Premium
+ */
+router.post('/virtual-tryon', authenticate, checkAIAccess, async (req, res) => {
+  try {
+    // Verificar se é Premium (virtual try-on só para premium)
+    if (req.aiAccessType !== 'premium') {
+      return res.status(403).json({
+        error: true,
+        message: 'Virtual Try-On disponível apenas para assinantes Premium',
+        code: 'PREMIUM_ONLY'
+      });
+    }
+
+    const { clothingImageUrl, modelImageUrl } = req.body;
+
+    if (!clothingImageUrl) {
+      return res.status(400).json({ error: true, message: 'URL da imagem da roupa é obrigatória' });
+    }
+
+    const result = await virtualTryOn(clothingImageUrl, modelImageUrl);
+
+    res.json({
+      success: true,
+      ...result
+    });
+
+  } catch (error) {
+    console.error('Erro no virtual try-on:', error);
+    res.status(500).json({
+      error: true,
+      message: 'Erro ao gerar virtual try-on',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/ai/enhance-image
+ * Melhora a imagem (remove fundo, etc)
+ * Apenas Premium
+ */
+router.post('/enhance-image', authenticate, checkAIAccess, upload.single('image'), async (req, res) => {
+  try {
+    // Verificar se é Premium
+    if (req.aiAccessType !== 'premium') {
+      return res.status(403).json({
+        error: true,
+        message: 'Melhoria de imagem disponível apenas para assinantes Premium',
+        code: 'PREMIUM_ONLY'
+      });
+    }
+
+    let imageUrl = req.body.imageUrl;
+
+    // Se enviou arquivo, fazer upload para Cloudinary
+    if (req.file) {
+      const uploadResult = await uploadToCloudinary(req.file.buffer, {
+        folder: 'apega/ai-enhance',
+      });
+      imageUrl = uploadResult.secure_url;
+    }
+
+    if (!imageUrl) {
+      return res.status(400).json({ error: true, message: 'Envie uma imagem' });
+    }
+
+    const result = await enhanceImage(imageUrl);
+
+    res.json({
+      success: true,
+      ...result
+    });
+
+  } catch (error) {
+    console.error('Erro ao melhorar imagem:', error);
+    res.status(500).json({
+      error: true,
+      message: 'Erro ao melhorar imagem',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/ai/remove-background
+ * Remove fundo da imagem
+ * Apenas Premium
+ */
+router.post('/remove-background', authenticate, checkAIAccess, upload.single('image'), async (req, res) => {
+  try {
+    if (req.aiAccessType !== 'premium') {
+      return res.status(403).json({
+        error: true,
+        message: 'Remoção de fundo disponível apenas para assinantes Premium',
+        code: 'PREMIUM_ONLY'
+      });
+    }
+
+    let imageUrl = req.body.imageUrl;
+
+    if (req.file) {
+      const uploadResult = await uploadToCloudinary(req.file.buffer, {
+        folder: 'apega/ai-bg-remove',
+      });
+      imageUrl = uploadResult.secure_url;
+    }
+
+    if (!imageUrl) {
+      return res.status(400).json({ error: true, message: 'Envie uma imagem' });
+    }
+
+    const result = await removeBackground(imageUrl);
+
+    res.json({
+      success: true,
+      ...result
+    });
+
+  } catch (error) {
+    console.error('Erro ao remover fundo:', error);
+    res.status(500).json({
+      error: true,
+      message: 'Erro ao remover fundo',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/ai/services
+ * Retorna status dos serviços de IA configurados
+ */
+router.get('/services', async (req, res) => {
+  res.json({
+    services: getServicesStatus(),
+    providers: {
+      analysis: 'Claude 3.5 Sonnet (Anthropic)',
+      virtualTryOn: 'Replicate (Kolors)',
+      imageEnhancement: 'Photoroom / Remove.bg'
+    }
+  });
 });
 
 module.exports = router;
