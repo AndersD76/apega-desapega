@@ -300,7 +300,7 @@ export default function HomeScreen({ navigation }: Props) {
           useNativeDriver: true,
         }),
       ]).start(() => {
-        setCurrentImageIndex((prev) => (prev + 1) % CAROUSEL_IMAGES.length);
+        setCurrentImageIndex((prev) => (prev + 1) % CAROUSEL_BANNERS.length);
         infoSlideAnim.setValue(30);
         // Fade in animação paralela
         Animated.parallel([
