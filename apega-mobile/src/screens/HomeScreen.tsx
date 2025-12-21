@@ -31,11 +31,11 @@ const isDesktop = isWeb && width > 1024;
 const isTablet = isWeb && width > 600 && width <= 1024;
 const isMobile = !isDesktop && !isTablet;
 
-// Banners full-width do carrossel
+// Banners full-width do carrossel - SOMENTE PRODUTOS, SEM MODELOS
 const CAROUSEL_BANNERS = [
   {
-    // Mulheres fazendo compras de moda - combina com "Moda Circular"
-    uri: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1600&q=80',
+    // Arara de roupas coloridas - Moda Circular
+    uri: 'https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=1600&q=80',
     title: 'Moda Circular',
     subtitle: 'Renove seu guarda-roupa com peças únicas',
     highlight: 'ATÉ 70% OFF',
@@ -43,26 +43,26 @@ const CAROUSEL_BANNERS = [
     gradient: ['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.7)'],
   },
   {
-    // Roupas elegantes em cabide - combina com "Peças Premium"
-    uri: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&q=80',
+    // Blazers e roupas premium em cabides - Peças Premium
+    uri: 'https://images.unsplash.com/photo-1558171813-01ca2ae39523?w=1600&q=80',
     title: 'Peças Premium',
     subtitle: 'Farm, Animale, Zara e muito mais',
     highlight: 'EXCLUSIVO',
     cta: 'Ver coleção',
-    gradient: ['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.7)'],
+    gradient: ['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.8)'],
   },
   {
-    // Roupas com plantas/natureza - combina com "Sustentabilidade"
-    uri: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=1600&q=80',
+    // Roupas em tecidos naturais/algodão - Sustentabilidade
+    uri: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=1600&q=80',
     title: 'Sustentabilidade',
     subtitle: 'Moda consciente que faz a diferença',
     highlight: 'ECO-FRIENDLY',
     cta: 'Saiba mais',
-    gradient: ['rgba(45,90,39,0.3)', 'rgba(0,0,0,0.7)'],
+    gradient: ['rgba(45,90,39,0.2)', 'rgba(0,0,0,0.7)'],
   },
   {
-    // Bolsas de grife/luxo - combina com "Bolsas de Grife"
-    uri: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=1600&q=80',
+    // Bolsas de luxo expostas - Bolsas de Grife
+    uri: 'https://images.unsplash.com/photo-1591561954557-26941169b49e?w=1600&q=80',
     title: 'Bolsas de Grife',
     subtitle: 'Louis Vuitton, Gucci, Prada',
     highlight: 'IMPERDÍVEL',
