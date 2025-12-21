@@ -481,7 +481,7 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
         <LinearGradient
-          colors={['#f8faf9', '#fff']}
+          colors={redirectTo ? ['#fef9e7', '#fff'] : ['#f8faf9', '#fff']}
           style={StyleSheet.absoluteFill}
         />
 
@@ -489,7 +489,7 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
         <View style={[styles.formHeader, { paddingTop: insets.top + 12 }]}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => setCurrentScreen('main')}
+            onPress={() => redirectTo ? navigation.goBack() : setCurrentScreen('main')}
           >
             <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
@@ -505,19 +505,48 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Promo Banner - só mostra se veio do onboarding */}
+          {redirectTo && (
+            <View style={styles.promoBanner}>
+              <LinearGradient
+                colors={['#FFD700', '#FFA500']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.promoBannerGradient}
+              >
+                <View style={styles.promoBannerContent}>
+                  <View style={styles.promoBannerIcon}>
+                    <Ionicons name="diamond" size={24} color="#fff" />
+                  </View>
+                  <View style={styles.promoBannerText}>
+                    <Text style={styles.promoBannerTitle}>Você está garantindo sua vaga!</Text>
+                    <Text style={styles.promoBannerSubtitle}>0% comissão + IA Premium grátis</Text>
+                  </View>
+                </View>
+                <View style={styles.promoBannerBadge}>
+                  <Ionicons name="checkmark-circle" size={16} color="#FFD700" />
+                  <Text style={styles.promoBannerBadgeText}>10 vagas restantes</Text>
+                </View>
+              </LinearGradient>
+            </View>
+          )}
+
           {/* Form Icon */}
           <View style={styles.formIconContainer}>
             <LinearGradient
-              colors={['#e3f2fd', '#bbdefb']}
+              colors={redirectTo ? ['#FFF3CD', '#FFE69C'] : ['#e3f2fd', '#bbdefb']}
               style={styles.formIconGradient}
             >
-              <Ionicons name="sparkles" size={32} color="#1976d2" />
+              <Ionicons name={redirectTo ? 'diamond' : 'sparkles'} size={32} color={redirectTo ? '#D4A574' : '#1976d2'} />
             </LinearGradient>
           </View>
 
-          <Text style={styles.formTitle}>Criar Conta</Text>
+          <Text style={styles.formTitle}>{redirectTo ? 'Garantir Minha Vaga' : 'Criar Conta'}</Text>
           <Text style={styles.formSubtitle}>
-            Junte-se a milhares de pessoas que{'\n'}amam moda sustentável
+            {redirectTo
+              ? 'Crie sua conta e comece a vender\ncom IA Premium gratuita'
+              : 'Junte-se a milhares de pessoas que\namam moda sustentável'
+            }
           </Text>
 
           {/* Name Input */}
@@ -1102,5 +1131,68 @@ const styles = StyleSheet.create({
   backToLoginText: {
     fontSize: 14,
     color: COLORS.textSecondary,
+  },
+
+  // Promo Banner (quando vem do onboarding)
+  promoBanner: {
+    marginBottom: 24,
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...Platform.select({
+      web: { boxShadow: '0 4px 20px rgba(255, 165, 0, 0.3)' },
+      default: {
+        shadowColor: '#FFA500',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 8,
+      },
+    }),
+  },
+  promoBannerGradient: {
+    padding: 16,
+  },
+  promoBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  promoBannerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  promoBannerText: {
+    flex: 1,
+  },
+  promoBannerTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#fff',
+    marginBottom: 2,
+  },
+  promoBannerSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: '500',
+  },
+  promoBannerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+  },
+  promoBannerBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#B8860B',
   },
 });

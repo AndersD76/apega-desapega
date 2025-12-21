@@ -19,6 +19,7 @@ const categoriesRoutes = require('./routes/categories');
 const checkoutRoutes = require('./routes/checkout');
 const shippingRoutes = require('./routes/shipping');
 const subscriptionsRoutes = require('./routes/subscriptions');
+const aiRoutes = require('./routes/ai');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -58,6 +59,7 @@ app.use('/api/categories', categoriesRoutes);
 app.use('/api/checkout', checkoutRoutes);
 app.use('/api/shipping', shippingRoutes);
 app.use('/api/subscriptions', subscriptionsRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Middleware de erro global
 app.use((err, req, res, next) => {
