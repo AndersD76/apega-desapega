@@ -1061,29 +1061,97 @@ export default function HomeScreen({ navigation }: Props) {
 
         {/* Footer Estilo Enjoei */}
         <View style={styles.footerEnjoei}>
-          {/* Banner Download App */}
-          <View style={styles.footerAppBanner}>
+          {/* Banner Download App - Premium Design */}
+          <LinearGradient
+            colors={['#1a1a2e', '#16213e', '#0f3460']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.footerAppBanner}
+          >
+            {/* Decorative Elements */}
+            <View style={styles.bannerDecorCircle1} />
+            <View style={styles.bannerDecorCircle2} />
+            <View style={styles.bannerDecorCircle3} />
+
             <View style={styles.footerAppBannerContent}>
-              <Text style={styles.footerAppBannerTitle}>BAIXE AGORA O APP</Text>
-              <Text style={styles.footerAppBannerSubtitle}>
-                Moda circular na palma da sua mão.{'\n'}Desapegue de onde estiver!
+              {/* Badge de Lançamento */}
+              <View style={styles.bannerLaunchBadge}>
+                <Ionicons name="rocket" size={14} color="#fff" />
+                <Text style={styles.bannerLaunchBadgeText}>EM BREVE NAS LOJAS</Text>
+              </View>
+
+              {/* Brand */}
+              <View style={styles.bannerBrandRow}>
+                <Text style={styles.bannerBrandApega}>apega</Text>
+                <Text style={styles.bannerBrandDesapega}>desapega</Text>
+              </View>
+
+              <Text style={styles.footerAppBannerTitle}>
+                O futuro da moda{'\n'}circular esta chegando
               </Text>
+
+              <Text style={styles.footerAppBannerSubtitle}>
+                Cadastre-se agora e seja uma das primeiras a experimentar.{'\n'}
+                <Text style={styles.bannerHighlight}>5 contas Premium gratis</Text> para as pioneiras!
+              </Text>
+
               <View style={styles.footerAppButtons}>
-                <TouchableOpacity style={styles.footerAppButton}>
-                  <Ionicons name="logo-google-playstore" size={18} color="#fff" />
-                  <Text style={styles.footerAppButtonText}>Google Play</Text>
+                <TouchableOpacity style={styles.footerAppButtonGoogle}>
+                  <View style={styles.storeButtonIcon}>
+                    <Ionicons name="logo-google-playstore" size={20} color="#fff" />
+                  </View>
+                  <View style={styles.storeButtonTextContainer}>
+                    <Text style={styles.storeButtonSmallText}>Disponivel no</Text>
+                    <Text style={styles.storeButtonMainText}>Google Play</Text>
+                  </View>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.footerAppButton}>
-                  <Ionicons name="logo-apple" size={18} color="#fff" />
-                  <Text style={styles.footerAppButtonText}>App Store</Text>
+
+                <TouchableOpacity style={styles.footerAppButtonApple}>
+                  <View style={styles.storeButtonIcon}>
+                    <Ionicons name="logo-apple" size={22} color="#fff" />
+                  </View>
+                  <View style={styles.storeButtonTextContainer}>
+                    <Text style={styles.storeButtonSmallText}>Baixe na</Text>
+                    <Text style={styles.storeButtonMainText}>App Store</Text>
+                  </View>
                 </TouchableOpacity>
               </View>
+
+              {/* Stats Preview */}
+              <View style={styles.bannerStatsRow}>
+                <View style={styles.bannerStatItem}>
+                  <Text style={styles.bannerStatNumber}>5%</Text>
+                  <Text style={styles.bannerStatLabel}>taxa reduzida</Text>
+                </View>
+                <View style={styles.bannerStatDivider} />
+                <View style={styles.bannerStatItem}>
+                  <Text style={styles.bannerStatNumber}>0%</Text>
+                  <Text style={styles.bannerStatLabel}>para Premium</Text>
+                </View>
+                <View style={styles.bannerStatDivider} />
+                <View style={styles.bannerStatItem}>
+                  <Text style={styles.bannerStatNumber}>100%</Text>
+                  <Text style={styles.bannerStatLabel}>sustentavel</Text>
+                </View>
+              </View>
             </View>
-            <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=300&q=80' }}
-              style={styles.footerAppImage}
-            />
-          </View>
+
+            {/* Phone Mockup */}
+            <View style={styles.phoneMockupContainer}>
+              <LinearGradient
+                colors={['rgba(201,162,39,0.3)', 'rgba(201,162,39,0.1)']}
+                style={styles.phoneMockupGlow}
+              />
+              <View style={styles.phoneMockup}>
+                <View style={styles.phoneMockupNotch} />
+                <Image
+                  source={{ uri: 'https://images.unsplash.com/photo-1558171813-01342e9fa63c?w=400&q=90' }}
+                  style={styles.phoneMockupScreen}
+                />
+                <View style={styles.phoneMockupBottomBar} />
+              </View>
+            </View>
+          </LinearGradient>
 
           {/* Links do Footer */}
           <View style={styles.footerLinksContainer}>
@@ -2783,54 +2851,218 @@ const createStyles = (isDesktop: boolean, isTablet: boolean, isMobile: boolean) 
   },
   footerAppBanner: {
     flexDirection: isDesktop ? 'row' : isTablet ? 'row' : 'column',
-    backgroundColor: COLORS.primary,
     marginHorizontal: isDesktop ? 60 : isTablet ? 32 : 16,
-    borderRadius: 24,
-    padding: isDesktop ? 40 : isTablet ? 32 : 24,
+    borderRadius: 32,
+    padding: isDesktop ? 48 : isTablet ? 36 : 28,
     marginBottom: 40,
     overflow: 'hidden',
     alignItems: 'center',
+    position: 'relative',
+  },
+  // Decorative circles
+  bannerDecorCircle1: {
+    position: 'absolute',
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: 'rgba(201,162,39,0.08)',
+    top: -100,
+    right: -50,
+  },
+  bannerDecorCircle2: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(201,162,39,0.05)',
+    bottom: -80,
+    left: -60,
+  },
+  bannerDecorCircle3: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    top: '50%',
+    left: '30%',
+  },
+  bannerLaunchBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(201,162,39,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(201,162,39,0.4)',
+  },
+  bannerLaunchBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#C9A227',
+    letterSpacing: 1,
+  },
+  bannerBrandRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 12,
+  },
+  bannerBrandApega: {
+    fontSize: isDesktop ? 28 : 22,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: -0.5,
+  },
+  bannerBrandDesapega: {
+    fontSize: isDesktop ? 28 : 22,
+    fontWeight: '400',
+    color: 'rgba(255,255,255,0.5)',
+    letterSpacing: -0.5,
   },
   footerAppBannerContent: {
     flex: 1,
-    marginRight: isDesktop ? 40 : 0,
-    marginBottom: isDesktop ? 0 : 20,
+    marginRight: isDesktop ? 60 : 0,
+    marginBottom: isDesktop ? 0 : isTablet ? 0 : 24,
+    zIndex: 1,
   },
   footerAppBannerTitle: {
-    fontSize: isDesktop ? 32 : 24,
-    fontWeight: '900',
+    fontSize: isDesktop ? 36 : isTablet ? 30 : 26,
+    fontWeight: '800',
     color: '#fff',
-    marginBottom: 12,
-    letterSpacing: 1,
+    marginBottom: 16,
+    lineHeight: isDesktop ? 44 : isTablet ? 38 : 34,
+    letterSpacing: -0.5,
   },
   footerAppBannerSubtitle: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.9)',
-    lineHeight: 24,
-    marginBottom: 20,
+    fontSize: isDesktop ? 17 : 15,
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: isDesktop ? 26 : 24,
+    marginBottom: 24,
+  },
+  bannerHighlight: {
+    color: '#C9A227',
+    fontWeight: '700',
   },
   footerAppButtons: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
+    marginBottom: 28,
   },
-  footerAppButton: {
+  footerAppButtonGoogle: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: '#414141',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  footerAppButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+  footerAppButtonApple: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#000',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  storeButtonIcon: {
+    marginRight: 10,
+  },
+  storeButtonTextContainer: {
+    alignItems: 'flex-start',
+  },
+  storeButtonSmallText: {
+    fontSize: 9,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '400',
+  },
+  storeButtonMainText: {
+    fontSize: 15,
     color: '#fff',
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
-  footerAppImage: {
-    width: isDesktop ? 200 : 150,
-    height: isDesktop ? 200 : 150,
+  bannerStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    flexWrap: 'wrap',
+  },
+  bannerStatItem: {
+    alignItems: 'center',
+  },
+  bannerStatNumber: {
+    fontSize: isDesktop ? 24 : 20,
+    fontWeight: '800',
+    color: '#C9A227',
+  },
+  bannerStatLabel: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.6)',
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  bannerStatDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  // Phone Mockup
+  phoneMockupContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  phoneMockupGlow: {
+    position: 'absolute',
+    width: isDesktop ? 280 : 220,
+    height: isDesktop ? 280 : 220,
+    borderRadius: isDesktop ? 140 : 110,
+  },
+  phoneMockup: {
+    width: isDesktop ? 180 : isTablet ? 160 : 140,
+    height: isDesktop ? 360 : isTablet ? 320 : 280,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 28,
+    padding: 8,
+    borderWidth: 3,
+    borderColor: '#333',
+    shadowColor: '#C9A227',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 30,
+    elevation: 20,
+  },
+  phoneMockupNotch: {
+    width: 60,
+    height: 20,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 10,
+    alignSelf: 'center',
+    marginBottom: 4,
+    zIndex: 10,
+  },
+  phoneMockupScreen: {
+    flex: 1,
     borderRadius: 20,
+    backgroundColor: '#2a2a2a',
+  },
+  phoneMockupBottomBar: {
+    width: 80,
+    height: 4,
+    backgroundColor: '#444',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 8,
   },
   footerLinksContainer: {
     flexDirection: 'row',
