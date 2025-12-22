@@ -487,12 +487,17 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
 
         {/* Header */}
         <View style={[styles.formHeader, { paddingTop: insets.top + 12 }]}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => redirectTo ? navigation.goBack() : setCurrentScreen('main')}
-          >
-            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-          </TouchableOpacity>
+          {/* Só mostra botão voltar se NÃO veio do fluxo de convite */}
+          {!redirectTo ? (
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => setCurrentScreen('main')}
+            >
+              <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 44 }} />
+          )}
           <View style={styles.headerLogoContainer}>
             <Text style={styles.headerLogo}>apega</Text>
             <Text style={styles.headerLogoAccent}>desapega</Text>
@@ -520,12 +525,12 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
                   </View>
                   <View style={styles.promoBannerText}>
                     <Text style={styles.promoBannerTitle}>Você está garantindo sua vaga!</Text>
-                    <Text style={styles.promoBannerSubtitle}>0% comissão + IA Premium grátis</Text>
+                    <Text style={styles.promoBannerSubtitle}>5% comissão + IA Premium grátis</Text>
                   </View>
                 </View>
                 <View style={styles.promoBannerBadge}>
                   <Ionicons name="checkmark-circle" size={16} color="#FFD700" />
-                  <Text style={styles.promoBannerBadgeText}>10 vagas restantes</Text>
+                  <Text style={styles.promoBannerBadgeText}>50 vagas restantes</Text>
                 </View>
               </LinearGradient>
             </View>
@@ -796,13 +801,13 @@ const styles = StyleSheet.create({
   logoMain: {
     fontSize: 36,
     fontWeight: '800',
-    color: COLORS.primary,
+    color: '#1a1a1a',
     letterSpacing: -1,
   },
   logoAccent: {
     fontSize: 36,
-    fontWeight: '300',
-    color: '#333',
+    fontWeight: '400',
+    color: COLORS.gray[400],
     letterSpacing: -1,
   },
   tagline: {
@@ -1006,12 +1011,12 @@ const styles = StyleSheet.create({
   headerLogo: {
     fontSize: 20,
     fontWeight: '800',
-    color: COLORS.primary,
+    color: '#1a1a1a',
   },
   headerLogoAccent: {
     fontSize: 20,
-    fontWeight: '300',
-    color: COLORS.textPrimary,
+    fontWeight: '400',
+    color: COLORS.gray[400],
   },
 
   // Form Content

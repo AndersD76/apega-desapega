@@ -10,7 +10,7 @@ const mercadopago = require('../services/mercadopago');
 const router = express.Router();
 
 // Taxa de comissão
-const COMMISSION_RATE = 0.10; // 10%
+const COMMISSION_RATE = 0.05; // 5% (promocional para primeiros 50)
 const PREMIUM_COMMISSION_RATE = 0.01; // 1% para Premium
 
 // Gerar número do pedido
@@ -26,7 +26,7 @@ const generateOrderNumber = () => {
  */
 router.post('/pix', authenticate, async (req, res, next) => {
   try {
-    const { product_id, address_id, shipping_option } = req.body;
+    const { product_id, address_id, shipping_option, shipping_price, shipping_service_id } = req.body;
 
     // Validar produto
     const products = await sql`
@@ -51,8 +51,8 @@ router.post('/pix', authenticate, async (req, res, next) => {
 
     // Calcular valores
     const productPrice = parseFloat(product.price);
-    const shippingPrice = shipping_option?.price || 15.00;
-    const totalAmount = productPrice + shippingPrice;
+    const calculatedShippingPrice = shipping_price || shipping_option?.price || 15.00;
+    const totalAmount = productPrice + calculatedShippingPrice;
 
     const commissionRate = product.seller_subscription === 'premium' ? PREMIUM_COMMISSION_RATE : COMMISSION_RATE;
     const commissionAmount = productPrice * commissionRate;
@@ -69,7 +69,7 @@ router.post('/pix', authenticate, async (req, res, next) => {
       )
       VALUES (
         ${orderNumber}, ${req.user.id}, ${product.seller_id}, ${product_id},
-        ${productPrice}, ${shippingPrice}, ${shipping_option?.name || null}, ${shipping_option?.deliveryTime || null},
+        ${productPrice}, ${calculatedShippingPrice}, ${shipping_option?.name || null}, ${shipping_option?.deliveryTime || null},
         ${commissionRate}, ${commissionAmount}, ${sellerReceives}, ${totalAmount},
         ${address_id || null}, 'pix', 'pending_payment'
       )
@@ -121,6 +121,8 @@ router.post('/card', authenticate, async (req, res, next) => {
       product_id,
       address_id,
       shipping_option,
+      shipping_price,
+      shipping_service_id,
       card_token,
       installments,
       payment_method_id,
@@ -150,8 +152,8 @@ router.post('/card', authenticate, async (req, res, next) => {
 
     // Calcular valores
     const productPrice = parseFloat(product.price);
-    const shippingPrice = shipping_option?.price || 15.00;
-    const totalAmount = productPrice + shippingPrice;
+    const calculatedShippingPrice = shipping_price || shipping_option?.price || 15.00;
+    const totalAmount = productPrice + calculatedShippingPrice;
 
     const commissionRate = product.seller_subscription === 'premium' ? PREMIUM_COMMISSION_RATE : COMMISSION_RATE;
     const commissionAmount = productPrice * commissionRate;
@@ -168,7 +170,7 @@ router.post('/card', authenticate, async (req, res, next) => {
       )
       VALUES (
         ${orderNumber}, ${req.user.id}, ${product.seller_id}, ${product_id},
-        ${productPrice}, ${shippingPrice}, ${shipping_option?.name || null}, ${shipping_option?.deliveryTime || null},
+        ${productPrice}, ${calculatedShippingPrice}, ${shipping_option?.name || null}, ${shipping_option?.deliveryTime || null},
         ${commissionRate}, ${commissionAmount}, ${sellerReceives}, ${totalAmount},
         ${address_id || null}, 'credit_card', 'processing'
       )
@@ -225,7 +227,7 @@ router.post('/card', authenticate, async (req, res, next) => {
  */
 router.post('/boleto', authenticate, async (req, res, next) => {
   try {
-    const { product_id, address_id, shipping_option } = req.body;
+    const { product_id, address_id, shipping_option, shipping_price, shipping_service_id } = req.body;
 
     // Validar produto
     const products = await sql`
@@ -253,8 +255,8 @@ router.post('/boleto', authenticate, async (req, res, next) => {
 
     // Calcular valores
     const productPrice = parseFloat(product.price);
-    const shippingPrice = shipping_option?.price || 15.00;
-    const totalAmount = productPrice + shippingPrice;
+    const calculatedShippingPrice = shipping_price || shipping_option?.price || 15.00;
+    const totalAmount = productPrice + calculatedShippingPrice;
 
     const commissionRate = product.seller_subscription === 'premium' ? PREMIUM_COMMISSION_RATE : COMMISSION_RATE;
     const commissionAmount = productPrice * commissionRate;
@@ -271,7 +273,7 @@ router.post('/boleto', authenticate, async (req, res, next) => {
       )
       VALUES (
         ${orderNumber}, ${req.user.id}, ${product.seller_id}, ${product_id},
-        ${productPrice}, ${shippingPrice}, ${shipping_option?.name || null}, ${shipping_option?.deliveryTime || null},
+        ${productPrice}, ${calculatedShippingPrice}, ${shipping_option?.name || null}, ${shipping_option?.deliveryTime || null},
         ${commissionRate}, ${commissionAmount}, ${sellerReceives}, ${totalAmount},
         ${address_id || null}, 'boleto', 'pending_payment'
       )

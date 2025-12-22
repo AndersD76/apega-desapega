@@ -5,7 +5,7 @@ const { authenticate } = require('../middleware/auth');
 const router = express.Router();
 
 // Taxa de comissão
-const COMMISSION_RATE = 0.10; // 10%
+const COMMISSION_RATE = 0.05; // 5% (promocional para primeiros 50)
 const PREMIUM_COMMISSION_RATE = 0.01; // 1% para Premium
 
 // Gerar número do pedido

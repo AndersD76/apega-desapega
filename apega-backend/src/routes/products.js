@@ -248,6 +248,8 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
 });
 
 // Criar produto
+// O vendedor informa o preço que deseja receber
+// O preço exibido para compradores inclui a comissão (5%)
 router.post('/', authenticate, async (req, res, next) => {
   try {
     const {
@@ -257,7 +259,7 @@ router.post('/', authenticate, async (req, res, next) => {
       size,
       color,
       condition,
-      price,
+      price, // Preço que o vendedor quer receber
       original_price,
       category_id,
       is_premium
@@ -286,8 +288,15 @@ router.post('/', authenticate, async (req, res, next) => {
       }
     }
 
-    // Buscar cidade do usuário
-    const userData = await sql`SELECT city, state FROM users WHERE id = ${req.user.id}`;
+    // Buscar cidade do usuário e tipo de assinatura
+    const userData = await sql`SELECT city, state, subscription_type FROM users WHERE id = ${req.user.id}`;
+
+    // Calcular preço com comissão
+    // Premium: 1% comissão, Free: 5% comissão
+    const sellerPrice = parseFloat(price);
+    const isPremiumUser = userData[0]?.subscription_type === 'premium' || userData[0]?.subscription_type === 'premium_plus';
+    const commissionRate = isPremiumUser ? 0.01 : 0.05;
+    const displayPrice = Math.ceil(sellerPrice * (1 + commissionRate) * 100) / 100; // Arredonda para cima
 
     const newProduct = await sql`
       INSERT INTO products (
@@ -303,7 +312,7 @@ router.post('/', authenticate, async (req, res, next) => {
         ${size || null},
         ${color || null},
         ${condition},
-        ${parseFloat(price)},
+        ${displayPrice},
         ${original_price ? parseFloat(original_price) : null},
         ${is_premium || false},
         ${userData[0]?.city || null},
@@ -315,7 +324,9 @@ router.post('/', authenticate, async (req, res, next) => {
     res.status(201).json({
       success: true,
       message: 'Produto criado com sucesso',
-      product: newProduct[0]
+      product: newProduct[0],
+      seller_receives: sellerPrice,
+      commission_rate: commissionRate * 100
     });
   } catch (error) {
     next(error);

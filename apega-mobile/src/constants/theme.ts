@@ -230,8 +230,8 @@ export const BRAND = {
 
 // Taxas e Comissões
 export const FEES = {
-  commissionRate: 0.10, // 10% de comissão por venda
-  commissionPercentage: 10,
+  commissionRate: 0.05, // 5% de comissão por venda (promocional para primeiros 50)
+  commissionPercentage: 5,
   premiumCommissionRate: 0.01, // Premium tem taxa de apenas 1%
   premiumCommissionPercentage: 1,
   minCommission: 1.00, // Comissão mínima de R$ 1,00
