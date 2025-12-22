@@ -119,4 +119,81 @@ router.patch('/:id/default', authenticate, async (req, res, next) => {
   }
 });
 
+// Listar transacoes (admin)
+router.get('/transactions', async (req, res, next) => {
+  try {
+    const { page = 1, limit = 20, type, status } = req.query;
+    const offset = (page - 1) * limit;
+
+    let whereCondition = sql`1=1`;
+    if (type) {
+      whereCondition = sql`${whereCondition} AND t.type = ${type}`;
+    }
+    if (status) {
+      whereCondition = sql`${whereCondition} AND t.status = ${status}`;
+    }
+
+    const transactions = await sql`
+      SELECT
+        t.*,
+        u.name as user_name,
+        u.email as user_email,
+        o.order_number as order_number
+      FROM transactions t
+      JOIN users u ON t.user_id = u.id
+      LEFT JOIN orders o ON t.order_id = o.id
+      WHERE ${whereCondition}
+      ORDER BY t.created_at DESC
+      LIMIT ${parseInt(limit)}
+      OFFSET ${offset}
+    `;
+
+    const total = await sql`
+      SELECT COUNT(*) as count
+      FROM transactions t
+      WHERE ${whereCondition}
+    `;
+
+    res.json({
+      success: true,
+      transactions,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: parseInt(total[0].count)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Processar saque (admin)
+router.post('/withdrawals/:transactionId/:action', async (req, res, next) => {
+  try {
+    const { transactionId, action } = req.params;
+
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ error: true, message: 'Acao invalida' });
+    }
+
+    const status = action === 'approve' ? 'approved' : 'rejected';
+
+    const updated = await sql`
+      UPDATE transactions
+      SET status = ${status}
+      WHERE id = ${transactionId} AND type = 'withdrawal'
+      RETURNING *
+    `;
+
+    if (updated.length === 0) {
+      return res.status(404).json({ error: true, message: 'Transacao nao encontrada' });
+    }
+
+    res.json({ success: true, transaction: updated[0] });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

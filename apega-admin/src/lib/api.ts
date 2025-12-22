@@ -111,15 +111,17 @@ export interface Product {
 
 export interface Order {
   id: string
+  order_number?: string
   product_id: string
   buyer_id: string
   seller_id: string
-  status: 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled' | 'disputed'
+  status: 'pending_payment' | 'pending_shipment' | 'paid' | 'shipped' | 'delivered' | 'completed' | 'cancelled' | 'disputed' | 'refunded'
   total_amount: number
   commission_amount: number
   seller_receives: number
-  shipping_cost: number
-  tracking_code?: string
+  shipping_price: number
+  shipping_code?: string
+  shipping_carrier?: string
   created_at: string
   product_title?: string
   buyer_name?: string
@@ -170,6 +172,19 @@ export interface Settings {
   premium_plus_price?: number
   shipping_base_cost?: number
   minimum_withdrawal?: number
+}
+
+export interface AdminNotification {
+  id: string
+  user_id: string
+  type: string
+  title: string
+  message?: string
+  data?: any
+  is_read: boolean
+  created_at: string
+  user_name?: string
+  user_email?: string
 }
 
 // API Functions
@@ -283,6 +298,14 @@ export const getAbandonedCarts = (params?: {
   status?: string
 }): Promise<{ success: boolean; carts: Cart[]; stats: { abandoned: number; recovered: number; expiring: number; lost_revenue: number } }> =>
   api.get('/analytics/admin/abandoned-carts', { params })
+
+// Communications
+export const getAdminNotifications = (params?: {
+  page?: number
+  limit?: number
+  type?: string
+}): Promise<{ success: boolean; notifications: AdminNotification[]; stats: { total: number; unread: number }; pagination: { page: number; limit: number; total: number } }> =>
+  api.get('/analytics/admin/notifications', { params })
 
 // Reports
 export const getPendingReports = (): Promise<{ success: boolean; data: any[]; pendingCount: number }> =>

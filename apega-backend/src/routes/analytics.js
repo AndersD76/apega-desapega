@@ -512,6 +512,58 @@ router.get('/admin/pending-reports', async (req, res, next) => {
   }
 });
 
+// Notificacoes (admin)
+router.get('/admin/notifications', async (req, res, next) => {
+  try {
+    const { page = 1, limit = 20, type } = req.query;
+    const offset = (page - 1) * limit;
+
+    let whereCondition = sql`1=1`;
+    if (type) {
+      whereCondition = sql`n.type = ${type}`;
+    }
+
+    const notifications = await sql`
+      SELECT
+        n.*,
+        u.name as user_name,
+        u.email as user_email
+      FROM notifications n
+      JOIN users u ON n.user_id = u.id
+      WHERE ${whereCondition}
+      ORDER BY n.created_at DESC
+      LIMIT ${parseInt(limit)}
+      OFFSET ${offset}
+    `;
+
+    const stats = await sql`
+      SELECT
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE is_read = false) as unread
+      FROM notifications n
+      WHERE ${whereCondition}
+    `;
+
+    const total = await sql`SELECT COUNT(*) as count FROM notifications n WHERE ${whereCondition}`;
+
+    res.json({
+      success: true,
+      notifications,
+      stats: {
+        total: parseInt(stats[0].total),
+        unread: parseInt(stats[0].unread)
+      },
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: parseInt(total[0].count)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Produtos aguardando aprovação
 router.get('/admin/pending-products', async (req, res, next) => {
   try {
@@ -813,8 +865,8 @@ router.get('/admin/orders', async (req, res, next) => {
     // Stats
     const stats = await sql`
       SELECT
-        COUNT(*) FILTER (WHERE status = 'pending') as pending,
-        COUNT(*) FILTER (WHERE status = 'paid') as paid,
+        COUNT(*) FILTER (WHERE status = 'pending_payment') as pending,
+        COUNT(*) FILTER (WHERE status IN ('pending_shipment', 'paid')) as paid,
         COUNT(*) FILTER (WHERE status = 'shipped') as shipped,
         COUNT(*) FILTER (WHERE status = 'delivered') as delivered,
         COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled,
