@@ -1,6 +1,6 @@
 const express = require('express');
 const { sql } = require('../config/database');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -120,7 +120,7 @@ router.patch('/:id/default', authenticate, async (req, res, next) => {
 });
 
 // Listar transacoes (admin)
-router.get('/transactions', async (req, res, next) => {
+router.get('/transactions', requireAdmin, async (req, res, next) => {
   try {
     const { page = 1, limit = 20, type, status } = req.query;
     const offset = (page - 1) * limit;
@@ -222,7 +222,7 @@ router.get('/transactions', async (req, res, next) => {
 });
 
 // Processar saque (admin)
-router.post('/withdrawals/:transactionId/:action', async (req, res, next) => {
+router.post('/withdrawals/:transactionId/:action', requireAdmin, async (req, res, next) => {
   try {
     const { transactionId, action } = req.params;
 

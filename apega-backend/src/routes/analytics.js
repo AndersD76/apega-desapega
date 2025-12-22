@@ -1,6 +1,6 @@
 const express = require('express');
 const { sql } = require('../config/database');
-const { authenticate, optionalAuth } = require('../middleware/auth');
+const { authenticate, optionalAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -120,6 +120,7 @@ router.post('/track/event', optionalAuth, async (req, res, next) => {
 });
 
 // ==================== ADMIN DASHBOARD ENDPOINTS ====================
+router.use('/admin', requireAdmin);
 
 // Dashboard KPIs principais
 router.get('/admin/dashboard', async (req, res, next) => {

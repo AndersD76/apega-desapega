@@ -67,7 +67,60 @@ const optionalAuth = async (req, res, next) => {
   }
 };
 
-// Verificar se é usuário premium
+// Verificar se e admin
+const requireAdmin = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: true, message: 'Token nao fornecido' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (!decoded.isAdmin) {
+      return res.status(403).json({ error: true, message: 'Acesso nao autorizado' });
+    }
+
+    if (decoded.userId === 'admin') {
+      req.admin = {
+        id: 'admin',
+        name: 'Administrador',
+        email: process.env.ADMIN_EMAIL || 'admin@apegadesapega.com',
+        is_admin: true
+      };
+      return next();
+    }
+
+    const users = await sql`
+      SELECT id, email, name, is_admin, is_active
+      FROM users
+      WHERE id = ${decoded.userId} AND is_admin = true
+    `;
+
+    if (users.length === 0) {
+      return res.status(403).json({ error: true, message: 'Usuario nao e admin' });
+    }
+
+    if (!users[0].is_active) {
+      return res.status(401).json({ error: true, message: 'Conta desativada' });
+    }
+
+    req.admin = users[0];
+    next();
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: true, message: 'Token invalido' });
+    }
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: true, message: 'Token expirado' });
+    }
+    next(error);
+  }
+};
+
+// Verificar se e usuario premium
 const requirePremium = (req, res, next) => {
   if (req.user.subscription_type !== 'premium') {
     return res.status(403).json({
@@ -78,4 +131,4 @@ const requirePremium = (req, res, next) => {
   next();
 };
 
-module.exports = { authenticate, optionalAuth, requirePremium };
+module.exports = { authenticate, optionalAuth, requireAdmin, requirePremium };
