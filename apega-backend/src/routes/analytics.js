@@ -236,30 +236,47 @@ router.get('/admin/revenue-chart', async (req, res, next) => {
   try {
     const { period = '6months' } = req.query;
 
-    let interval, groupBy;
+    let data;
     if (period === '7days') {
-      interval = '7 days';
-      groupBy = 'day';
+      data = await sql`
+        SELECT
+          DATE_TRUNC('day', created_at) as date,
+          COALESCE(SUM(total_amount), 0) as revenue,
+          COALESCE(SUM(commission_amount), 0) as commission,
+          COUNT(*) as orders
+        FROM orders
+        WHERE created_at >= NOW() - INTERVAL '7 days'
+          AND status != 'cancelled'
+        GROUP BY DATE_TRUNC('day', created_at)
+        ORDER BY date
+      `;
     } else if (period === '30days') {
-      interval = '30 days';
-      groupBy = 'day';
+      data = await sql`
+        SELECT
+          DATE_TRUNC('day', created_at) as date,
+          COALESCE(SUM(total_amount), 0) as revenue,
+          COALESCE(SUM(commission_amount), 0) as commission,
+          COUNT(*) as orders
+        FROM orders
+        WHERE created_at >= NOW() - INTERVAL '30 days'
+          AND status != 'cancelled'
+        GROUP BY DATE_TRUNC('day', created_at)
+        ORDER BY date
+      `;
     } else {
-      interval = '6 months';
-      groupBy = 'month';
+      data = await sql`
+        SELECT
+          DATE_TRUNC('month', created_at) as date,
+          COALESCE(SUM(total_amount), 0) as revenue,
+          COALESCE(SUM(commission_amount), 0) as commission,
+          COUNT(*) as orders
+        FROM orders
+        WHERE created_at >= NOW() - INTERVAL '6 months'
+          AND status != 'cancelled'
+        GROUP BY DATE_TRUNC('month', created_at)
+        ORDER BY date
+      `;
     }
-
-    const data = await sql`
-      SELECT
-        DATE_TRUNC(${groupBy}, created_at) as date,
-        COALESCE(SUM(total_amount), 0) as revenue,
-        COALESCE(SUM(commission_amount), 0) as commission,
-        COUNT(*) as orders
-      FROM orders
-      WHERE created_at >= NOW() - INTERVAL ${interval}
-        AND status != 'cancelled'
-      GROUP BY DATE_TRUNC(${groupBy}, created_at)
-      ORDER BY date
-    `;
 
     res.json({ success: true, data });
   } catch (error) {
@@ -321,23 +338,33 @@ router.get('/admin/abandoned-carts', async (req, res, next) => {
         AND last_activity_at < NOW() - INTERVAL '1 hour'
     `;
 
-    let whereClause = sql`1=1`;
+    let carts;
     if (status !== 'all') {
-      whereClause = sql`c.status = ${status}`;
+      carts = await sql`
+        SELECT
+          c.*,
+          u.name as user_name,
+          u.email as user_email
+        FROM carts c
+        JOIN users u ON c.user_id = u.id
+        WHERE c.status = ${status}
+        ORDER BY c.last_activity_at DESC
+        LIMIT ${parseInt(limit)}
+        OFFSET ${offset}
+      `;
+    } else {
+      carts = await sql`
+        SELECT
+          c.*,
+          u.name as user_name,
+          u.email as user_email
+        FROM carts c
+        JOIN users u ON c.user_id = u.id
+        ORDER BY c.last_activity_at DESC
+        LIMIT ${parseInt(limit)}
+        OFFSET ${offset}
+      `;
     }
-
-    const carts = await sql`
-      SELECT
-        c.*,
-        u.name as user_name,
-        u.email as user_email
-      FROM carts c
-      JOIN users u ON c.user_id = u.id
-      WHERE ${whereClause}
-      ORDER BY c.last_activity_at DESC
-      LIMIT ${parseInt(limit)}
-      OFFSET ${offset}
-    `;
 
     // Stats
     const stats = await sql`
@@ -439,7 +466,7 @@ router.get('/admin/conversion-metrics', async (req, res, next) => {
       completedOrders
     ] = await Promise.all([
       sql`SELECT COALESCE(SUM(views), 0) as total FROM products`,
-      sql`SELECT COUNT(DISTINCT COALESCE(user_id, session_id)) as count FROM product_views WHERE created_at >= NOW() - INTERVAL '30 days'`,
+      sql`SELECT COUNT(DISTINCT COALESCE(user_id::text, session_id)) as count FROM product_views WHERE created_at >= NOW() - INTERVAL '30 days'`,
       sql`SELECT COUNT(*) as count FROM cart_items WHERE created_at >= NOW() - INTERVAL '30 days'`,
       sql`SELECT COUNT(*) as count FROM orders WHERE created_at >= NOW() - INTERVAL '30 days' AND status != 'cancelled'`
     ]);
@@ -518,33 +545,50 @@ router.get('/admin/notifications', async (req, res, next) => {
     const { page = 1, limit = 20, type } = req.query;
     const offset = (page - 1) * limit;
 
-    let whereCondition = sql`1=1`;
+    let notifications;
     if (type) {
-      whereCondition = sql`n.type = ${type}`;
+      notifications = await sql`
+        SELECT
+          n.*,
+          u.name as user_name,
+          u.email as user_email
+        FROM notifications n
+        JOIN users u ON n.user_id = u.id
+        WHERE n.type = ${type}
+        ORDER BY n.created_at DESC
+        LIMIT ${parseInt(limit)}
+        OFFSET ${offset}
+      `;
+    } else {
+      notifications = await sql`
+        SELECT
+          n.*,
+          u.name as user_name,
+          u.email as user_email
+        FROM notifications n
+        JOIN users u ON n.user_id = u.id
+        ORDER BY n.created_at DESC
+        LIMIT ${parseInt(limit)}
+        OFFSET ${offset}
+      `;
     }
 
-    const notifications = await sql`
-      SELECT
-        n.*,
-        u.name as user_name,
-        u.email as user_email
-      FROM notifications n
-      JOIN users u ON n.user_id = u.id
-      WHERE ${whereCondition}
-      ORDER BY n.created_at DESC
-      LIMIT ${parseInt(limit)}
-      OFFSET ${offset}
-    `;
-
-    const stats = await sql`
+    const stats = await (type ? sql`
       SELECT
         COUNT(*) as total,
         COUNT(*) FILTER (WHERE is_read = false) as unread
       FROM notifications n
-      WHERE ${whereCondition}
-    `;
+      WHERE n.type = ${type}
+    ` : sql`
+      SELECT
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE is_read = false) as unread
+      FROM notifications n
+    `);
 
-    const total = await sql`SELECT COUNT(*) as count FROM notifications n WHERE ${whereCondition}`;
+    const total = await (type
+      ? sql`SELECT COUNT(*) as count FROM notifications n WHERE n.type = ${type}`
+      : sql`SELECT COUNT(*) as count FROM notifications n`);
 
     res.json({
       success: true,

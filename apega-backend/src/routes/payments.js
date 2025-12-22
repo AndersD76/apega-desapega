@@ -125,34 +125,87 @@ router.get('/transactions', async (req, res, next) => {
     const { page = 1, limit = 20, type, status } = req.query;
     const offset = (page - 1) * limit;
 
-    let whereCondition = sql`1=1`;
-    if (type) {
-      whereCondition = sql`${whereCondition} AND t.type = ${type}`;
+    let transactions;
+    let total;
+    if (type && status) {
+      transactions = await sql`
+        SELECT
+          t.*,
+          u.name as user_name,
+          u.email as user_email,
+          o.order_number as order_number
+        FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        LEFT JOIN orders o ON t.order_id = o.id
+        WHERE t.type = ${type} AND t.status = ${status}
+        ORDER BY t.created_at DESC
+        LIMIT ${parseInt(limit)}
+        OFFSET ${offset}
+      `;
+      total = await sql`
+        SELECT COUNT(*) as count
+        FROM transactions t
+        WHERE t.type = ${type} AND t.status = ${status}
+      `;
+    } else if (type) {
+      transactions = await sql`
+        SELECT
+          t.*,
+          u.name as user_name,
+          u.email as user_email,
+          o.order_number as order_number
+        FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        LEFT JOIN orders o ON t.order_id = o.id
+        WHERE t.type = ${type}
+        ORDER BY t.created_at DESC
+        LIMIT ${parseInt(limit)}
+        OFFSET ${offset}
+      `;
+      total = await sql`
+        SELECT COUNT(*) as count
+        FROM transactions t
+        WHERE t.type = ${type}
+      `;
+    } else if (status) {
+      transactions = await sql`
+        SELECT
+          t.*,
+          u.name as user_name,
+          u.email as user_email,
+          o.order_number as order_number
+        FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        LEFT JOIN orders o ON t.order_id = o.id
+        WHERE t.status = ${status}
+        ORDER BY t.created_at DESC
+        LIMIT ${parseInt(limit)}
+        OFFSET ${offset}
+      `;
+      total = await sql`
+        SELECT COUNT(*) as count
+        FROM transactions t
+        WHERE t.status = ${status}
+      `;
+    } else {
+      transactions = await sql`
+        SELECT
+          t.*,
+          u.name as user_name,
+          u.email as user_email,
+          o.order_number as order_number
+        FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        LEFT JOIN orders o ON t.order_id = o.id
+        ORDER BY t.created_at DESC
+        LIMIT ${parseInt(limit)}
+        OFFSET ${offset}
+      `;
+      total = await sql`
+        SELECT COUNT(*) as count
+        FROM transactions t
+      `;
     }
-    if (status) {
-      whereCondition = sql`${whereCondition} AND t.status = ${status}`;
-    }
-
-    const transactions = await sql`
-      SELECT
-        t.*,
-        u.name as user_name,
-        u.email as user_email,
-        o.order_number as order_number
-      FROM transactions t
-      JOIN users u ON t.user_id = u.id
-      LEFT JOIN orders o ON t.order_id = o.id
-      WHERE ${whereCondition}
-      ORDER BY t.created_at DESC
-      LIMIT ${parseInt(limit)}
-      OFFSET ${offset}
-    `;
-
-    const total = await sql`
-      SELECT COUNT(*) as count
-      FROM transactions t
-      WHERE ${whereCondition}
-    `;
 
     res.json({
       success: true,
