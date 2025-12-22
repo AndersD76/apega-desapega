@@ -30,83 +30,83 @@ const isWeb = Platform.OS === 'web';
 const CAROUSEL_BANNERS = [
   {
     // Arara de roupas coloridas - Moda Circular
-    uri: 'https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=1600&q=80',
+    uri: 'https://images.unsplash.com/photo-1558171813-01342e9fa63c?w=1920&q=95',
     title: 'Moda Circular',
-    subtitle: 'Renove seu guarda-roupa com peças únicas',
-    highlight: 'ATÉ 70% OFF',
+    subtitle: 'Renove seu guarda-roupa com pecas unicas',
+    highlight: 'ATE 70% OFF',
     cta: 'Explorar',
     gradient: ['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.7)'],
   },
   {
-    // Blazers e roupas premium em cabides - Peças Premium
-    uri: 'https://images.unsplash.com/photo-1558171813-01ca2ae39523?w=1600&q=80',
-    title: 'Peças Premium',
+    // Blazers e roupas premium em cabides - Pecas Premium
+    uri: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1920&q=95',
+    title: 'Pecas Premium',
     subtitle: 'Farm, Animale, Zara e muito mais',
     highlight: 'EXCLUSIVO',
-    cta: 'Ver coleção',
+    cta: 'Ver colecao',
     gradient: ['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.8)'],
   },
   {
-    // Roupas em tecidos naturais/algodão - Sustentabilidade
-    uri: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=1600&q=80',
+    // Roupas em tecidos naturais - Sustentabilidade
+    uri: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=1920&q=95',
     title: 'Sustentabilidade',
-    subtitle: 'Moda consciente que faz a diferença',
+    subtitle: 'Moda consciente que faz a diferenca',
     highlight: 'ECO-FRIENDLY',
     cta: 'Saiba mais',
     gradient: ['rgba(45,90,39,0.2)', 'rgba(0,0,0,0.7)'],
   },
   {
-    // Bolsas de luxo expostas - Bolsas de Grife
-    uri: 'https://images.unsplash.com/photo-1591561954557-26941169b49e?w=1600&q=80',
+    // Bolsas de luxo - Bolsas de Grife
+    uri: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=1920&q=95',
     title: 'Bolsas de Grife',
     subtitle: 'Louis Vuitton, Gucci, Prada',
-    highlight: 'IMPERDÍVEL',
+    highlight: 'IMPERDIVEL',
     cta: 'Conferir',
     gradient: ['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.8)'],
   },
 ];
 
 // Logos das marcas (usando logo.clearbit.com para melhor compatibilidade)
-// Peças em destaque - Fotos de produtos para seção de scroll horizontal
+// Pecas em destaque - Fotos de produtos para secao de scroll horizontal
 const FEATURED_PIECES = [
   {
     category: 'Vestidos',
-    image: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=400&q=80',
+    image: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=800&q=95',
     count: '+150'
   },
   {
     category: 'Bolsas',
-    image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400&q=80',
+    image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=800&q=95',
     count: '+80'
   },
   {
-    category: 'Calçados',
-    image: 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=400&q=80',
+    category: 'Calcados',
+    image: 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=800&q=95',
     count: '+200'
   },
   {
     category: 'Blusas',
-    image: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?w=400&q=80',
+    image: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?w=800&q=95',
     count: '+250'
   },
   {
-    category: 'Acessórios',
-    image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400&q=80',
+    category: 'Acessorios',
+    image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&q=95',
     count: '+120'
   },
   {
     category: 'Jaquetas',
-    image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80',
+    image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=95',
     count: '+90'
   },
   {
     category: 'Saias',
-    image: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaee?w=400&q=80',
+    image: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaee?w=800&q=95',
     count: '+70'
   },
   {
     category: 'Casacos',
-    image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400&q=80',
+    image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800&q=95',
     count: '+60'
   },
 ];
