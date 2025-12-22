@@ -67,47 +67,67 @@ const CAROUSEL_BANNERS = [
 ];
 
 // Logos das marcas (usando logo.clearbit.com para melhor compatibilidade)
-// Pecas em destaque - Fotos de produtos para secao de scroll horizontal
+// Pecas em destaque - Fotos de produtos SEM MODELOS
 const FEATURED_PIECES = [
   {
     category: 'Vestidos',
-    image: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=800&q=95',
-    count: '+150'
+    image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=95',
+    count: '0'
   },
   {
     category: 'Bolsas',
-    image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=800&q=95',
-    count: '+80'
+    image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&q=95',
+    count: '0'
   },
   {
     category: 'Calcados',
-    image: 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=800&q=95',
-    count: '+200'
+    image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=800&q=95',
+    count: '0'
   },
   {
     category: 'Blusas',
-    image: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?w=800&q=95',
-    count: '+250'
+    image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=95',
+    count: '0'
   },
   {
-    category: 'Acessorios',
-    image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&q=95',
-    count: '+120'
+    category: 'Calcas',
+    image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=800&q=95',
+    count: '0'
   },
   {
     category: 'Jaquetas',
     image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=95',
-    count: '+90'
+    count: '0'
   },
   {
     category: 'Saias',
-    image: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaee?w=800&q=95',
-    count: '+70'
+    image: 'https://images.unsplash.com/photo-1592301933927-35b597393c0a?w=800&q=95',
+    count: '0'
   },
   {
     category: 'Casacos',
-    image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800&q=95',
-    count: '+60'
+    image: 'https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=800&q=95',
+    count: '0'
+  },
+  {
+    category: 'Shorts',
+    image: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&q=95',
+    count: '0'
+  },
+  {
+    category: 'Blazers',
+    image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&q=95',
+    count: '0'
+  },
+  {
+    category: 'Acessorios',
+    image: 'https://images.unsplash.com/photo-1611085583191-a3b181a88401?w=800&q=95',
+    count: '0'
+  },
+  {
+    category: 'Relogios',
+    image: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=800&q=95',
+    count: '0'
   },
 ];
 
