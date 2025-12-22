@@ -629,6 +629,358 @@ router.post('/admin/users/:id/toggle-status', async (req, res, next) => {
   }
 });
 
+// Excluir usuário (soft delete - desativa e anonimiza)
+router.delete('/admin/users/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const user = await sql`SELECT id, email FROM users WHERE id = ${id}`;
+    if (user.length === 0) {
+      return res.status(404).json({ error: true, message: 'Usuário não encontrado' });
+    }
+
+    // Soft delete: desativa e anonimiza dados
+    await sql`
+      UPDATE users SET
+        is_active = false,
+        email = CONCAT('deleted_', ${id}, '@deleted.com'),
+        name = 'Usuário Removido',
+        phone = null,
+        avatar_url = null,
+        bio = null,
+        deleted_at = NOW()
+      WHERE id = ${id}
+    `;
+
+    // Remover produtos do usuário
+    await sql`UPDATE products SET status = 'deleted' WHERE seller_id = ${id}`;
+
+    res.json({ success: true, message: 'Usuário excluído com sucesso' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Listar todos os produtos (admin)
+router.get('/admin/products', async (req, res, next) => {
+  try {
+    const { page = 1, limit = 20, search, status, category } = req.query;
+    const offset = (page - 1) * limit;
+
+    let whereConditions = sql`p.status != 'deleted'`;
+
+    if (status && status !== 'all') {
+      whereConditions = sql`${whereConditions} AND p.status = ${status}`;
+    }
+
+    if (search) {
+      whereConditions = sql`${whereConditions} AND (p.title ILIKE ${'%' + search + '%'} OR p.brand ILIKE ${'%' + search + '%'})`;
+    }
+
+    const products = await sql`
+      SELECT
+        p.*,
+        u.name as seller_name,
+        u.email as seller_email,
+        c.name as category_name,
+        (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url
+      FROM products p
+      JOIN users u ON p.seller_id = u.id
+      LEFT JOIN categories c ON p.category_id = c.id
+      WHERE ${whereConditions}
+      ORDER BY p.created_at DESC
+      LIMIT ${parseInt(limit)}
+      OFFSET ${offset}
+    `;
+
+    const total = await sql`
+      SELECT COUNT(*) as count FROM products p
+      WHERE ${whereConditions}
+    `;
+
+    // Stats
+    const stats = await sql`
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'active') as active,
+        COUNT(*) FILTER (WHERE status = 'pending') as pending,
+        COUNT(*) FILTER (WHERE status = 'sold') as sold,
+        COUNT(*) as total
+      FROM products
+      WHERE status != 'deleted'
+    `;
+
+    res.json({
+      success: true,
+      products,
+      stats: stats[0],
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: parseInt(total[0].count)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Obter detalhes de um produto (admin)
+router.get('/admin/products/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const products = await sql`
+      SELECT
+        p.*,
+        u.name as seller_name,
+        u.email as seller_email,
+        u.phone as seller_phone,
+        u.avatar_url as seller_avatar,
+        c.name as category_name
+      FROM products p
+      JOIN users u ON p.seller_id = u.id
+      LEFT JOIN categories c ON p.category_id = c.id
+      WHERE p.id = ${id}
+    `;
+
+    if (products.length === 0) {
+      return res.status(404).json({ error: true, message: 'Produto não encontrado' });
+    }
+
+    const images = await sql`
+      SELECT image_url, is_primary FROM product_images
+      WHERE product_id = ${id}
+      ORDER BY sort_order
+    `;
+
+    res.json({
+      success: true,
+      product: {
+        ...products[0],
+        images: images.map(i => i.image_url)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Excluir produto (admin)
+router.delete('/admin/products/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    await sql`UPDATE products SET status = 'deleted' WHERE id = ${id}`;
+
+    res.json({ success: true, message: 'Produto excluído' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Listar todos os pedidos (admin)
+router.get('/admin/orders', async (req, res, next) => {
+  try {
+    const { page = 1, limit = 20, status } = req.query;
+    const offset = (page - 1) * limit;
+
+    let whereCondition = sql`1=1`;
+    if (status && status !== 'all') {
+      whereCondition = sql`o.status = ${status}`;
+    }
+
+    const orders = await sql`
+      SELECT
+        o.*,
+        p.title as product_title,
+        p.brand as product_brand,
+        p.size as product_size,
+        (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as product_image,
+        buyer.name as buyer_name,
+        buyer.email as buyer_email,
+        seller.name as seller_name,
+        seller.email as seller_email
+      FROM orders o
+      JOIN products p ON o.product_id = p.id
+      JOIN users buyer ON o.buyer_id = buyer.id
+      JOIN users seller ON o.seller_id = seller.id
+      WHERE ${whereCondition}
+      ORDER BY o.created_at DESC
+      LIMIT ${parseInt(limit)}
+      OFFSET ${offset}
+    `;
+
+    const total = await sql`SELECT COUNT(*) as count FROM orders o WHERE ${whereCondition}`;
+
+    // Stats
+    const stats = await sql`
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'pending') as pending,
+        COUNT(*) FILTER (WHERE status = 'paid') as paid,
+        COUNT(*) FILTER (WHERE status = 'shipped') as shipped,
+        COUNT(*) FILTER (WHERE status = 'delivered') as delivered,
+        COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled,
+        COALESCE(SUM(total_amount) FILTER (WHERE status != 'cancelled'), 0) as total_revenue,
+        COALESCE(SUM(commission_amount) FILTER (WHERE status != 'cancelled'), 0) as total_commission
+      FROM orders
+    `;
+
+    res.json({
+      success: true,
+      orders,
+      stats: stats[0],
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: parseInt(total[0].count)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Obter detalhes de um pedido (admin)
+router.get('/admin/orders/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const orders = await sql`
+      SELECT
+        o.*,
+        p.title as product_title,
+        p.brand as product_brand,
+        p.size as product_size,
+        p.description as product_description,
+        p.condition as product_condition,
+        seller.name as seller_name,
+        seller.email as seller_email,
+        seller.phone as seller_phone,
+        seller.avatar_url as seller_avatar,
+        buyer.name as buyer_name,
+        buyer.email as buyer_email,
+        buyer.phone as buyer_phone,
+        buyer.avatar_url as buyer_avatar,
+        a.street, a.number, a.complement, a.neighborhood, a.city, a.state, a.zipcode, a.recipient_name
+      FROM orders o
+      JOIN products p ON o.product_id = p.id
+      JOIN users seller ON o.seller_id = seller.id
+      JOIN users buyer ON o.buyer_id = buyer.id
+      LEFT JOIN addresses a ON o.shipping_address_id = a.id
+      WHERE o.id = ${id}
+    `;
+
+    if (orders.length === 0) {
+      return res.status(404).json({ error: true, message: 'Pedido não encontrado' });
+    }
+
+    const images = await sql`
+      SELECT image_url FROM product_images WHERE product_id = ${orders[0].product_id} ORDER BY sort_order
+    `;
+
+    res.json({
+      success: true,
+      order: {
+        ...orders[0],
+        product_images: images.map(i => i.image_url)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Atualizar status do pedido (admin)
+router.put('/admin/orders/:id/status', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ['pending', 'paid', 'shipped', 'delivered', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: true, message: 'Status inválido' });
+    }
+
+    await sql`UPDATE orders SET status = ${status}, updated_at = NOW() WHERE id = ${id}`;
+
+    res.json({ success: true, message: 'Status atualizado' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Listar denúncias
+router.get('/admin/reports', async (req, res, next) => {
+  try {
+    const { page = 1, limit = 20, status = 'pending' } = req.query;
+    const offset = (page - 1) * limit;
+
+    let whereCondition = sql`1=1`;
+    if (status !== 'all') {
+      whereCondition = sql`r.status = ${status}`;
+    }
+
+    const reports = await sql`
+      SELECT
+        r.*,
+        reporter.name as reporter_name,
+        reporter.email as reporter_email,
+        reported.name as reported_name,
+        reported.email as reported_email,
+        p.title as product_title
+      FROM reports r
+      JOIN users reporter ON r.reporter_id = reporter.id
+      LEFT JOIN users reported ON r.reported_user_id = reported.id
+      LEFT JOIN products p ON r.product_id = p.id
+      WHERE ${whereCondition}
+      ORDER BY r.created_at DESC
+      LIMIT ${parseInt(limit)}
+      OFFSET ${offset}
+    `;
+
+    const total = await sql`SELECT COUNT(*) as count FROM reports r WHERE ${whereCondition}`;
+
+    const stats = await sql`
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'pending') as pending,
+        COUNT(*) FILTER (WHERE status = 'resolved') as resolved,
+        COUNT(*) FILTER (WHERE status = 'dismissed') as dismissed
+      FROM reports
+    `;
+
+    res.json({
+      success: true,
+      reports,
+      stats: stats[0],
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: parseInt(total[0].count)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Resolver denúncia
+router.put('/admin/reports/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status, resolution_notes } = req.body;
+
+    await sql`
+      UPDATE reports
+      SET status = ${status}, resolution_notes = ${resolution_notes}, resolved_at = NOW()
+      WHERE id = ${id}
+    `;
+
+    res.json({ success: true, message: 'Denúncia atualizada' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Configurações do sistema
 router.get('/admin/settings', async (req, res, next) => {
   try {

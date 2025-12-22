@@ -275,6 +275,22 @@ async function initDatabase() {
       )
     `;
 
+    console.log('📝 Criando tabela reports...');
+    await sql`
+      CREATE TABLE IF NOT EXISTS reports (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        reporter_id UUID NOT NULL REFERENCES users(id),
+        reported_user_id UUID REFERENCES users(id),
+        product_id UUID REFERENCES products(id),
+        reason VARCHAR(100) NOT NULL,
+        description TEXT,
+        status VARCHAR(20) DEFAULT 'pending',
+        resolution_notes TEXT,
+        resolved_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
     // Inserir categorias padrão
     console.log('📝 Inserindo categorias...');
     const categories = [
