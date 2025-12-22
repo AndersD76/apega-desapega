@@ -9,9 +9,9 @@ const mercadopago = require('../services/mercadopago');
 
 const router = express.Router();
 
-// Taxa de comissão
-const COMMISSION_RATE = 0.05; // 5% (promocional para primeiros 50)
-const PREMIUM_COMMISSION_RATE = 0.01; // 1% para Premium
+// Taxa de comissão - PROMOÇÃO: 0% para primeiras 50 vendedoras
+const COMMISSION_RATE = 0.00; // 0% (promocional para primeiros 50) - depois será 20%
+const PREMIUM_COMMISSION_RATE = 0.00; // 0% (promocional) - depois será 10%
 
 // Gerar número do pedido
 const generateOrderNumber = () => {

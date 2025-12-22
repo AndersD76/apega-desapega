@@ -525,7 +525,7 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
                   </View>
                   <View style={styles.promoBannerText}>
                     <Text style={styles.promoBannerTitle}>Você está garantindo sua vaga!</Text>
-                    <Text style={styles.promoBannerSubtitle}>5% comissão + IA Premium grátis</Text>
+                    <Text style={styles.promoBannerSubtitle}>0% comissão para sempre!</Text>
                   </View>
                 </View>
                 <View style={styles.promoBannerBadge}>

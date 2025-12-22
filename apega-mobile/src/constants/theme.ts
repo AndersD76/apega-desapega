@@ -230,11 +230,15 @@ export const BRAND = {
 
 // Taxas e Comissões
 export const FEES = {
-  commissionRate: 0.05, // 5% de comissão por venda (promocional para primeiros 50)
-  commissionPercentage: 5,
-  premiumCommissionRate: 0.01, // Premium tem taxa de apenas 1%
-  premiumCommissionPercentage: 1,
-  minCommission: 1.00, // Comissão mínima de R$ 1,00
+  // Promocional: 0% para primeiras 50 vendedoras
+  commissionRate: 0.00, // 0% de comissão (promocional para primeiros 50) - depois será 20%
+  commissionPercentage: 0,
+  premiumCommissionRate: 0.00, // 0% promocional - depois será 10%
+  premiumCommissionPercentage: 0,
+  // Taxas normais (após promoção)
+  regularCommissionRate: 0.20, // 20% taxa normal para free
+  regularPremiumCommissionRate: 0.10, // 10% taxa para premium
+  minCommission: 0.00, // Sem comissão mínima durante promoção
   // Cashback
   cashbackRate: 0.02, // 2% de cashback para usuários free
   cashbackPercentage: 2,

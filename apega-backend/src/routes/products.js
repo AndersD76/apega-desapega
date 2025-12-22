@@ -292,11 +292,11 @@ router.post('/', authenticate, async (req, res, next) => {
     const userData = await sql`SELECT city, state, subscription_type FROM users WHERE id = ${req.user.id}`;
 
     // Calcular preço com comissão
-    // Premium: 1% comissão, Free: 5% comissão
+    // PROMOÇÃO: 0% para primeiras 50 vendedoras (depois será 20% free, 10% premium)
     const sellerPrice = parseFloat(price);
     const isPremiumUser = userData[0]?.subscription_type === 'premium' || userData[0]?.subscription_type === 'premium_plus';
-    const commissionRate = isPremiumUser ? 0.01 : 0.05;
-    const displayPrice = Math.ceil(sellerPrice * (1 + commissionRate) * 100) / 100; // Arredonda para cima
+    const commissionRate = 0.00; // 0% durante promoção (depois: isPremiumUser ? 0.10 : 0.20)
+    const displayPrice = Math.ceil(sellerPrice * (1 + commissionRate) * 100) / 100; // Preço = valor do vendedor durante promoção
 
     const newProduct = await sql`
       INSERT INTO products (
