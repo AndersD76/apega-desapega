@@ -42,7 +42,7 @@ interface Sale {
   urgent?: boolean;
   status: 'pending_shipment' | 'in_transit' | 'delivered';
 }
-\r\n
+
 export default function SalesScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<string>('pending');
