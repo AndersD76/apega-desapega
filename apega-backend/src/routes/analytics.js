@@ -667,15 +667,9 @@ router.get('/admin/products', async (req, res, next) => {
     const { page = 1, limit = 20, search, status, category } = req.query;
     const offset = (page - 1) * limit;
 
-    let whereConditions = sql`p.status != 'deleted'`;
-
-    if (status && status !== 'all') {
-      whereConditions = sql`${whereConditions} AND p.status = ${status}`;
-    }
-
-    if (search) {
-      whereConditions = sql`${whereConditions} AND (p.title ILIKE ${'%' + search + '%'} OR p.brand ILIKE ${'%' + search + '%'})`;
-    }
+    // Construir query baseado nos filtros
+    const statusFilter = status && status !== 'all' ? status : null;
+    const searchFilter = search ? `%${search}%` : null;
 
     const products = await sql`
       SELECT
@@ -687,7 +681,9 @@ router.get('/admin/products', async (req, res, next) => {
       FROM products p
       JOIN users u ON p.seller_id = u.id
       LEFT JOIN categories c ON p.category_id = c.id
-      WHERE ${whereConditions}
+      WHERE p.status != 'deleted'
+        AND (${statusFilter}::text IS NULL OR p.status = ${statusFilter})
+        AND (${searchFilter}::text IS NULL OR p.title ILIKE ${searchFilter} OR p.brand ILIKE ${searchFilter})
       ORDER BY p.created_at DESC
       LIMIT ${parseInt(limit)}
       OFFSET ${offset}
@@ -695,7 +691,9 @@ router.get('/admin/products', async (req, res, next) => {
 
     const total = await sql`
       SELECT COUNT(*) as count FROM products p
-      WHERE ${whereConditions}
+      WHERE p.status != 'deleted'
+        AND (${statusFilter}::text IS NULL OR p.status = ${statusFilter})
+        AND (${searchFilter}::text IS NULL OR p.title ILIKE ${searchFilter} OR p.brand ILIKE ${searchFilter})
     `;
 
     // Stats
