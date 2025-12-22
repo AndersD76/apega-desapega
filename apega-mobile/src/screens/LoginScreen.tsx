@@ -536,7 +536,7 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
           {redirectTo && (
             <View style={styles.promoBanner}>
               <LinearGradient
-                colors={['#FFD700', '#FFA500']}
+                colors={['#7B1FA2', '#9C27B0']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.promoBannerGradient}
@@ -546,13 +546,13 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
                     <Ionicons name="diamond" size={24} color="#fff" />
                   </View>
                   <View style={styles.promoBannerText}>
-                    <Text style={styles.promoBannerTitle}>Você está garantindo sua vaga!</Text>
-                    <Text style={styles.promoBannerSubtitle}>0% comissão para sempre!</Text>
+                    <Text style={styles.promoBannerTitle}>Oferta de lancamento!</Text>
+                    <Text style={styles.promoBannerSubtitle}>Premium gratis + taxa reduzida</Text>
                   </View>
                 </View>
                 <View style={styles.promoBannerBadge}>
-                  <Ionicons name="checkmark-circle" size={16} color="#FFD700" />
-                  <Text style={styles.promoBannerBadgeText}>50 vagas restantes</Text>
+                  <Ionicons name="flash" size={16} color="#7B1FA2" />
+                  <Text style={styles.promoBannerBadgeText}>Vagas limitadas</Text>
                 </View>
               </LinearGradient>
             </View>
@@ -568,11 +568,11 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
             </LinearGradient>
           </View>
 
-          <Text style={styles.formTitle}>{redirectTo ? 'Garantir Minha Vaga' : 'Criar Conta'}</Text>
+          <Text style={styles.formTitle}>{redirectTo ? 'Garanta sua vaga' : 'Criar Conta'}</Text>
           <Text style={styles.formSubtitle}>
             {redirectTo
-              ? 'Crie sua conta e comece a vender\ncom IA Premium gratuita'
-              : 'Junte-se a milhares de pessoas que\namam moda sustentável'
+              ? 'Crie sua conta agora e aproveite\nPremium gratis + taxa reduzida de 5%'
+              : 'Junte-se a milhares de pessoas que\namam moda sustentavel'
             }
           </Text>
 
@@ -1166,9 +1166,9 @@ const createStyles = (isDesktop: boolean) => StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     ...Platform.select({
-      web: { boxShadow: '0 4px 20px rgba(255, 165, 0, 0.3)' },
+      web: { boxShadow: '0 4px 20px rgba(123, 31, 162, 0.3)' },
       default: {
-        shadowColor: '#FFA500',
+        shadowColor: '#7B1FA2',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 10,
@@ -1220,6 +1220,6 @@ const createStyles = (isDesktop: boolean) => StyleSheet.create({
   promoBannerBadgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#B8860B',
+    color: '#7B1FA2',
   },
 });
