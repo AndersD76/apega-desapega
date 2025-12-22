@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../constants/theme';
-import { loadToken } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
-const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
 
 interface BottomNavigationProps {
@@ -24,32 +23,29 @@ const NAV_ITEMS = [
 
 export default function BottomNavigation({ navigation, activeRoute = 'Home' }: BottomNavigationProps) {
   const insets = useSafeAreaInsets();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { width } = useWindowDimensions();
+  const { isAuthenticated } = useAuth();
+  const isDesktop = isWeb && width > 768;
 
   // Não mostra footer na web desktop
-  if (isWeb && width > 768) {
+  if (isDesktop) {
     return null;
   }
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    const token = await loadToken();
-    setIsAuthenticated(!!token);
-  };
-
-  const navigateWithAuth = (route: string) => {
+  const navigateWithAuth = (route: string, redirectTo?: string) => {
     if (isAuthenticated) {
       navigation.navigate(route);
+    } else if (redirectTo) {
+      navigation.navigate('Login', { redirectTo });
     } else {
       navigation.navigate('Login');
     }
   };
 
   const handlePress = (key: string) => {
-    if (key === 'NewItem' || key === 'Favorites') {
+    if (key === 'NewItem') {
+      navigateWithAuth(key, 'NewItem');
+    } else if (key === 'Favorites') {
       navigateWithAuth(key);
     } else {
       navigation.navigate(key);

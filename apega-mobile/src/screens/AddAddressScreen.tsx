@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,12 +11,10 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 
-const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
-const isDesktop = isWeb && width > 768;
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
@@ -29,6 +27,9 @@ type Props = NativeStackScreenProps<RootStackParamList, 'AddAddress'>;
 
 export default function AddAddressScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isDesktop = isWeb && width > 768;
+  const styles = useMemo(() => createStyles(isDesktop), [isDesktop]);
   const editAddress = route.params?.address;
 
   const [loading, setLoading] = useState(false);
@@ -326,7 +327,7 @@ export default function AddAddressScreen({ navigation, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (isDesktop: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

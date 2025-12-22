@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   Image,
   Platform,
-  Dimensions,
   Animated,
   useWindowDimensions,
 } from 'react-native';
@@ -19,8 +18,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../constants/theme';
 import { BottomNavigation } from '../components';
-import { loadToken, removeToken } from '../services/api';
-import { getCurrentUser } from '../services/authService';
+import { useAuth } from '../contexts/AuthContext';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
@@ -35,25 +33,12 @@ const BANNER_IMAGES = [
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  rating: number;
-  total_reviews: number;
-  total_sales: number;
-  avatar_url: string | null;
-}
-
 export default function ProfileScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   const isDesktop = isWeb && windowWidth > 768;
-  const contentWidth = isDesktop ? Math.min(windowWidth * 0.9, MAX_CONTENT_WIDTH) : windowWidth;
 
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user, isAuthenticated, isLoading, refreshUser, logout } = useAuth();
 
   // Banner carousel
   const [currentBanner, setCurrentBanner] = useState(0);
@@ -79,39 +64,19 @@ export default function ProfileScreen({ navigation }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      checkAuth();
-    }, [])
+      const refresh = async () => {
+        if (!isAuthenticated) return;
+        const freshUser = await refreshUser();
+        if (!freshUser) {
+          await logout();
+        }
+      };
+      refresh();
+    }, [isAuthenticated, refreshUser, logout])
   );
 
-  const checkAuth = async () => {
-    setIsLoading(true);
-    try {
-      const token = await loadToken();
-      if (!token) {
-        setIsAuthenticated(false);
-        setIsLoading(false);
-        return;
-      }
-
-      const userData = await getCurrentUser();
-      if (userData) {
-        setUser(userData);
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
-      }
-    } catch (error) {
-      console.error('Auth check error:', error);
-      setIsAuthenticated(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleLogout = async () => {
-    await removeToken();
-    setUser(null);
-    setIsAuthenticated(false);
+    await logout();
     navigation.reset({
       index: 0,
       routes: [{ name: 'Home' }],

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   StatusBar,
   Modal,
   Platform,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,24 +22,25 @@ import type { RootStackParamList } from '../navigation/AppNavigator';
 import { useAuth } from '../contexts/AuthContext';
 import { createProduct, uploadProductImages } from '../services/products';
 
-const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
-const isDesktop = isWeb && width > 768;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NewItem'>;
 
 export default function NewItemScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
+  const { width } = useWindowDimensions();
+  const isDesktop = isWeb && width > 768;
+  const styles = useMemo(() => createStyles(isDesktop), [isDesktop]);
+  const { user, isAuthenticated, isLoading } = useAuth();
 
-  // Verificar se é premium (default false se não houver user)
+  // Verificar se Ã© premium (default false se nÃ£o houver user)
   const isPremium = user?.subscription_type === 'premium';
   const maxPhotos = isPremium ? SUBSCRIPTION_PLANS.premium.limits.maxPhotos : SUBSCRIPTION_PLANS.free.limits.maxPhotos;
 
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  // Dados da peça
+  // Dados da peÃ§a
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [brand, setBrand] = useState('');
@@ -56,14 +57,25 @@ export default function NewItemScreen({ navigation }: Props) {
   const [showSizeModal, setShowSizeModal] = useState(false);
   const [showImagePicker, setShowImagePicker] = useState(false);
 
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigation.navigate('Login', { redirectTo: 'NewItem' });
+    }
+  }, [isAuthenticated, isLoading, navigation]);
+
+
+  const getCategoryLabel = (value: string) => {
+    return CATEGORIES.find((item) => item.id === value)?.name || value;
+  };
+
   const pickImage = async () => {
     // Verificar limite de fotos
     if (images.length >= maxPhotos) {
       Alert.alert(
         'Limite atingido',
         isPremium
-          ? `Você pode adicionar no máximo ${maxPhotos} fotos.`
-          : `Usuários gratuitos podem adicionar até ${maxPhotos} fotos. Seja Premium para adicionar até 10 fotos!`,
+          ? `VocÃª pode adicionar no mÃ¡ximo ${maxPhotos} fotos.`
+          : `UsuÃ¡rios gratuitos podem adicionar atÃ© ${maxPhotos} fotos. Seja Premium para adicionar atÃ© 10 fotos!`,
         isPremium ? [{ text: 'OK' }] : [
           { text: 'Continuar', style: 'cancel' },
           { text: 'Ser Premium', onPress: () => navigation.navigate('Subscription' as any) }
@@ -77,7 +89,7 @@ export default function NewItemScreen({ navigation }: Props) {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (status !== 'granted') {
-        Alert.alert('Permissão negada', 'Precisamos de permissão para acessar suas fotos');
+        Alert.alert('PermissÃ£o negada', 'Precisamos de permissÃ£o para acessar suas fotos');
         return;
       }
 
@@ -96,7 +108,7 @@ export default function NewItemScreen({ navigation }: Props) {
       }
       setShowImagePicker(false);
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível selecionar a imagem');
+      Alert.alert('Erro', 'NÃ£o foi possÃ­vel selecionar a imagem');
     }
   };
 
@@ -106,8 +118,8 @@ export default function NewItemScreen({ navigation }: Props) {
       Alert.alert(
         'Limite atingido',
         isPremium
-          ? `Você pode adicionar no máximo ${maxPhotos} fotos.`
-          : `Usuários gratuitos podem adicionar até ${maxPhotos} fotos. Seja Premium para adicionar até 10 fotos!`,
+          ? `VocÃª pode adicionar no mÃ¡ximo ${maxPhotos} fotos.`
+          : `UsuÃ¡rios gratuitos podem adicionar atÃ© ${maxPhotos} fotos. Seja Premium para adicionar atÃ© 10 fotos!`,
         isPremium ? [{ text: 'OK' }] : [
           { text: 'Continuar', style: 'cancel' },
           { text: 'Ser Premium', onPress: () => navigation.navigate('Subscription' as any) }
@@ -121,7 +133,7 @@ export default function NewItemScreen({ navigation }: Props) {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
       if (status !== 'granted') {
-        Alert.alert('Permissão negada', 'Precisamos de permissão para acessar sua câmera');
+        Alert.alert('PermissÃ£o negada', 'Precisamos de permissÃ£o para acessar sua cÃ¢mera');
         return;
       }
 
@@ -136,7 +148,7 @@ export default function NewItemScreen({ navigation }: Props) {
       }
       setShowImagePicker(false);
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível tirar a foto');
+      Alert.alert('Erro', 'NÃ£o foi possÃ­vel tirar a foto');
     }
   };
 
@@ -145,24 +157,28 @@ export default function NewItemScreen({ navigation }: Props) {
   };
 
   const handleSubmit = async () => {
-    // Validações
+    if (!isAuthenticated) {
+      navigation.navigate('Login', { redirectTo: 'NewItem' });
+      return;
+    }
+    // ValidaÃ§Ãµes
     if (images.length === 0) {
-      Alert.alert('Erro', 'Adicione pelo menos uma foto da peça');
+      Alert.alert('Erro', 'Adicione pelo menos uma foto da peÃ§a');
       return;
     }
 
     if (!title.trim()) {
-      Alert.alert('Erro', 'Preencha o título da peça');
+      Alert.alert('Erro', 'Preencha o tÃ­tulo da peÃ§a');
       return;
     }
 
     if (!description.trim()) {
-      Alert.alert('Erro', 'Preencha a descrição');
+      Alert.alert('Erro', 'Preencha a descriÃ§Ã£o');
       return;
     }
 
     if (!price.trim()) {
-      Alert.alert('Erro', 'Preencha o preço');
+      Alert.alert('Erro', 'Preencha o preÃ§o');
       return;
     }
 
@@ -174,11 +190,11 @@ export default function NewItemScreen({ navigation }: Props) {
     setUploading(true);
 
     try {
-      // Converter preços de string para número
+      // Converter preÃ§os de string para nÃºmero
       const priceValue = parseFloat(price.replace(',', '.'));
       const originalPriceValue = originalPrice ? parseFloat(originalPrice.replace(',', '.')) : undefined;
 
-      // Mapear condição para o formato esperado pelo backend
+      // Mapear condiÃ§Ã£o para o formato esperado pelo backend
       const conditionMap: { [key: string]: 'novo' | 'seminovo' | 'usado' } = {
         'novo': 'novo',
         'seminovo': 'seminovo',
@@ -195,6 +211,7 @@ export default function NewItemScreen({ navigation }: Props) {
         condition: conditionMap[condition] || 'seminovo',
         price: priceValue,
         original_price: originalPriceValue,
+        category: category || undefined,
       });
 
       console.log('Produto criado:', result);
@@ -207,13 +224,13 @@ export default function NewItemScreen({ navigation }: Props) {
           console.log('Imagens enviadas:', uploadResult);
         } catch (uploadError) {
           console.error('Erro ao fazer upload das imagens:', uploadError);
-          // Não bloquear o sucesso - o produto foi criado
+          // NÃ£o bloquear o sucesso - o produto foi criado
         }
       }
 
       Alert.alert(
         'Sucesso!',
-        'Seu anúncio foi publicado com sucesso!',
+        'Seu anÃºncio foi publicado com sucesso!',
         [
           {
             text: 'OK',
@@ -222,8 +239,8 @@ export default function NewItemScreen({ navigation }: Props) {
         ]
       );
     } catch (error: any) {
-      console.error('Erro ao publicar anúncio:', error);
-      Alert.alert('Erro', error.message || 'Não foi possível publicar o anúncio');
+      console.error('Erro ao publicar anÃºncio:', error);
+      Alert.alert('Erro', error.message || 'NÃ£o foi possÃ­vel publicar o anÃºncio');
     } finally {
       setUploading(false);
     }
@@ -256,14 +273,14 @@ export default function NewItemScreen({ navigation }: Props) {
                 <Text style={styles.navLink}>Favoritos</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.headerTitle}>Nova Peça</Text>
+            <Text style={styles.headerTitle}>Nova PeÃ§a</Text>
           </>
         ) : (
           <>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-              <Text style={styles.backIcon}>←</Text>
+              <Text style={styles.backIcon}>â†</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Nova Peça</Text>
+            <Text style={styles.headerTitle}>Nova PeÃ§a</Text>
             <View style={{ width: 40 }} />
           </>
         )}
@@ -275,15 +292,15 @@ export default function NewItemScreen({ navigation }: Props) {
           <Text style={styles.sectionTitle}>Fotos</Text>
           <Text style={styles.sectionSubtitle}>
             {isPremium
-              ? `Adicione até ${maxPhotos} fotos da sua peça`
-              : `Adicione até ${maxPhotos} fotos (Premium: até 10)`}
+              ? `Adicione atÃ© ${maxPhotos} fotos da sua peÃ§a`
+              : `Adicione atÃ© ${maxPhotos} fotos (Premium: atÃ© 10)`}
           </Text>
           <Text style={styles.photoCounter}>
             {images.length}/{maxPhotos} fotos
           </Text>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagesList}>
-            {/* Botão de adicionar foto - só mostra se ainda tem espaço */}
+            {/* BotÃ£o de adicionar foto - sÃ³ mostra se ainda tem espaÃ§o */}
             {images.length < maxPhotos && (
               <TouchableOpacity
                 style={styles.addPhotoButton}
@@ -302,7 +319,7 @@ export default function NewItemScreen({ navigation }: Props) {
                   style={styles.removeImageButton}
                   onPress={() => removeImage(index)}
                 >
-                  <Text style={styles.removeImageText}>×</Text>
+                  <Text style={styles.removeImageText}>Ã—</Text>
                 </TouchableOpacity>
                 {index === 0 && (
                   <View style={styles.mainPhotoBadge}>
@@ -314,12 +331,12 @@ export default function NewItemScreen({ navigation }: Props) {
           </ScrollView>
         </View>
 
-        {/* Informações Básicas */}
+        {/* InformaÃ§Ãµes BÃ¡sicas */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Informações Básicas</Text>
+          <Text style={styles.sectionTitle}>InformaÃ§Ãµes BÃ¡sicas</Text>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Título *</Text>
+            <Text style={styles.label}>TÃ­tulo *</Text>
             <TextInput
               style={styles.input}
               value={title}
@@ -330,12 +347,12 @@ export default function NewItemScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Descrição *</Text>
+            <Text style={styles.label}>DescriÃ§Ã£o *</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
               value={description}
               onChangeText={setDescription}
-              placeholder="Descreva a peça, tecido, detalhes..."
+              placeholder="Descreva a peÃ§a, tecido, detalhes..."
               placeholderTextColor={COLORS.textTertiary}
               multiline
               numberOfLines={4}
@@ -367,14 +384,14 @@ export default function NewItemScreen({ navigation }: Props) {
                 onPress={() => setShowCategoryModal(true)}
               >
                 <Text style={category ? styles.selectText : styles.selectPlaceholder}>
-                  {category || 'Selecione'}
+                  {category ? getCategoryLabel(category) : 'Selecione'}
                 </Text>
-                <Text style={styles.selectIcon}>›</Text>
+                <Text style={styles.selectIcon}>â€º</Text>
               </TouchableOpacity>
             </View>
 
             <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.label}>Condição *</Text>
+              <Text style={styles.label}>CondiÃ§Ã£o *</Text>
               <TouchableOpacity
                 style={styles.selectInput}
                 onPress={() => setShowConditionModal(true)}
@@ -382,7 +399,7 @@ export default function NewItemScreen({ navigation }: Props) {
                 <Text style={condition ? styles.selectText : styles.selectPlaceholder}>
                   {CONDITIONS.find(c => c.id === condition)?.label || 'Selecione'}
                 </Text>
-                <Text style={styles.selectIcon}>›</Text>
+                <Text style={styles.selectIcon}>â€º</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -397,7 +414,7 @@ export default function NewItemScreen({ navigation }: Props) {
                 <Text style={size ? styles.selectText : styles.selectPlaceholder}>
                   {size || 'Selecione'}
                 </Text>
-                <Text style={styles.selectIcon}>›</Text>
+                <Text style={styles.selectIcon}>â€º</Text>
               </TouchableOpacity>
             </View>
 
@@ -414,12 +431,12 @@ export default function NewItemScreen({ navigation }: Props) {
           </View>
         </View>
 
-        {/* Preço */}
+        {/* PreÃ§o */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preço</Text>
+          <Text style={styles.sectionTitle}>PreÃ§o</Text>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Preço de venda *</Text>
+            <Text style={styles.label}>PreÃ§o de venda *</Text>
             <View style={styles.priceInputWrapper}>
               <Text style={styles.currencySymbol}>R$</Text>
               <TextInput
@@ -434,7 +451,7 @@ export default function NewItemScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Preço original (opcional)</Text>
+            <Text style={styles.label}>PreÃ§o original (opcional)</Text>
             <View style={styles.priceInputWrapper}>
               <Text style={styles.currencySymbol}>R$</Text>
               <TextInput
@@ -455,7 +472,7 @@ export default function NewItemScreen({ navigation }: Props) {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Footer com botão de publicar */}
+      {/* Footer com botÃ£o de publicar */}
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, SPACING.lg) }]}>
         <TouchableOpacity
           style={[styles.publishButton, uploading && styles.publishButtonDisabled]}
@@ -466,7 +483,7 @@ export default function NewItemScreen({ navigation }: Props) {
           {uploading ? (
             <ActivityIndicator color={COLORS.white} />
           ) : (
-            <Text style={styles.publishButtonText}>Publicar Anúncio</Text>
+            <Text style={styles.publishButtonText}>Publicar AnÃºncio</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -487,7 +504,7 @@ export default function NewItemScreen({ navigation }: Props) {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Selecione a Categoria</Text>
               <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
-                <Text style={styles.modalClose}>×</Text>
+                <Text style={styles.modalClose}>Ã—</Text>
               </TouchableOpacity>
             </View>
             <ScrollView>
@@ -496,13 +513,13 @@ export default function NewItemScreen({ navigation }: Props) {
                   key={cat.id}
                   style={styles.modalOption}
                   onPress={() => {
-                    setCategory(cat.name);
+                    setCategory(cat.id);
                     setShowCategoryModal(false);
                   }}
                 >
                   <Text style={styles.modalOptionText}>{cat.name}</Text>
-                  {category === cat.name && (
-                    <Text style={styles.modalCheck}>✓</Text>
+                  {category === cat.id && (
+                    <Text style={styles.modalCheck}>âœ“</Text>
                   )}
                 </TouchableOpacity>
               ))}
@@ -511,7 +528,7 @@ export default function NewItemScreen({ navigation }: Props) {
         </TouchableOpacity>
       </Modal>
 
-      {/* Modal de Condição */}
+      {/* Modal de CondiÃ§Ã£o */}
       <Modal
         visible={showConditionModal}
         transparent
@@ -525,9 +542,9 @@ export default function NewItemScreen({ navigation }: Props) {
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Selecione a Condição</Text>
+              <Text style={styles.modalTitle}>Selecione a CondiÃ§Ã£o</Text>
               <TouchableOpacity onPress={() => setShowConditionModal(false)}>
-                <Text style={styles.modalClose}>×</Text>
+                <Text style={styles.modalClose}>Ã—</Text>
               </TouchableOpacity>
             </View>
             <ScrollView>
@@ -542,7 +559,7 @@ export default function NewItemScreen({ navigation }: Props) {
                 >
                   <Text style={styles.modalOptionText}>{cond.label}</Text>
                   {condition === cond.id && (
-                    <Text style={styles.modalCheck}>✓</Text>
+                    <Text style={styles.modalCheck}>âœ“</Text>
                   )}
                 </TouchableOpacity>
               ))}
@@ -567,7 +584,7 @@ export default function NewItemScreen({ navigation }: Props) {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Selecione o Tamanho</Text>
               <TouchableOpacity onPress={() => setShowSizeModal(false)}>
-                <Text style={styles.modalClose}>×</Text>
+                <Text style={styles.modalClose}>Ã—</Text>
               </TouchableOpacity>
             </View>
             <ScrollView>
@@ -592,7 +609,7 @@ export default function NewItemScreen({ navigation }: Props) {
         </TouchableOpacity>
       </Modal>
 
-      {/* Modal de Seleção de Imagem */}
+      {/* Modal de SeleÃ§Ã£o de Imagem */}
       <Modal
         visible={showImagePicker}
         transparent
@@ -613,7 +630,7 @@ export default function NewItemScreen({ navigation }: Props) {
                 takePhoto();
               }}
             >
-              <Text style={styles.imagePickerIcon}>📷</Text>
+              <Text style={styles.imagePickerIcon}>ðŸ“·</Text>
               <Text style={styles.imagePickerText}>Tirar Foto</Text>
             </TouchableOpacity>
             <View style={styles.imagePickerDivider} />
@@ -624,7 +641,7 @@ export default function NewItemScreen({ navigation }: Props) {
                 pickImage();
               }}
             >
-              <Text style={styles.imagePickerIcon}>🖼️</Text>
+              <Text style={styles.imagePickerIcon}>ðŸ–¼ï¸</Text>
               <Text style={styles.imagePickerText}>Escolher da Galeria</Text>
             </TouchableOpacity>
             <View style={styles.imagePickerDivider} />
@@ -641,7 +658,7 @@ export default function NewItemScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (isDesktop: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
@@ -1009,3 +1026,5 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
   },
 });
+
+

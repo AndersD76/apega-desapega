@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -14,16 +13,15 @@ import {
   Image,
   Animated,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
-import { login, register } from '../services/auth';
+import { useAuth } from '../contexts/AuthContext';
 
-const { width, height } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
-const isDesktop = isWeb && width > 768;
 
 interface LoginScreenProps {
   navigation: any;
@@ -47,6 +45,10 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
   // Parâmetro de redirecionamento após cadastro
   const redirectTo = route?.params?.redirectTo || null;
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isDesktop = isWeb && width > 768;
+  const styles = useMemo(() => createStyles(isDesktop), [isDesktop]);
+  const { login: authLogin, register: authRegister } = useAuth();
   // Se tem redirectTo, vai direto para signup
   const [currentScreen, setCurrentScreen] = useState<Screen>(redirectTo ? 'email-signup' : 'main');
 
@@ -131,11 +133,24 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
 
     setIsLoading(true);
     try {
-      await login(email.trim().toLowerCase(), password);
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Home' }],
-      });
+      const result = await authLogin(email.trim().toLowerCase(), password);
+      if (!result.success) {
+        throw new Error(result.message || 'Email ou senha incorretos. Verifique seus dados e tente novamente.');
+      }
+      if (redirectTo) {
+        navigation.reset({
+          index: 1,
+          routes: [
+            { name: 'Home' },
+            { name: redirectTo },
+          ],
+        });
+      } else {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        });
+      }
     } catch (error: any) {
       console.error('Login error:', error);
       Alert.alert(
@@ -163,7 +178,10 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
 
     setIsLoading(true);
     try {
-      await register(signupEmail.trim().toLowerCase(), signupPassword, signupName.trim());
+      const result = await authRegister(signupEmail.trim().toLowerCase(), signupPassword, signupName.trim());
+      if (!result.success) {
+        throw new Error(result.message || 'NÇœo foi possÇðvel criar sua conta. Tente novamente.');
+      }
       // Se tem redirectTo, vai para lá após criar conta
       if (redirectTo) {
         navigation.reset({
@@ -775,7 +793,7 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
   return null;
 }
 
-const styles = StyleSheet.create({
+const createStyles = (isDesktop: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',

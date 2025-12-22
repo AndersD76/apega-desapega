@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+﻿import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
   Image,
   StatusBar,
   Platform,
@@ -12,7 +13,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS, FEES } from '../constants/theme';
+import { getSales, getSalesStats, type Order as ApiOrder, type SalesStats } from '../services/orders';
 import { BottomNavigation, Tab, Button, Modal } from '../components';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -39,33 +42,83 @@ interface Sale {
   urgent?: boolean;
   status: 'pending_shipment' | 'in_transit' | 'delivered';
 }
-
-const MOCK_SALES: Sale[] = [];
-
+\r\n
 export default function SalesScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<string>('pending');
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [stats, setStats] = useState<SalesStats | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showLabelModal, setShowLabelModal] = useState(false);
   const [showShipModal, setShowShipModal] = useState(false);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
-
-  // Dados serão carregados da API quando disponível
-  const revenue = 0;
-  const salesCount = 0;
+  const revenue = stats?.totalRevenue || 0;
+  const salesCount = stats?.totalOrders || sales.length;
   const rating = 0;
   const goal = 10;
   const goalProgress = salesCount > 0 ? (salesCount / goal) * 100 : 0;
 
-  const pendingCount = MOCK_SALES.filter(s => s.status === 'pending_shipment').length;
-  const inTransitCount = MOCK_SALES.filter(s => s.status === 'in_transit').length;
+  const normalizeStatus = (status: ApiOrder['status']): Sale['status'] => {
+    if (status === 'in_transit' || status === 'shipped') {
+      return 'in_transit';
+    }
+    if (status === 'delivered' || status === 'completed') {
+      return 'delivered';
+    }
+    return 'pending_shipment';
+  };
+
+  const mapOrderToSale = (order: ApiOrder): Sale => ({
+    id: order.id,
+    orderId: order.order_number || order.id,
+    product: {
+      name: order.product_title || '---',
+      size: order.product_size || '',
+      image: order.product_image || '',
+    },
+    buyer: order.buyer_name || '---',
+    amount: order.product_price || 0,
+    sellerReceives: order.seller_receives || 0,
+    status: normalizeStatus(order.status),
+  });
+
+  const loadSales = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [salesResponse, statsResponse] = await Promise.all([
+        getSales(),
+        getSalesStats(),
+      ]);
+
+      if (salesResponse.orders) {
+        setSales(salesResponse.orders.map(mapOrderToSale));
+      }
+      if (statsResponse.stats) {
+        setStats(statsResponse.stats);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar vendas:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadSales();
+    }, [loadSales])
+  );
+
+  const pendingCount = sales.filter((s) => s.status === 'pending_shipment').length;
+  const inTransitCount = sales.filter((s) => s.status === 'in_transit').length;
 
   const tabs: TabItem[] = [
     { id: 'pending', label: `aguardando envio (${pendingCount})` },
-    { id: 'transit', label: `em trânsito (${inTransitCount})` },
+    { id: 'transit', label: `em transito (${inTransitCount})` },
     { id: 'delivered', label: 'entregues' },
   ];
 
-  const filteredSales = MOCK_SALES.filter(sale => {
+  const filteredSales = sales.filter((sale) => {
     if (activeTab === 'pending') return sale.status === 'pending_shipment';
     if (activeTab === 'transit') return sale.status === 'in_transit';
     if (activeTab === 'delivered') return sale.status === 'delivered';
@@ -97,16 +150,20 @@ export default function SalesScreen({ navigation }: Props) {
       {sale.urgent && (
         <View style={styles.urgentBanner}>
           <Ionicons name="warning" size={20} color={COLORS.warning} />
-          <Text style={styles.urgentText}>envie até amanhã</Text>
+          <Text style={styles.urgentText}>envie atÃ© amanhÃ£</Text>
         </View>
       )}
 
       <Text style={styles.saleOrderId}>venda #{sale.orderId}</Text>
 
       <View style={styles.saleProduct}>
-        <View style={styles.productImage}>
-          <Ionicons name="image" size={32} color={COLORS.textTertiary} />
-        </View>
+        {sale.product.image ? (
+          <Image source={{ uri: sale.product.image }} style={styles.productImage} />
+        ) : (
+          <View style={styles.productImage}>
+            <Ionicons name="image" size={32} color={COLORS.textTertiary} />
+          </View>
+        )}
         <View style={styles.productInfo}>
           <Text style={styles.productName}>{sale.product.name}</Text>
           {sale.product.size && (
@@ -118,8 +175,8 @@ export default function SalesScreen({ navigation }: Props) {
       <View style={styles.saleDetails}>
         <Text style={styles.saleLabel}>compradora: <Text style={styles.saleValue}>{sale.buyer}</Text></Text>
         <Text style={styles.saleLabel}>valor da venda: <Text style={styles.saleValue}>R$ {(sale?.amount || 0).toFixed(2)}</Text></Text>
-        <Text style={styles.saleLabel}>comissão ({FEES.commissionPercentage}%): <Text style={styles.commissionValue}>- R$ {((sale?.amount || 0) * FEES.commissionRate).toFixed(2)}</Text></Text>
-        <Text style={styles.saleLabel}>você recebe: <Text style={styles.saleValueHighlight}>R$ {(sale?.sellerReceives || 0).toFixed(2)}</Text></Text>
+        <Text style={styles.saleLabel}>comissÃ£o ({FEES.commissionPercentage}%): <Text style={styles.commissionValue}>- R$ {((sale?.amount || 0) * FEES.commissionRate).toFixed(2)}</Text></Text>
+        <Text style={styles.saleLabel}>vocÃª recebe: <Text style={styles.saleValueHighlight}>R$ {(sale?.sellerReceives || 0).toFixed(2)}</Text></Text>
       </View>
 
       {sale.status === 'pending_shipment' && (
@@ -185,13 +242,13 @@ export default function SalesScreen({ navigation }: Props) {
         <View style={styles.commissionBanner}>
           <Ionicons name="information-circle" size={20} color={COLORS.info} />
           <Text style={styles.commissionBannerText}>
-            Taxa de {FEES.commissionPercentage}% por venda • Assinantes Premium têm taxa zero
+            Taxa de {FEES.commissionPercentage}% por venda â€¢ Assinantes Premium tÃªm taxa zero
           </Text>
         </View>
 
         {/* Revenue Card */}
         <View style={styles.revenueCard}>
-          <Text style={styles.revenueLabel}>faturamento este mês</Text>
+          <Text style={styles.revenueLabel}>faturamento este mÃªs</Text>
           <Text style={styles.revenueAmount}>R$ {(revenue || 0).toFixed(2)}</Text>
           <Text style={styles.revenueGrowth}>comece a vender hoje!</Text>
 
@@ -214,7 +271,7 @@ export default function SalesScreen({ navigation }: Props) {
             <Text style={styles.statLabel}>vendas</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>{rating}⭐</Text>
+            <Text style={styles.statValue}>{rating}â­</Text>
             <Text style={styles.statLabel}>nota</Text>
           </View>
         </View>
@@ -228,7 +285,19 @@ export default function SalesScreen({ navigation }: Props) {
 
         {/* Sales List */}
         <View style={styles.salesList}>
-          {filteredSales.map(renderSaleCard)}
+          {loading ? (
+            <View style={styles.emptyState}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text style={styles.emptyText}>carregando vendas...</Text>
+            </View>
+          ) : filteredSales.length > 0 ? (
+            filteredSales.map(renderSaleCard)
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="cube-outline" size={48} color={COLORS.textTertiary} />
+              <Text style={styles.emptyText}>nenhuma venda por aqui</Text>
+            </View>
+          )}
         </View>
 
         <View style={{ height: 80 }} />
@@ -255,14 +324,14 @@ export default function SalesScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.addressCard}>
-            <Text style={styles.addressLabel}>destinatário</Text>
+            <Text style={styles.addressLabel}>destinatÃ¡rio</Text>
             <Text style={styles.addressName}>{selectedSale?.buyer}</Text>
             <Text style={styles.addressText}>av. ipiranga, 500</Text>
             <Text style={styles.addressText}>porto alegre - rs</Text>
             <Text style={styles.addressText}>90000-000</Text>
           </View>
 
-          <Text style={styles.modalLabel}>método de envio</Text>
+          <Text style={styles.modalLabel}>mÃ©todo de envio</Text>
           <TouchableOpacity style={styles.radioOption}>
             <Ionicons name="radio-button-on" size={20} color={COLORS.primary} />
             <Text style={styles.radioText}>PAC (R$ 15,00 - 5-7 dias)</Text>
@@ -282,7 +351,7 @@ export default function SalesScreen({ navigation }: Props) {
             style={{ marginTop: SPACING.lg }}
           />
 
-          <Text style={styles.modalHint}>após gerar, imprima e cole na embalagem do produto</Text>
+          <Text style={styles.modalHint}>apÃ³s gerar, imprima e cole na embalagem do produto</Text>
         </View>
       </Modal>
 
@@ -297,22 +366,22 @@ export default function SalesScreen({ navigation }: Props) {
           <Text style={styles.modalOrderId}>venda #{selectedSale?.orderId}</Text>
           <Text style={styles.modalProductName}>{selectedSale?.product.name}</Text>
 
-          <Text style={styles.modalLabel}>código de rastreio</Text>
+          <Text style={styles.modalLabel}>cÃ³digo de rastreio</Text>
           <View style={styles.input}>
             <Text style={styles.inputText}>BR</Text>
           </View>
           <Text style={styles.inputHint}>ex: BR123456789BR</Text>
 
-          <Text style={styles.modalLabel}>método de envio</Text>
+          <Text style={styles.modalLabel}>mÃ©todo de envio</Text>
           <View style={styles.dropdown}>
             <Text style={styles.dropdownText}>PAC</Text>
             <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
           </View>
 
           <View style={styles.tipBanner}>
-            <Text style={styles.tipIcon}>💡</Text>
+            <Text style={styles.tipIcon}>ðŸ’¡</Text>
             <Text style={styles.tipText}>
-              a compradora será notificada automaticamente
+              a compradora serÃ¡ notificada automaticamente
             </Text>
           </View>
 
@@ -651,5 +720,14 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: TYPOGRAPHY.sizes.sm,
     color: COLORS.textPrimary,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: SPACING.lg,
+  },
+  emptyText: {
+    marginTop: SPACING.sm,
+    fontSize: TYPOGRAPHY.sizes.sm,
+    color: COLORS.textSecondary,
   },
 });

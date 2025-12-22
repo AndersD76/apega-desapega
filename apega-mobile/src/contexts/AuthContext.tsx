@@ -9,7 +9,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   register: (email: string, password: string, name: string, phone?: string) => Promise<{ success: boolean; message?: string }>;
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<User | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -96,7 +96,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const freshUser = await getCurrentUser();
     if (freshUser) {
       setUser(freshUser);
+      return freshUser;
     }
+    return null;
   };
 
   return (

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,10 @@ import {
   ActivityIndicator,
   RefreshControl,
   Platform,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 
-const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
-const isDesktop = isWeb && width > 768;
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -43,6 +41,9 @@ interface Address {
 
 export default function AddressesScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isDesktop = isWeb && width > 768;
+  const styles = useMemo(() => createStyles(isDesktop), [isDesktop]);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -232,7 +233,7 @@ export default function AddressesScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (isDesktop: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,

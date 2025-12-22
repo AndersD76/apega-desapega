@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const multer = require('multer');
 const { sql } = require('../config/database');
 const { authenticate, optionalAuth } = require('../middleware/auth');
@@ -6,7 +6,25 @@ const { uploadToCloudinary } = require('../config/cloudinary');
 
 const router = express.Router();
 
-// Configuração do multer para upload em memória (para Cloudinary)
+const resolveCategoryId = async (categoryId, categoryValue) => {
+  if (categoryId) {
+    return categoryId;
+  }
+  if (!categoryValue) {
+    return null;
+  }
+  const categories = await sql`
+    SELECT id
+    FROM categories
+    WHERE (slug = ${categoryValue} OR name = ${categoryValue})
+      AND is_active = true
+    LIMIT 1
+  `;
+  return categories[0]?.id || null;
+};
+
+
+// ConfiguraÃ§Ã£o do multer para upload em memÃ³ria (para Cloudinary)
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
@@ -14,7 +32,7 @@ const fileFilter = (req, file, cb) => {
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Tipo de arquivo não permitido. Use JPG, PNG ou WEBP.'), false);
+    cb(new Error('Tipo de arquivo nÃ£o permitido. Use JPG, PNG ou WEBP.'), false);
   }
 };
 
@@ -59,7 +77,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
       WHERE p.status = 'active'
     `;
 
-    // Filtros dinâmicos
+    // Filtros dinÃ¢micos
     const conditions = [];
 
     if (category && category !== 'all') {
@@ -94,7 +112,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
       conditions.push(sql`p.city ILIKE ${'%' + city + '%'}`);
     }
 
-    // Ordenação
+    // OrdenaÃ§Ã£o
     let orderBy;
     switch (sort) {
       case 'price_asc':
@@ -180,7 +198,7 @@ router.get('/my', authenticate, async (req, res, next) => {
   }
 });
 
-// Upload único de imagem (deve vir antes de /:id)
+// Upload Ãºnico de imagem (deve vir antes de /:id)
 router.post('/upload', authenticate, upload.single('image'), async (req, res, next) => {
   try {
     if (!req.file) {
@@ -205,7 +223,7 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // Incrementar visualizações
+    // Incrementar visualizaÃ§Ãµes
     await sql`UPDATE products SET views = views + 1 WHERE id = ${id}`;
 
     const products = await sql`
@@ -228,7 +246,7 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
     `;
 
     if (products.length === 0) {
-      return res.status(404).json({ error: true, message: 'Produto não encontrado' });
+      return res.status(404).json({ error: true, message: 'Produto nÃ£o encontrado' });
     }
 
     // Buscar todas as imagens
@@ -248,8 +266,8 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
 });
 
 // Criar produto
-// O vendedor informa o preço que deseja receber
-// O preço exibido para compradores inclui a comissão (5%)
+// O vendedor informa o preÃ§o que deseja receber
+// O preÃ§o exibido para compradores inclui a comissÃ£o (5%)
 router.post('/', authenticate, async (req, res, next) => {
   try {
     const {
@@ -259,21 +277,22 @@ router.post('/', authenticate, async (req, res, next) => {
       size,
       color,
       condition,
-      price, // Preço que o vendedor quer receber
+      price, // PreÃ§o que o vendedor quer receber
       original_price,
       category_id,
+      category,
       is_premium
     } = req.body;
 
-    // Validações
+    // ValidaÃ§Ãµes
     if (!title || !condition || !price) {
       return res.status(400).json({
         error: true,
-        message: 'Título, condição e preço são obrigatórios'
+        message: 'TÃ­tulo, condiÃ§Ã£o e preÃ§o sÃ£o obrigatÃ³rios'
       });
     }
 
-    // Verificar limite de produtos para usuário free
+    // Verificar limite de produtos para usuÃ¡rio free
     if (req.user.subscription_type === 'free') {
       const count = await sql`
         SELECT COUNT(*) as total FROM products
@@ -283,20 +302,28 @@ router.post('/', authenticate, async (req, res, next) => {
       if (parseInt(count[0].total) >= 5) {
         return res.status(403).json({
           error: true,
-          message: 'Limite de 5 produtos atingido. Assine o Premium para anúncios ilimitados.'
+          message: 'Limite de 5 produtos atingido. Assine o Premium para anÃºncios ilimitados.'
         });
       }
     }
 
-    // Buscar cidade do usuário e tipo de assinatura
+    // Buscar cidade do usuÃ¡rio e tipo de assinatura
     const userData = await sql`SELECT city, state, subscription_type FROM users WHERE id = ${req.user.id}`;
 
-    // Calcular preço com comissão
-    // PROMOÇÃO: 0% para primeiras 50 vendedoras (depois será 20% free, 10% premium)
+    // Calcular preÃ§o com comissÃ£o
+    // PROMOÃ‡ÃƒO: 0% para primeiras 50 vendedoras (depois serÃ¡ 20% free, 10% premium)
     const sellerPrice = parseFloat(price);
     const isPremiumUser = userData[0]?.subscription_type === 'premium' || userData[0]?.subscription_type === 'premium_plus';
-    const commissionRate = 0.00; // 0% durante promoção (depois: isPremiumUser ? 0.10 : 0.20)
-    const displayPrice = Math.ceil(sellerPrice * (1 + commissionRate) * 100) / 100; // Preço = valor do vendedor durante promoção
+    const commissionRate = 0.00; // 0% durante promoÃ§Ã£o (depois: isPremiumUser ? 0.10 : 0.20)
+    const displayPrice = Math.ceil(sellerPrice * (1 + commissionRate) * 100) / 100; // PreÃ§o = valor do vendedor durante promoÃ§Ã£o
+
+    const resolvedCategoryId = await resolveCategoryId(category_id, category);
+    if (category && !resolvedCategoryId) {
+      return res.status(400).json({
+        error: true,
+        message: 'Categoria invalida'
+      });
+    }
 
     const newProduct = await sql`
       INSERT INTO products (
@@ -305,7 +332,7 @@ router.post('/', authenticate, async (req, res, next) => {
       )
       VALUES (
         ${req.user.id},
-        ${category_id || null},
+        ${resolvedCategoryId || null},
         ${title},
         ${description || null},
         ${brand || null},
@@ -347,20 +374,26 @@ router.put('/:id', authenticate, async (req, res, next) => {
       price,
       original_price,
       category_id,
+      category,
       status
     } = req.body;
 
-    // Verificar se o produto pertence ao usuário
+    // Verificar se o produto pertence ao usuÃ¡rio
     const existing = await sql`
       SELECT seller_id FROM products WHERE id = ${id}
     `;
 
     if (existing.length === 0) {
-      return res.status(404).json({ error: true, message: 'Produto não encontrado' });
+      return res.status(404).json({ error: true, message: 'Produto nÃ£o encontrado' });
     }
 
     if (existing[0].seller_id !== req.user.id) {
-      return res.status(403).json({ error: true, message: 'Sem permissão para editar este produto' });
+      return res.status(403).json({ error: true, message: 'Sem permissÃ£o para editar este produto' });
+    }
+
+    const resolvedCategoryId = await resolveCategoryId(category_id, category);
+    if (category && !resolvedCategoryId) {
+      return res.status(400).json({ error: true, message: 'Categoria invalida' });
     }
 
     const updated = await sql`
@@ -374,7 +407,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
         condition = COALESCE(${condition}, condition),
         price = COALESCE(${price ? parseFloat(price) : null}, price),
         original_price = COALESCE(${original_price ? parseFloat(original_price) : null}, original_price),
-        category_id = COALESCE(${category_id}, category_id),
+        category_id = COALESCE(${resolvedCategoryId}, category_id),
         status = COALESCE(${status}, status)
       WHERE id = ${id}
       RETURNING *
@@ -396,11 +429,11 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     `;
 
     if (existing.length === 0) {
-      return res.status(404).json({ error: true, message: 'Produto não encontrado' });
+      return res.status(404).json({ error: true, message: 'Produto nÃ£o encontrado' });
     }
 
     if (existing[0].seller_id !== req.user.id) {
-      return res.status(403).json({ error: true, message: 'Sem permissão' });
+      return res.status(403).json({ error: true, message: 'Sem permissÃ£o' });
     }
 
     await sql`UPDATE products SET status = 'deleted' WHERE id = ${id}`;
@@ -416,24 +449,24 @@ router.post('/:id/images', authenticate, upload.array('images', 10), async (req,
   try {
     const { id } = req.params;
 
-    // Verificar se o produto pertence ao usuário
+    // Verificar se o produto pertence ao usuÃ¡rio
     const existing = await sql`
       SELECT seller_id FROM products WHERE id = ${id}
     `;
 
     if (existing.length === 0) {
-      return res.status(404).json({ error: true, message: 'Produto não encontrado' });
+      return res.status(404).json({ error: true, message: 'Produto nÃ£o encontrado' });
     }
 
     if (existing[0].seller_id !== req.user.id) {
-      return res.status(403).json({ error: true, message: 'Sem permissão' });
+      return res.status(403).json({ error: true, message: 'Sem permissÃ£o' });
     }
 
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: true, message: 'Nenhuma imagem enviada' });
     }
 
-    // Verificar quantas imagens já existem
+    // Verificar quantas imagens jÃ¡ existem
     const existingImages = await sql`
       SELECT COUNT(*) as count FROM product_images WHERE product_id = ${id}
     `;
@@ -468,3 +501,4 @@ router.post('/:id/images', authenticate, upload.array('images', 10), async (req,
 });
 
 module.exports = router;
+

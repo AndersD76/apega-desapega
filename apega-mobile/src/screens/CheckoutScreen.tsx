@@ -10,10 +10,10 @@ import {
   StatusBar,
   ActivityIndicator,
   Linking,
-  Clipboard,
   Platform,
   Dimensions,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
@@ -198,15 +198,21 @@ export default function CheckoutScreen({ route, navigation }: Props) {
         address_id: selectedAddressId,
         shipping_service_id: selectedShipping?.id,
         shipping_price: shippingPrice,
+        shipping_option: selectedShipping ? {
+          name: selectedShipping.name,
+          deliveryTime: selectedShipping.delivery_range?.max,
+        } : undefined,
       };
 
       switch (selectedPayment) {
         case 'pix':
           response = await api.post('/checkout/pix', paymentData);
           if (response.success && response.payment) {
+            const qrCode = response.payment.pix_qr_code || response.payment.qrCode;
+            const qrCodeBase64 = response.payment.pix_qr_code_base64 || response.payment.qrCodeBase64;
             setPixData({
-              qr_code: response.payment.pix_qr_code,
-              qr_code_base64: response.payment.pix_qr_code_base64,
+              qr_code: qrCode,
+              qr_code_base64: qrCodeBase64,
             });
             setShowPixModal(true);
           }
@@ -224,9 +230,10 @@ export default function CheckoutScreen({ route, navigation }: Props) {
         case 'boleto':
           response = await api.post('/checkout/boleto', paymentData);
           if (response.success && response.payment) {
+            const boletoUrl = response.payment.boleto_url || response.payment.boletoUrl;
             setBoletoData({
               barcode: response.payment.barcode,
-              url: response.payment.boleto_url,
+              url: boletoUrl,
             });
             setShowBoletoModal(true);
           }
@@ -240,17 +247,17 @@ export default function CheckoutScreen({ route, navigation }: Props) {
   };
 
   // Copy PIX code
-  const copyPixCode = () => {
+  const copyPixCode = async () => {
     if (pixData?.qr_code) {
-      Clipboard.setString(pixData.qr_code);
+      await Clipboard.setStringAsync(pixData.qr_code);
       Alert.alert('Copiado!', 'Código PIX copiado para a área de transferência');
     }
   };
 
   // Copy Boleto barcode
-  const copyBoletoCode = () => {
+  const copyBoletoCode = async () => {
     if (boletoData?.barcode) {
-      Clipboard.setString(boletoData.barcode);
+      await Clipboard.setStringAsync(boletoData.barcode);
       Alert.alert('Copiado!', 'Código de barras copiado para a área de transferência');
     }
   };

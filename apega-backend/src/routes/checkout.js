@@ -100,6 +100,8 @@ router.post('/pix', authenticate, async (req, res, next) => {
       payment: {
         id: pixPayment.paymentId,
         status: pixPayment.status,
+        pix_qr_code: pixPayment.qrCode,
+        pix_qr_code_base64: pixPayment.qrCodeBase64,
         qrCode: pixPayment.qrCode,
         qrCodeBase64: pixPayment.qrCodeBase64,
         expirationDate: pixPayment.expirationDate
@@ -305,6 +307,7 @@ router.post('/boleto', authenticate, async (req, res, next) => {
       payment: {
         id: boletoPayment.paymentId,
         status: boletoPayment.status,
+        boleto_url: boletoPayment.boletoUrl,
         boletoUrl: boletoPayment.boletoUrl,
         barcode: boletoPayment.barcode,
         expirationDate: boletoPayment.expirationDate

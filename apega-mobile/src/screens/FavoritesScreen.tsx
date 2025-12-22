@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,11 @@ import {
   TouchableOpacity,
   Image,
   StatusBar,
-  Dimensions,
   ActivityIndicator,
   RefreshControl,
   Platform,
   Animated,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,10 +21,7 @@ import BottomNavigation from '../components/BottomNavigation';
 import { getFavorites, removeFromFavorites, FavoriteItem } from '../services/favorites';
 import { useAuth } from '../contexts/AuthContext';
 
-const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
-const isDesktop = isWeb && width > 768;
-const CARD_WIDTH = isDesktop ? (width - 160) / 4 : (width - 48) / 2;
 
 // Banner images
 const BANNER_IMAGES = [
@@ -38,6 +35,10 @@ interface FavoritesScreenProps {
 
 export default function FavoritesScreen({ navigation }: FavoritesScreenProps) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isDesktop = isWeb && width > 768;
+  const cardWidth = isDesktop ? (width - 160) / 4 : (width - 48) / 2;
+  const styles = useMemo(() => createStyles(isDesktop, cardWidth), [isDesktop, cardWidth]);
   const { isAuthenticated } = useAuth();
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -334,7 +335,7 @@ export default function FavoritesScreen({ navigation }: FavoritesScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (isDesktop: boolean, cardWidth: number) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAF9F7',
@@ -473,7 +474,7 @@ const styles = StyleSheet.create({
 
   // Card
   card: {
-    width: CARD_WIDTH,
+    width: cardWidth,
     marginHorizontal: 8,
     marginBottom: 24,
     backgroundColor: '#fff',

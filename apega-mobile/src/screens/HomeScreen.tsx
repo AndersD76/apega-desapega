@@ -6,13 +6,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  Dimensions,
   ActivityIndicator,
   RefreshControl,
   StatusBar,
   Platform,
   Animated,
   Modal,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,16 +20,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomNavigation } from '../components';
 import { COLORS } from '../constants/theme';
 import { getProducts, Product, getCategoryCounts } from '../services/products';
-import { loadToken } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
-const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
-const isDesktop = isWeb && width > 1024;
-const isTablet = isWeb && width > 600 && width <= 1024;
-const isMobile = !isDesktop && !isTablet;
 
 // Banners full-width do carrossel - SOMENTE PRODUTOS, SEM MODELOS
 const CAROUSEL_BANNERS = [
@@ -159,6 +154,11 @@ const getConditionStyle = (condition: string | undefined) => {
 
 export default function HomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isDesktop = isWeb && width > 1024;
+  const isTablet = isWeb && width > 600 && width <= 1024;
+  const isMobile = !isDesktop && !isTablet;
+  const styles = useMemo(() => createStyles(isDesktop, isTablet, isMobile), [isDesktop, isTablet, isMobile]);
   const { user, isAuthenticated } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -425,12 +425,11 @@ export default function HomeScreen({ navigation }: Props) {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [secretSequence]);
 
-  const handleSellPress = async () => {
-    const token = await loadToken();
-    if (token) {
+  const handleSellPress = () => {
+    if (isAuthenticated) {
       (navigation as any).navigate('NewItem');
     } else {
-      navigation.navigate('Login');
+      navigation.navigate('Login', { redirectTo: 'NewItem' });
     }
   };
 
@@ -1137,7 +1136,7 @@ export default function HomeScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (isDesktop: boolean, isTablet: boolean, isMobile: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAF9F7',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from 'expo-image-picker';
 
 const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
@@ -19,16 +20,16 @@ const isDesktop = isWeb && width > 768;
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS, CATEGORIES, FEES } from '../constants/theme';
 import { Input, Button, Pill, Modal } from '../components';
-import { createProduct } from '../services/products';
+import { createProduct, uploadSingleImage } from '../services/products';
 import { analyzeClothing, checkAIAccess, AIAnalysisResult, AIAccessStatus } from '../services/ai';
 
 interface CreateProductScreenProps {
   navigation: any;
 }
 
-const SIZES = ['PP', 'P', 'M', 'G', 'GG', 'XG', 'único'];
+const SIZES = ['PP', 'P', 'M', 'G', 'GG', 'XG', 'Ãºnico'];
 const CONDITIONS = ['novo', 'seminovo', 'usado'];
-const COLORS_PICKER = ['⚪', '⚫', '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '🟤'];
+const COLORS_PICKER = ['âšª', 'âš«', 'ðŸ”´', 'ðŸŸ ', 'ðŸŸ¡', 'ðŸŸ¢', 'ðŸ”µ', 'ðŸŸ£', 'ðŸŸ¤'];
 const BRANDS = ['farm', 'zara', 'forever 21', 'renner', 'c&a', 'riachuelo', 'outras'];
 
 export default function CreateProductScreen({ navigation }: CreateProductScreenProps) {
@@ -61,30 +62,52 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
         const access = await checkAIAccess();
         setAiAccess(access);
       } catch (error) {
-        console.log('Usuário não tem acesso à IA');
+        console.log('UsuÃ¡rio nÃ£o tem acesso Ã  IA');
       }
     };
     checkAccess();
   }, []);
 
-  const handleAddPhoto = () => {
-    if (photos.length < 8) {
-      // Placeholder - integrate with image picker
-      setPhotos([...photos, `photo-${photos.length + 1}`]);
+  const handleAddPhoto = async () => {
+    if (photos.length >= 8) {
+      return;
+    }
+
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('PermissÃ‡Å“o necessÃ‡Â­ria', 'Permita acesso Ã‡Ã¿ galeria para adicionar fotos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.length) {
+        setPhotos([...photos, result.assets[0].uri]);
+      }
+    } catch (error) {
+      Alert.alert('Erro', 'NÃ‡Å“o foi possÃ‡Ã°vel acessar a galeria.');
     }
   };
 
   // AI Analysis function
   const handleAIAnalysis = async () => {
     if (photos.length === 0) {
-      Alert.alert('Atenção', 'Adicione pelo menos uma foto para análise');
+      Alert.alert('AtenÃ§Ã£o', 'Adicione pelo menos uma foto para anÃ¡lise');
       return;
     }
 
     setIsAnalyzing(true);
     try {
-      // For now, using a placeholder URL - in production, use the actual uploaded image URL
-      const imageUrl = photos[0]; // This should be the actual image URL
+      const imageUri = photos[0];
+      let imageUrl = imageUri;
+      if (!imageUri.startsWith('http')) {
+        const uploadResult = await uploadSingleImage(imageUri);
+        imageUrl = uploadResult.url;
+      }
       const result = await analyzeClothing(imageUrl);
       setAiResult(result);
       setShowAiResult(true);
@@ -144,7 +167,7 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
     }
 
     setShowAiResult(false);
-    Alert.alert('Sucesso', 'Sugestões aplicadas! Revise e ajuste se necessário.');
+    Alert.alert('Sucesso', 'SugestÃµes aplicadas! Revise e ajuste se necessÃ¡rio.');
   };
 
   const handleRemovePhoto = (index: number) => {
@@ -162,11 +185,15 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
   const handlePublish = async () => {
     // Validations
     if (!title || title.length < 10) {
-      Alert.alert('Erro', 'Título deve ter no mínimo 10 caracteres');
+      Alert.alert('Erro', 'TÃ­tulo deve ter no mÃ­nimo 10 caracteres');
       return;
     }
     if (!description || description.length < 20) {
-      Alert.alert('Erro', 'Descrição deve ter no mínimo 20 caracteres');
+      Alert.alert('Erro', 'DescriÃ§Ã£o deve ter no mÃ­nimo 20 caracteres');
+      return;
+    }
+    if (!category) {
+      Alert.alert('Erro', 'Selecione uma categoria');
       return;
     }
     if (!selectedSize) {
@@ -174,11 +201,11 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
       return;
     }
     if (!condition) {
-      Alert.alert('Erro', 'Selecione a condição do produto');
+      Alert.alert('Erro', 'Selecione a condiÃ§Ã£o do produto');
       return;
     }
     if (!price || parseFloat(price) < 5) {
-      Alert.alert('Erro', 'Preço deve ser maior que R$ 5,00');
+      Alert.alert('Erro', 'PreÃ§o deve ser maior que R$ 5,00');
       return;
     }
 
@@ -193,6 +220,7 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
         condition: condition as 'novo' | 'seminovo' | 'usado',
         price: parseFloat(price),
         original_price: originalPrice ? parseFloat(originalPrice) : undefined,
+        category: category || undefined,
       });
       setShowSuccessModal(true);
     } catch (error: any) {
@@ -259,7 +287,7 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
           )}
         </ScrollView>
 
-        <Text style={styles.photoHint}>↓ arraste para ordenar</Text>
+        <Text style={styles.photoHint}>â†“ arraste para ordenar</Text>
 
         {/* AI Analysis Button */}
         {aiAccess?.hasAccess && photos.length > 0 && (
@@ -285,7 +313,7 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
                   <Text style={styles.aiButtonText}>Analisar com IA</Text>
                   <View style={styles.aiBadge}>
                     <Text style={styles.aiBadgeText}>
-                      {aiAccess.isPremium ? 'Premium' : 'Grátis'}
+                      {aiAccess.isPremium ? 'Premium' : 'GrÃ¡tis'}
                     </Text>
                   </View>
                 </>
@@ -302,7 +330,7 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
               <View style={styles.aiPromoTextContainer}>
                 <Text style={styles.aiPromoTitle}>IA Premium</Text>
                 <Text style={styles.aiPromoSubtitle}>
-                  Análise automática, sugestão de preço e mais
+                  AnÃ¡lise automÃ¡tica, sugestÃ£o de preÃ§o e mais
                 </Text>
               </View>
               <Ionicons name="lock-closed" size={16} color={COLORS.textTertiary} />
@@ -312,7 +340,7 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
 
         {/* Tip Banner */}
         <View style={styles.tipBanner}>
-          <Text style={styles.tipIcon}>💡</Text>
+          <Text style={styles.tipIcon}>ðŸ’¡</Text>
           <Text style={styles.tipText}>
             <Text style={styles.tipBold}>dica:</Text> use fotos com boa luz e mostre detalhes do produto
           </Text>
@@ -320,11 +348,11 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
 
         {renderDivider()}
 
-        {/* Informações Básicas */}
-        <Text style={styles.sectionTitle}>informações básicas</Text>
+        {/* InformaÃ§Ãµes BÃ¡sicas */}
+        <Text style={styles.sectionTitle}>informaÃ§Ãµes bÃ¡sicas</Text>
 
         <Input
-          label="título"
+          label="tÃ­tulo"
           required
           value={title}
           onChangeText={setTitle}
@@ -335,7 +363,7 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
 
         <Input
           type="textarea"
-          label="descrição"
+          label="descriÃ§Ã£o"
           required
           value={description}
           onChangeText={setDescription}
@@ -345,9 +373,9 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
         />
 
         <View style={styles.tipBanner}>
-          <Text style={styles.tipIcon}>💡</Text>
+          <Text style={styles.tipIcon}>ðŸ’¡</Text>
           <Text style={styles.tipText}>
-            seja detalhista! quanto mais informações, mais confiança
+            seja detalhista! quanto mais informaÃ§Ãµes, mais confianÃ§a
           </Text>
         </View>
 
@@ -407,7 +435,7 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
         </View>
 
         <Text style={styles.label}>
-          condição <Text style={styles.required}>*</Text>
+          condiÃ§Ã£o <Text style={styles.required}>*</Text>
         </Text>
         <View style={styles.pillsContainer}>
           {CONDITIONS.map((cond) => (
@@ -422,19 +450,19 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
         </View>
 
         <Input
-          label="composição"
+          label="composiÃ§Ã£o"
           value={composition}
           onChangeText={setComposition}
-          placeholder="algodão"
+          placeholder="algodÃ£o"
         />
 
         {renderDivider()}
 
-        {/* Preço e Negociação */}
-        <Text style={styles.sectionTitle}>preço e negociação</Text>
+        {/* PreÃ§o e NegociaÃ§Ã£o */}
+        <Text style={styles.sectionTitle}>preÃ§o e negociaÃ§Ã£o</Text>
 
         <Input
-          label="preço de venda"
+          label="preÃ§o de venda"
           required
           value={price}
           onChangeText={setPrice}
@@ -443,7 +471,7 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
         />
 
         <Input
-          label="preço original (opcional)"
+          label="preÃ§o original (opcional)"
           value={originalPrice}
           onChangeText={setOriginalPrice}
           placeholder="R$"
@@ -457,29 +485,29 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
               <Ionicons name="calculator" size={16} color={COLORS.textPrimary} /> seu ganho estimado
             </Text>
             <View style={styles.earningsRow}>
-              <Text style={styles.earningsLabel}>Preço de venda</Text>
+              <Text style={styles.earningsLabel}>PreÃ§o de venda</Text>
               <Text style={styles.earningsValue}>R$ {parseFloat(price).toFixed(2)}</Text>
             </View>
             <View style={styles.earningsRow}>
-              <Text style={styles.earningsLabel}>Comissão ({FEES.commissionPercentage}%)</Text>
+              <Text style={styles.earningsLabel}>ComissÃ£o ({FEES.commissionPercentage}%)</Text>
               <Text style={styles.earningsCommission}>- R$ {(parseFloat(price) * FEES.commissionRate).toFixed(2)}</Text>
             </View>
             <View style={styles.earningsDivider} />
             <View style={styles.earningsRow}>
-              <Text style={styles.earningsTotalLabel}>Você recebe</Text>
+              <Text style={styles.earningsTotalLabel}>VocÃª recebe</Text>
               <Text style={styles.earningsTotalValue}>R$ {(parseFloat(price) * (1 - FEES.commissionRate)).toFixed(2)}</Text>
             </View>
             <Text style={styles.earningsNote}>
-              Assinantes Premium não pagam comissão
+              Assinantes Premium nÃ£o pagam comissÃ£o
             </Text>
           </View>
         )}
 
         {originalPrice && price && discountPercentage > 0 && (
           <View style={styles.tipBanner}>
-            <Text style={styles.tipIcon}>💡</Text>
+            <Text style={styles.tipIcon}>ðŸ’¡</Text>
             <Text style={styles.tipText}>
-              mostre o desconto de {discountPercentage}% que está oferecendo
+              mostre o desconto de {discountPercentage}% que estÃ¡ oferecendo
             </Text>
           </View>
         )}
@@ -498,7 +526,7 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
 
         {acceptOffers && (
           <Input
-            label="valor mínimo para ofertas"
+            label="valor mÃ­nimo para ofertas"
             value={minOfferPrice}
             onChangeText={setMinOfferPrice}
             placeholder="R$"
@@ -509,8 +537,8 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
         {renderDivider()}
 
         {/* Preview */}
-        <Text style={styles.sectionTitle}>prévia do anúncio</Text>
-        <Text style={styles.previewLabel}>veja como ficará:</Text>
+        <Text style={styles.sectionTitle}>prÃ©via do anÃºncio</Text>
+        <Text style={styles.previewLabel}>veja como ficarÃ¡:</Text>
 
         <View style={styles.previewCard}>
           <View style={styles.previewImage}>
@@ -531,10 +559,10 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
           <View style={styles.previewInfo}>
             <Text style={styles.previewPrice}>R$ {price || '0,00'}</Text>
             <Text style={styles.previewTitle} numberOfLines={2}>
-              {title || 'Título do produto'}
+              {title || 'TÃ­tulo do produto'}
             </Text>
             <Text style={styles.previewMeta}>
-              {brand || 'marca'} • {selectedSize || 'M'} • {condition || 'usado'}
+              {brand || 'marca'} â€¢ {selectedSize || 'M'} â€¢ {condition || 'usado'}
             </Text>
           </View>
         </View>
@@ -573,7 +601,7 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
           <Ionicons name="checkmark-circle" size={80} color={COLORS.success} />
           <Text style={styles.successTitle}>produto publicado!</Text>
           <Text style={styles.successText}>
-            seu produto está no ar e pronto para receber visitas
+            seu produto estÃ¡ no ar e pronto para receber visitas
           </Text>
           <Button
             label="ver produto"
@@ -611,7 +639,7 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
             >
               <Ionicons name="sparkles" size={24} color="#FFF" />
             </LinearGradient>
-            <Text style={styles.aiResultTitle}>Análise da IA</Text>
+            <Text style={styles.aiResultTitle}>AnÃ¡lise da IA</Text>
             <Text style={styles.aiResultSubtitle}>powered by Claude</Text>
           </View>
 
@@ -619,7 +647,7 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
             <ScrollView style={styles.aiResultContent}>
               {/* Product Type */}
               <View style={styles.aiResultItem}>
-                <Text style={styles.aiResultLabel}>Tipo de Peça</Text>
+                <Text style={styles.aiResultLabel}>Tipo de PeÃ§a</Text>
                 <Text style={styles.aiResultValue}>{aiResult.tipo}</Text>
               </View>
 
@@ -633,7 +661,7 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
 
               {/* Condition */}
               <View style={styles.aiResultItem}>
-                <Text style={styles.aiResultLabel}>Condição</Text>
+                <Text style={styles.aiResultLabel}>CondiÃ§Ã£o</Text>
                 <Text style={styles.aiResultValue}>{aiResult.condicao}</Text>
               </View>
 
@@ -667,7 +695,7 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
 
               {/* Suggested Price */}
               <View style={styles.aiPriceCard}>
-                <Text style={styles.aiPriceLabel}>Preço Sugerido</Text>
+                <Text style={styles.aiPriceLabel}>PreÃ§o Sugerido</Text>
                 <Text style={styles.aiPriceValue}>
                   R$ {aiResult.precoSugerido?.recomendado?.toFixed(2) || '0,00'}
                 </Text>
@@ -680,7 +708,7 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
               {/* Suggested Description */}
               {aiResult.descricaoSugerida && (
                 <View style={styles.aiDescriptionCard}>
-                  <Text style={styles.aiDescriptionLabel}>Descrição Sugerida</Text>
+                  <Text style={styles.aiDescriptionLabel}>DescriÃ§Ã£o Sugerida</Text>
                   <Text style={styles.aiDescriptionText}>
                     {aiResult.descricaoSugerida}
                   </Text>
@@ -705,7 +733,7 @@ export default function CreateProductScreen({ navigation }: CreateProductScreenP
 
           <View style={styles.aiResultActions}>
             <Button
-              label="Aplicar Sugestões"
+              label="Aplicar SugestÃµes"
               variant="primary"
               onPress={applyAISuggestions}
               fullWidth
@@ -1215,3 +1243,4 @@ const styles = StyleSheet.create({
     marginTop: SPACING.lg,
   },
 });
+
