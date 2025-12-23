@@ -26,13 +26,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
 const isWeb = Platform.OS === 'web';
-const MAX_CONTENT_WIDTH = 800;
-
-// Banner images for non-authenticated state
-const BANNER_IMAGES = [
-  { uri: 'https://images.unsplash.com/photo-1558171813-4c088753af8f?w=800&q=80', title: 'SUA CONTA', subtitle: 'Gerencie seus dados' },
-  { uri: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80', title: 'VENDA CONOSCO', subtitle: 'Lucre com moda circular' },
-];
+const MAX_CONTENT_WIDTH = 600;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
@@ -40,38 +34,13 @@ export default function ProfileScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   const isDesktop = isWeb && windowWidth > 768;
-  const isTablet = isWeb && windowWidth > 480 && windowWidth <= 768;
-  const contentWidth = Math.min(windowWidth, MAX_CONTENT_WIDTH);
 
   const { user, isAuthenticated, isLoading, refreshUser, logout } = useAuth();
 
-  // Banner carousel for non-authenticated
-  const [currentBanner, setCurrentBanner] = useState(0);
-  const bannerFade = useRef(new Animated.Value(1)).current;
-
-  // Upload states
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [uploadingBanner, setUploadingBanner] = useState(false);
   const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   const [localBannerUri, setLocalBannerUri] = useState<string | null>(null);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      Animated.timing(bannerFade, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
-        setCurrentBanner((prev) => (prev + 1) % BANNER_IMAGES.length);
-        Animated.timing(bannerFade, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }).start();
-      });
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [bannerFade]);
 
   useFocusEffect(
     useCallback(() => {
@@ -88,117 +57,191 @@ export default function ProfileScreen({ navigation }: Props) {
 
   const handleLogout = async () => {
     await logout();
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Home' }],
-    });
+    navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
   };
 
-  // Image picking functions
-  const pickImage = async (type: 'avatar' | 'banner') => {
+  const pickAvatar = async () => {
     if (isWeb) {
-      pickImageFromGallery(type);
+      pickAvatarFromGallery();
       return;
     }
-
-    Alert.alert(
-      type === 'avatar' ? 'Foto de Perfil' : 'Foto de Capa',
-      'Escolha uma opcao:',
-      [
-        { text: 'Tirar Foto', onPress: () => pickImageFromCamera(type) },
-        { text: 'Escolher da Galeria', onPress: () => pickImageFromGallery(type) },
-        { text: 'Cancelar', style: 'cancel' },
-      ]
-    );
+    Alert.alert('Foto de Perfil', 'Escolha uma opcao:', [
+      { text: 'Tirar Foto', onPress: pickAvatarFromCamera },
+      { text: 'Escolher da Galeria', onPress: pickAvatarFromGallery },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
   };
 
-  const pickImageFromCamera = async (type: 'avatar' | 'banner') => {
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permissionResult.granted) {
-      Alert.alert('Permissao Necessaria', 'E necessario permitir acesso a camera.');
+  const pickAvatarFromCamera = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permissao Necessaria', 'Permita acesso a camera.');
       return;
     }
-
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: type === 'avatar' ? [1, 1] : [16, 9],
+      aspect: [1, 1],
       quality: 0.8,
     });
-
     if (!result.canceled && result.assets[0]) {
-      await uploadImage(result.assets[0].uri, type);
+      uploadAvatar(result.assets[0].uri);
     }
   };
 
-  const pickImageFromGallery = async (type: 'avatar' | 'banner') => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
-      Alert.alert('Permissao Necessaria', 'E necessario permitir acesso a galeria.');
+  const pickAvatarFromGallery = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permissao Necessaria', 'Permita acesso a galeria.');
       return;
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: type === 'avatar' ? [1, 1] : [16, 9],
+      aspect: [1, 1],
       quality: 0.8,
     });
-
     if (!result.canceled && result.assets[0]) {
-      await uploadImage(result.assets[0].uri, type);
+      uploadAvatar(result.assets[0].uri);
     }
   };
 
-  const uploadImage = async (uri: string, type: 'avatar' | 'banner') => {
-    if (type === 'avatar') {
-      setUploadingAvatar(true);
-      setLocalAvatarUri(uri);
-    } else {
-      setUploadingBanner(true);
-      setLocalBannerUri(uri);
-    }
-
+  const uploadAvatar = async (uri: string) => {
+    setUploadingAvatar(true);
+    setLocalAvatarUri(uri);
     try {
       const formData = new FormData();
-      const filename = uri.split('/').pop() || `${type}.jpg`;
-      const match = /\.(\w+)$/.exec(filename);
-      const mimeType = match ? `image/${match[1]}` : 'image/jpeg';
 
-      formData.append('image', {
-        uri,
-        name: filename,
-        type: mimeType,
-      } as any);
-      formData.append('type', type);
-
-      const response = await api.upload('/users/upload-image', formData);
-
-      if (response.success) {
-        await refreshUser();
-        Alert.alert('Sucesso', 'Imagem atualizada com sucesso!');
+      if (isWeb) {
+        // Web: converter blob URL para File
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        const file = new File([blob], 'avatar.jpg', { type: blob.type || 'image/jpeg' });
+        formData.append('image', file);
       } else {
-        throw new Error(response.message || 'Erro ao atualizar imagem');
+        // Mobile: usar objeto com uri
+        const filename = uri.split('/').pop() || 'avatar.jpg';
+        const match = /\.(\w+)$/.exec(filename);
+        const mimeType = match ? `image/${match[1]}` : 'image/jpeg';
+        formData.append('image', { uri, name: filename, type: mimeType } as any);
+      }
+
+      formData.append('type', 'avatar');
+
+      console.log('[Upload] Iniciando upload de avatar...');
+      const uploadResponse = await api.upload('/users/upload-image', formData);
+      console.log('[Upload] Resposta:', uploadResponse);
+
+      if (uploadResponse.success) {
+        console.log('[Upload] Sucesso! URL:', uploadResponse.url);
+        await refreshUser();
+        Alert.alert('Sucesso', 'Foto atualizada com sucesso!');
+      } else {
+        throw new Error(uploadResponse.message || 'Erro desconhecido');
       }
     } catch (error: any) {
-      console.error('Erro ao fazer upload:', error);
-      Alert.alert('Erro', 'Nao foi possivel atualizar a imagem. Tente novamente.');
-      if (type === 'avatar') setLocalAvatarUri(null);
-      else setLocalBannerUri(null);
+      console.error('[Upload] Erro:', error);
+      Alert.alert('Erro', error.message || 'Nao foi possivel atualizar a foto.');
+      setLocalAvatarUri(null);
     } finally {
-      if (type === 'avatar') setUploadingAvatar(false);
-      else setUploadingBanner(false);
+      setUploadingAvatar(false);
     }
   };
 
-  // Loading state
+  // Banner functions
+  const pickBanner = async () => {
+    if (isWeb) {
+      pickBannerFromGallery();
+      return;
+    }
+    Alert.alert('Banner da Loja', 'Escolha uma opcao:', [
+      { text: 'Tirar Foto', onPress: pickBannerFromCamera },
+      { text: 'Escolher da Galeria', onPress: pickBannerFromGallery },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  };
+
+  const pickBannerFromCamera = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permissao Necessaria', 'Permita acesso a camera.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      uploadBanner(result.assets[0].uri);
+    }
+  };
+
+  const pickBannerFromGallery = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permissao Necessaria', 'Permita acesso a galeria.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      uploadBanner(result.assets[0].uri);
+    }
+  };
+
+  const uploadBanner = async (uri: string) => {
+    setUploadingBanner(true);
+    setLocalBannerUri(uri);
+    try {
+      const formData = new FormData();
+
+      if (isWeb) {
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        const file = new File([blob], 'banner.jpg', { type: blob.type || 'image/jpeg' });
+        formData.append('image', file);
+      } else {
+        const filename = uri.split('/').pop() || 'banner.jpg';
+        const match = /\.(\w+)$/.exec(filename);
+        const mimeType = match ? `image/${match[1]}` : 'image/jpeg';
+        formData.append('image', { uri, name: filename, type: mimeType } as any);
+      }
+
+      formData.append('type', 'banner');
+
+      console.log('[Upload] Iniciando upload de banner...');
+      const uploadResponse = await api.upload('/users/upload-image', formData);
+      console.log('[Upload] Resposta:', uploadResponse);
+
+      if (uploadResponse.success) {
+        console.log('[Upload] Sucesso! URL:', uploadResponse.url);
+        await refreshUser();
+        Alert.alert('Sucesso', 'Banner atualizado com sucesso!');
+      } else {
+        throw new Error(uploadResponse.message || 'Erro desconhecido');
+      }
+    } catch (error: any) {
+      console.error('[Upload] Erro:', error);
+      Alert.alert('Erro', error.message || 'Nao foi possivel atualizar o banner.');
+      setLocalBannerUri(null);
+    } finally {
+      setUploadingBanner(false);
+    }
+  };
+
+  // Loading
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <StatusBar barStyle="dark-content" backgroundColor="#FAF9F7" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>carregando...</Text>
         </View>
         <BottomNavigation navigation={navigation} activeRoute="Profile" />
       </View>
@@ -210,363 +253,234 @@ export default function ProfileScreen({ navigation }: Props) {
     return (
       <View style={styles.container}>
         <MainHeader navigation={navigation} title="Perfil" />
-
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[
-            styles.scrollContent,
-            isDesktop && { alignItems: 'center' },
-          ]}
+          contentContainerStyle={styles.scrollContent}
         >
-          <View style={[
-            styles.contentWrapper,
-            isDesktop && { maxWidth: MAX_CONTENT_WIDTH, width: '100%' }
-          ]}>
-            {/* Banner Hero */}
-            <Animated.View style={[styles.heroBanner, { opacity: bannerFade }]}>
-              <Image
-                source={{ uri: BANNER_IMAGES[currentBanner].uri }}
-                style={styles.heroBannerImage}
-              />
-              <LinearGradient
-                colors={['transparent', 'rgba(0,0,0,0.7)']}
-                style={styles.heroBannerOverlay}
-              />
-              <View style={styles.heroBannerContent}>
-                <Text style={styles.heroBannerTitle}>
-                  {BANNER_IMAGES[currentBanner].title}
-                </Text>
-                <Text style={styles.heroBannerSubtitle}>
-                  {BANNER_IMAGES[currentBanner].subtitle}
-                </Text>
+          <View style={[styles.contentWrapper, isDesktop && styles.contentWrapperDesktop]}>
+            <View style={styles.loginCard}>
+              <View style={styles.loginIconBg}>
+                <Ionicons name="person-outline" size={48} color={COLORS.primary} />
               </View>
-            </Animated.View>
-
-            {/* Login Hero */}
-            <View style={styles.loginHero}>
-              <View style={styles.loginIconCircle}>
-                <Ionicons name="heart" size={40} color={COLORS.primary} />
-              </View>
-              <Text style={styles.loginTitle}>Oi, bora desapegar?</Text>
+              <Text style={styles.loginTitle}>Entre na sua conta</Text>
               <Text style={styles.loginSubtitle}>
-                Entre pra salvar favoritos, vender suas pecas e acompanhar seus pedidos
+                Acesse para vender, comprar e acompanhar seus pedidos
               </Text>
-            </View>
-
-            {/* Login Actions */}
-            <View style={styles.loginActions}>
               <TouchableOpacity
-                style={styles.primaryBtn}
+                style={styles.loginBtn}
                 onPress={() => navigation.navigate('Login')}
-                activeOpacity={0.9}
               >
-                <Text style={styles.primaryBtnText}>entrar ou criar conta</Text>
+                <Text style={styles.loginBtnText}>Entrar ou criar conta</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Features */}
-            <View style={styles.featuresSection}>
-              <Text style={styles.featuresTitle}>por que entrar?</Text>
-
-              <View style={styles.featureRow}>
-                <View style={[styles.featureIcon, { backgroundColor: '#FEE2E2' }]}>
-                  <Ionicons name="heart" size={20} color="#EF4444" />
+            <View style={styles.benefitsCard}>
+              <Text style={styles.benefitsTitle}>Beneficios de ter uma conta</Text>
+              {[
+                { icon: 'heart-outline', label: 'Salvar favoritos', color: '#EF4444' },
+                { icon: 'pricetag-outline', label: 'Vender suas pecas', color: '#10B981' },
+                { icon: 'cube-outline', label: 'Acompanhar pedidos', color: '#6366F1' },
+                { icon: 'wallet-outline', label: 'Receber pagamentos', color: '#F59E0B' },
+              ].map((item, index) => (
+                <View key={index} style={styles.benefitRow}>
+                  <View style={[styles.benefitIcon, { backgroundColor: `${item.color}15` }]}>
+                    <Ionicons name={item.icon as any} size={20} color={item.color} />
+                  </View>
+                  <Text style={styles.benefitLabel}>{item.label}</Text>
                 </View>
-                <View style={styles.featureContent}>
-                  <Text style={styles.featureLabel}>favoritos</Text>
-                  <Text style={styles.featureDesc}>salve as pecas que voce amou</Text>
-                </View>
-              </View>
-
-              <View style={styles.featureRow}>
-                <View style={[styles.featureIcon, { backgroundColor: '#D1FAE5' }]}>
-                  <Ionicons name="pricetag" size={20} color="#10B981" />
-                </View>
-                <View style={styles.featureContent}>
-                  <Text style={styles.featureLabel}>venda facil</Text>
-                  <Text style={styles.featureDesc}>anuncie e ganhe dinheiro</Text>
-                </View>
-              </View>
-
-              <View style={styles.featureRow}>
-                <View style={[styles.featureIcon, { backgroundColor: '#E0E7FF' }]}>
-                  <Ionicons name="cube" size={20} color="#6366F1" />
-                </View>
-                <View style={styles.featureContent}>
-                  <Text style={styles.featureLabel}>pedidos</Text>
-                  <Text style={styles.featureDesc}>acompanhe tudo em um lugar</Text>
-                </View>
-              </View>
+              ))}
             </View>
-
-            <View style={{ height: 120 }} />
           </View>
         </ScrollView>
-
         <BottomNavigation navigation={navigation} activeRoute="Profile" />
       </View>
     );
   }
 
-  // Authenticated - Profile
-  const rating = typeof user.rating === 'number' ? user.rating : parseFloat(user.rating || '0');
+  // Authenticated
   const isPremium = user?.subscription_type === 'premium';
   const isOfficial = user?.is_official;
   const avatarUri = localAvatarUri || user.avatar_url;
   const bannerUri = localBannerUri || user.banner_url;
+  const rating = typeof user.rating === 'number' ? user.rating : parseFloat(user.rating || '0');
+
+  const menuItems = [
+    { icon: 'storefront-outline', label: 'Minha Loja', route: 'MyStore', color: COLORS.primary },
+    { icon: 'trending-up-outline', label: 'Minhas Vendas', route: 'Sales', color: '#1976D2' },
+    { icon: 'cube-outline', label: 'Meus Pedidos', route: 'Orders', color: '#F57C00' },
+    { icon: 'heart-outline', label: 'Favoritos', route: 'Favorites', color: '#E91E63' },
+    { icon: 'wallet-outline', label: 'Saldo', route: 'Balance', color: '#4CAF50' },
+    { icon: 'location-outline', label: 'Enderecos', route: 'Addresses', color: '#9C27B0' },
+  ];
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FAF9F7" />
-
-      {/* Header */}
       <MainHeader navigation={navigation} title="Meu Perfil" />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={isDesktop && { alignItems: 'center' }}
+        contentContainerStyle={styles.scrollContent}
       >
-        <View style={[
-          styles.profileWrapper,
-          isDesktop && { maxWidth: MAX_CONTENT_WIDTH, width: '100%' }
-        ]}>
-          {/* Cover Photo - Clickable */}
-          <TouchableOpacity
-            style={styles.coverPhotoContainer}
-            onPress={() => pickImage('banner')}
-            activeOpacity={0.9}
-          >
-            {bannerUri ? (
-              <Image source={{ uri: bannerUri }} style={styles.coverPhotoImage} />
-            ) : (
-              <LinearGradient
-                colors={['#2d2d44', '#1a1a2e', '#0f3460']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.coverPhotoGradient}
-              />
-            )}
-
-            {/* Edit Banner Overlay */}
-            <View style={styles.editBannerOverlay}>
-              {uploadingBanner ? (
-                <ActivityIndicator size="small" color="#fff" />
+        <View style={[styles.contentWrapper, isDesktop && styles.contentWrapperDesktop]}>
+          {/* Profile Header Card with Banner */}
+          <View style={styles.profileCard}>
+            {/* Banner */}
+            <TouchableOpacity style={styles.bannerContainer} onPress={pickBanner} activeOpacity={0.8}>
+              {bannerUri ? (
+                <Image source={{ uri: bannerUri }} style={styles.banner} />
               ) : (
-                <>
-                  <Ionicons name="camera" size={18} color="#fff" />
-                  <Text style={styles.editBannerText}>Alterar capa</Text>
-                </>
+                <LinearGradient
+                  colors={[COLORS.primary, '#4CAF50']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.bannerPlaceholder}
+                />
               )}
-            </View>
-
-            {/* Official Badge on Cover */}
-            {isOfficial && (
-              <View style={styles.topBadge}>
-                <View style={styles.officialBadge}>
-                  <Ionicons name="checkmark-circle" size={14} color="#fff" />
-                  <Text style={styles.officialBadgeText}>Loja Oficial</Text>
-                </View>
+              <View style={styles.bannerOverlay}>
+                {uploadingBanner ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="camera" size={18} color="#fff" />
+                    <Text style={styles.bannerText}>Alterar Banner</Text>
+                  </>
+                )}
               </View>
-            )}
-          </TouchableOpacity>
+            </TouchableOpacity>
 
-          {/* Profile Card */}
-          <View style={[styles.profileCard, isDesktop && styles.profileCardDesktop]}>
-            {/* Avatar - Clickable */}
-            <TouchableOpacity
-              style={styles.avatarWrapper}
-              onPress={() => pickImage('avatar')}
-              activeOpacity={0.9}
-            >
-              <View style={styles.avatarRing}>
+            {/* Profile Info */}
+            <View style={styles.profileInfoSection}>
+              <TouchableOpacity style={styles.avatarContainer} onPress={pickAvatar}>
                 {avatarUri ? (
-                  <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+                  <Image source={{ uri: avatarUri }} style={styles.avatar} />
                 ) : (
                   <View style={styles.avatarPlaceholder}>
                     <Text style={styles.avatarInitial}>
-                      {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                      {user.name?.charAt(0).toUpperCase() || 'U'}
                     </Text>
                   </View>
                 )}
-              </View>
-
-              {/* Camera icon overlay */}
-              <View style={styles.avatarCameraOverlay}>
-                {uploadingAvatar ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Ionicons name="camera" size={16} color="#fff" />
-                )}
-              </View>
-            </TouchableOpacity>
-
-            {/* Name & Handle */}
-            <View style={styles.nameSection}>
-              <View style={styles.nameRow}>
-                <Text style={styles.userName}>{user.name || 'Usuario'}</Text>
-                {isOfficial && (
-                  <Ionicons name="checkmark-circle" size={20} color="#2196F3" style={{ marginLeft: 6 }} />
-                )}
-              </View>
-              <Text style={styles.userHandle}>@{user.name?.toLowerCase().replace(/\s/g, '') || 'usuario'}</Text>
-            </View>
-
-            {/* Plan Badge */}
-            <View style={[styles.planBadge, isPremium ? styles.planBadgePremium : styles.planBadgeFree]}>
-              {isPremium && <Ionicons name="diamond" size={12} color="#7B1FA2" style={{ marginRight: 4 }} />}
-              <Text style={[styles.planBadgeText, isPremium && styles.planBadgeTextPremium]}>
-                {isPremium ? 'PREMIUM' : 'FREE'}
-              </Text>
-            </View>
-
-            {/* Stats Row */}
-            <View style={[styles.statsRow, isDesktop && styles.statsRowDesktop]}>
-              <TouchableOpacity style={styles.statBox}>
-                <Text style={styles.statNumber}>{user.total_sales || 0}</Text>
-                <Text style={styles.statLabel}>vendas</Text>
-              </TouchableOpacity>
-              <View style={styles.statDivider} />
-              <TouchableOpacity style={styles.statBox}>
-                <Text style={styles.statNumber}>{user.total_reviews || 0}</Text>
-                <Text style={styles.statLabel}>avaliacoes</Text>
-              </TouchableOpacity>
-              <View style={styles.statDivider} />
-              <View style={styles.statBox}>
-                <View style={styles.ratingStars}>
-                  {[...Array(5)].map((_, i) => (
-                    <Ionicons
-                      key={i}
-                      name={i < Math.floor(rating) ? 'star' : 'star-outline'}
-                      size={14}
-                      color={i < Math.floor(rating) ? '#FFD700' : '#ddd'}
-                    />
-                  ))}
+                <View style={styles.cameraBtn}>
+                  {uploadingAvatar ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Ionicons name="camera" size={14} color="#fff" />
+                  )}
                 </View>
-                <Text style={styles.statLabel}>{rating.toFixed(1)}</Text>
-              </View>
-            </View>
-
-            {/* Action Buttons */}
-            <View style={[styles.actionButtonsRow, isDesktop && styles.actionButtonsRowDesktop]}>
-              <TouchableOpacity
-                style={styles.primaryActionBtn}
-                onPress={() => navigation.navigate('NewItem')}
-              >
-                <Ionicons name="add" size={20} color="#fff" />
-                <Text style={styles.primaryActionBtnText}>Vender</Text>
               </TouchableOpacity>
 
+              <View style={styles.userInfo}>
+                <View style={styles.nameRow}>
+                  <Text style={styles.userName}>{user.name || 'Usuario'}</Text>
+                  {isOfficial && (
+                    <Ionicons name="checkmark-circle" size={18} color="#2196F3" />
+                  )}
+                </View>
+                <Text style={styles.userEmail}>{user.email}</Text>
+                <View style={[styles.planBadge, isPremium && styles.planBadgePremium]}>
+                  {isPremium && <Ionicons name="diamond" size={12} color="#7B1FA2" />}
+                  <Text style={[styles.planText, isPremium && styles.planTextPremium]}>
+                    {isPremium ? 'Premium' : 'Free'}
+                  </Text>
+                </View>
+              </View>
+
               <TouchableOpacity
-                style={styles.secondaryActionBtn}
+                style={styles.editBtn}
                 onPress={() => navigation.navigate('EditProfile')}
               >
-                <Ionicons name="create-outline" size={18} color={COLORS.gray[700]} />
-                <Text style={styles.secondaryActionBtnText}>Editar Perfil</Text>
+                <Ionicons name="create-outline" size={18} color={COLORS.gray[600]} />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Quick Actions Grid */}
-          <View style={[styles.quickActionsGrid, isDesktop && styles.quickActionsGridDesktop]}>
-            <TouchableOpacity
-              style={[styles.quickActionCard, isDesktop && styles.quickActionCardDesktop]}
-              onPress={() => navigation.navigate('MyStore')}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#E8F5E9' }]}>
-                <Ionicons name="storefront" size={24} color={COLORS.primary} />
+          {/* Stats */}
+          <View style={styles.statsCard}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{user.total_sales || 0}</Text>
+              <Text style={styles.statLabel}>Vendas</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{user.total_reviews || 0}</Text>
+              <Text style={styles.statLabel}>Avaliacoes</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <View style={styles.ratingRow}>
+                <Ionicons name="star" size={16} color="#FFB800" />
+                <Text style={styles.statValue}>{rating.toFixed(1)}</Text>
               </View>
-              <Text style={styles.quickActionLabel}>Minha Loja</Text>
-              <Text style={styles.quickActionDesc}>Gerencie seus anuncios</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.quickActionCard, isDesktop && styles.quickActionCardDesktop]}
-              onPress={() => navigation.navigate('Sales')}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#E3F2FD' }]}>
-                <Ionicons name="trending-up" size={24} color="#1976D2" />
-              </View>
-              <Text style={styles.quickActionLabel}>Vendas</Text>
-              <Text style={styles.quickActionDesc}>Acompanhe resultados</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.quickActionCard, isDesktop && styles.quickActionCardDesktop]}
-              onPress={() => navigation.navigate('Orders')}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#FFF3E0' }]}>
-                <Ionicons name="cube" size={24} color="#F57C00" />
-              </View>
-              <Text style={styles.quickActionLabel}>Pedidos</Text>
-              <Text style={styles.quickActionDesc}>Suas compras</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.quickActionCard, isDesktop && styles.quickActionCardDesktop]}
-              onPress={() => navigation.navigate('Favorites')}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#FCE4EC' }]}>
-                <Ionicons name="heart" size={24} color="#E91E63" />
-              </View>
-              <Text style={styles.quickActionLabel}>Favoritos</Text>
-              <Text style={styles.quickActionDesc}>Pecas salvas</Text>
-            </TouchableOpacity>
+              <Text style={styles.statLabel}>Nota</Text>
+            </View>
           </View>
 
-          {/* Menu Section */}
-          <View style={[styles.menuSection, isDesktop && styles.menuSectionDesktop]}>
-            <Text style={styles.menuSectionTitle}>Configuracoes</Text>
+          {/* Sell Button */}
+          <TouchableOpacity
+            style={styles.sellBtn}
+            onPress={() => navigation.navigate('NewItem')}
+          >
+            <Ionicons name="add-circle-outline" size={22} color="#fff" />
+            <Text style={styles.sellBtnText}>Vender uma peca</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Balance')}>
-              <View style={styles.menuItemLeft}>
-                <Ionicons name="wallet-outline" size={22} color={COLORS.gray[600]} />
-                <Text style={styles.menuItemText}>Saldo e Pagamentos</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Addresses')}>
-              <View style={styles.menuItemLeft}>
-                <Ionicons name="location-outline" size={22} color={COLORS.gray[600]} />
-                <Text style={styles.menuItemText}>Enderecos</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Subscription')}>
-              <View style={styles.menuItemLeft}>
-                <Ionicons name="diamond-outline" size={22} color="#7B1FA2" />
-                <Text style={styles.menuItemText}>{isPremium ? 'Gerenciar Premium' : 'Seja Premium'}</Text>
-              </View>
-              {!isPremium && (
-                <View style={styles.menuBadge}>
-                  <Text style={styles.menuBadgeText}>UPGRADE</Text>
+          {/* Menu */}
+          <View style={styles.menuCard}>
+            {menuItems.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[styles.menuItem, index === menuItems.length - 1 && styles.menuItemLast]}
+                onPress={() => navigation.navigate(item.route as any)}
+              >
+                <View style={[styles.menuIcon, { backgroundColor: `${item.color}12` }]}>
+                  <Ionicons name={item.icon as any} size={20} color={item.color} />
                 </View>
-              )}
+                <Text style={styles.menuLabel}>{item.label}</Text>
+                <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Premium Card */}
+          {!isPremium && (
+            <TouchableOpacity
+              style={styles.premiumCard}
+              onPress={() => navigation.navigate('Subscription')}
+            >
+              <LinearGradient
+                colors={['#7B1FA2', '#9C27B0']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.premiumGradient}
+              >
+                <Ionicons name="diamond" size={28} color="#FFD700" />
+                <View style={styles.premiumContent}>
+                  <Text style={styles.premiumTitle}>Seja Premium</Text>
+                  <Text style={styles.premiumDesc}>Destaque seus anuncios e pague menos taxa</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#fff" />
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+
+          {/* Help & Logout */}
+          <View style={styles.footerCard}>
+            <TouchableOpacity
+              style={styles.footerItem}
+              onPress={() => navigation.navigate('Help')}
+            >
+              <Ionicons name="help-circle-outline" size={22} color={COLORS.gray[600]} />
+              <Text style={styles.footerLabel}>Ajuda</Text>
               <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
             </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Help')}>
-              <View style={styles.menuItemLeft}>
-                <Ionicons name="help-circle-outline" size={22} color={COLORS.gray[600]} />
-                <Text style={styles.menuItemText}>Ajuda</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={handleLogout}>
-              <View style={styles.menuItemLeft}>
-                <Ionicons name="log-out-outline" size={22} color="#EF4444" />
-                <Text style={[styles.menuItemText, { color: '#EF4444' }]}>Sair</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#EF4444" />
+            <TouchableOpacity style={[styles.footerItem, styles.logoutItem]} onPress={handleLogout}>
+              <Ionicons name="log-out-outline" size={22} color="#EF4444" />
+              <Text style={[styles.footerLabel, styles.logoutLabel]}>Sair da conta</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Version */}
           <Text style={styles.version}>apega desapega v1.0.0</Text>
-
-          <View style={{ height: 120 }} />
         </View>
       </ScrollView>
 
@@ -578,535 +492,400 @@ export default function ProfileScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF9F7',
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  contentWrapper: {
-    flex: 1,
-    width: '100%',
-  },
-  profileWrapper: {
-    flex: 1,
-    width: '100%',
+    backgroundColor: '#F5F5F5',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#999',
+  scrollContent: {
+    paddingBottom: 100,
   },
-
-  // Hero Banner (non-auth)
-  heroBanner: {
-    height: 180,
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 24,
-    borderRadius: 24,
-    overflow: 'hidden',
-    position: 'relative',
+  contentWrapper: {
+    padding: 16,
   },
-  heroBannerImage: {
+  contentWrapperDesktop: {
+    maxWidth: MAX_CONTENT_WIDTH,
+    alignSelf: 'center',
     width: '100%',
-    height: '100%',
-  },
-  heroBannerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  heroBannerContent: {
-    position: 'absolute',
-    bottom: 24,
-    left: 24,
-  },
-  heroBannerTitle: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#fff',
-    letterSpacing: 3,
-  },
-  heroBannerSubtitle: {
-    fontSize: 14,
-    color: '#fff',
-    marginTop: 4,
-    fontWeight: '500',
   },
 
-  // Login Hero
-  loginHero: {
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 32,
-  },
-  loginIconCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: COLORS.primaryExtraLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  loginTitle: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#1a1a1a',
-    marginBottom: 12,
-  },
-  loginSubtitle: {
-    fontSize: 18,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 26,
-  },
-
-  // Login Actions
-  loginActions: {
-    paddingHorizontal: 24,
-    marginBottom: 40,
-  },
-  primaryBtn: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 18,
-    borderRadius: 28,
-    alignItems: 'center',
-  },
-  primaryBtnText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-
-  // Features
-  featuresSection: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
-  },
-  featuresTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#1a1a1a',
-    marginBottom: 24,
-  },
-  featureRow: {
-    flexDirection: 'row',
+  // Login Card
+  loginCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 32,
     alignItems: 'center',
     marginBottom: 16,
-    backgroundColor: '#fff',
-    padding: 18,
-    borderRadius: 20,
+    ...Platform.select({
+      web: { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
+      default: { elevation: 2 },
+    }),
   },
-  featureIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
+  loginIconBg: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: `${COLORS.primary}15`,
     justifyContent: 'center',
-    marginRight: 16,
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  featureContent: {
-    flex: 1,
-  },
-  featureLabel: {
-    fontSize: 17,
+  loginTitle: {
+    fontSize: 22,
     fontWeight: '700',
     color: '#1a1a1a',
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  featureDesc: {
+  loginSubtitle: {
     fontSize: 15,
     color: '#666',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
   },
-
-  // Cover Photo (auth)
-  coverPhotoContainer: {
-    height: 160,
-    position: 'relative',
-    overflow: 'hidden',
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 16,
+  loginBtn: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
   },
-  coverPhotoImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  coverPhotoGradient: {
-    width: '100%',
-    height: '100%',
-  },
-  editBannerOverlay: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
-  },
-  editBannerText: {
+  loginBtnText: {
     color: '#fff',
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '600',
   },
-  topBadge: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
+
+  // Benefits Card
+  benefitsCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    ...Platform.select({
+      web: { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
+      default: { elevation: 2 },
+    }),
   },
-  officialBadge: {
+  benefitsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 16,
+  },
+  benefitRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2196F3',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 4,
+    paddingVertical: 10,
   },
-  officialBadgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  premiumTopBadge: {
-    flexDirection: 'row',
+  benefitIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#7B1FA2',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 4,
+    marginRight: 14,
   },
-  premiumTopBadgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
+  benefitLabel: {
+    fontSize: 15,
+    color: '#333',
   },
 
   // Profile Card
   profileCard: {
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 0,
-    paddingBottom: 24,
-    marginTop: -45,
     backgroundColor: '#fff',
-    marginHorizontal: 16,
-    borderRadius: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 12,
     ...Platform.select({
-      web: { boxShadow: '0 2px 12px rgba(0,0,0,0.06)' },
-      default: { elevation: 3 },
+      web: { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
+      default: { elevation: 2 },
     }),
   },
-  profileCardDesktop: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    paddingTop: 20,
-  },
-  avatarWrapper: {
-    alignSelf: 'center',
-    marginTop: -45,
+  bannerContainer: {
+    height: 100,
     position: 'relative',
   },
-  avatarRing: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#fff',
-    padding: 3,
-    ...Platform.select({
-      web: { boxShadow: '0 3px 12px rgba(0,0,0,0.12)' },
-      default: { elevation: 4 },
-    }),
-  },
-  avatarRingPremium: {
-    borderWidth: 3,
-    borderColor: '#FFD700',
-  },
-  avatarImage: {
+  banner: {
     width: '100%',
     height: '100%',
-    borderRadius: 50,
+    resizeMode: 'cover',
+  },
+  bannerPlaceholder: {
+    width: '100%',
+    height: '100%',
+  },
+  bannerOverlay: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  bannerText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  profileInfoSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    marginTop: -30,
+  },
+  avatarContainer: {
+    position: 'relative',
+  },
+  avatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 3,
+    borderColor: '#fff',
   },
   avatarPlaceholder: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 50,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
   },
   avatarInitial: {
-    fontSize: 36,
+    fontSize: 28,
     fontWeight: '700',
     color: '#fff',
   },
-  avatarCameraOverlay: {
+  cameraBtn: {
     position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.primary,
+    bottom: 0,
+    right: 0,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: COLORS.gray[700],
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#fff',
   },
-  premiumBadge: {
-    position: 'absolute',
-    bottom: 4,
-    right: 30,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#FFD700',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  nameSection: {
-    alignItems: 'center',
-    marginTop: 16,
+  userInfo: {
+    flex: 1,
+    marginLeft: 16,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
   },
   userName: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '700',
-    color: COLORS.gray[800],
-    textAlign: 'center',
+    color: '#1a1a1a',
   },
-  userHandle: {
-    fontSize: 14,
-    color: COLORS.gray[500],
-    textAlign: 'center',
+  userEmail: {
+    fontSize: 13,
+    color: '#666',
     marginTop: 2,
   },
   planBadge: {
-    alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 14,
-    marginTop: 12,
-  },
-  planBadgeFree: {
-    backgroundColor: COLORS.gray[200],
+    gap: 4,
+    backgroundColor: '#E8E8E8',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 8,
+    alignSelf: 'flex-start',
   },
   planBadgePremium: {
     backgroundColor: '#FFD700',
   },
-  planBadgeText: {
+  planText: {
     fontSize: 11,
     fontWeight: '700',
-    color: COLORS.gray[600],
-    letterSpacing: 0.5,
+    color: '#666',
   },
-  planBadgeTextPremium: {
+  planTextPremium: {
     color: '#7B1FA2',
   },
-  statsRow: {
+  editBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // Stats Card
+  statsCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f8f9fa',
-    marginTop: 20,
-    borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    width: '100%',
+    marginBottom: 12,
+    ...Platform.select({
+      web: { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
+      default: { elevation: 2 },
+    }),
   },
-  statsRowDesktop: {
-    maxWidth: 400,
-  },
-  statBox: {
+  statItem: {
     flex: 1,
     alignItems: 'center',
-    paddingHorizontal: 8,
   },
-  statNumber: {
+  statValue: {
     fontSize: 22,
     fontWeight: '700',
-    color: COLORS.gray[800],
+    color: '#1a1a1a',
   },
   statLabel: {
     fontSize: 12,
-    color: COLORS.gray[500],
+    color: '#888',
     marginTop: 4,
   },
   statDivider: {
     width: 1,
-    height: 35,
-    backgroundColor: COLORS.gray[300],
+    height: 40,
+    backgroundColor: '#E8E8E8',
   },
-  ratingStars: {
-    flexDirection: 'row',
-    gap: 2,
-  },
-  actionButtonsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 20,
-    width: '100%',
-  },
-  actionButtonsRowDesktop: {
-    maxWidth: 400,
-  },
-  primaryActionBtn: {
-    flex: 1,
+  ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
+    gap: 4,
+  },
+
+  // Sell Button
+  sellBtn: {
     backgroundColor: COLORS.primary,
-    paddingVertical: 16,
     borderRadius: 14,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 12,
+    ...Platform.select({
+      web: { boxShadow: '0 4px 12px rgba(107, 144, 128, 0.3)' },
+      default: { elevation: 4 },
+    }),
   },
-  primaryActionBtnText: {
-    fontSize: 16,
-    fontWeight: '600',
+  sellBtnText: {
     color: '#fff',
-  },
-  secondaryActionBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#f0f0f0',
-    paddingVertical: 16,
-    borderRadius: 14,
-  },
-  secondaryActionBtnText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.gray[700],
+    fontWeight: '700',
   },
 
-  // Quick Actions Grid
-  quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    gap: 12,
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  quickActionsGridDesktop: {
-    justifyContent: 'center',
-  },
-  quickActionCard: {
-    width: '47%',
+  // Menu Card
+  menuCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 18,
+    marginBottom: 12,
     ...Platform.select({
       web: { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
       default: { elevation: 2 },
     }),
-  },
-  quickActionCardDesktop: {
-    width: 180,
-  },
-  quickActionIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  quickActionLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.gray[800],
-  },
-  quickActionDesc: {
-    fontSize: 13,
-    color: COLORS.gray[500],
-    marginTop: 4,
-  },
-
-  // Menu Section
-  menuSection: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    ...Platform.select({
-      web: { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
-      default: { elevation: 2 },
-    }),
-  },
-  menuSectionDesktop: {
-    maxWidth: 500,
-    alignSelf: 'center',
-    width: '100%',
-  },
-  menuSectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.gray[500],
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 16,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
+    padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#F0F0F0',
   },
-  menuItemLogout: {
+  menuItemLast: {
     borderBottomWidth: 0,
   },
-  menuItemLeft: {
+  menuIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  menuLabel: {
+    flex: 1,
+    fontSize: 15,
+    color: '#333',
+    fontWeight: '500',
+  },
+
+  // Premium Card
+  premiumCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 12,
+    ...Platform.select({
+      web: { boxShadow: '0 4px 12px rgba(123, 31, 162, 0.2)' },
+      default: { elevation: 4 },
+    }),
+  },
+  premiumGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    padding: 20,
   },
-  menuItemText: {
-    fontSize: 16,
-    color: COLORS.gray[700],
+  premiumContent: {
+    flex: 1,
+    marginLeft: 16,
   },
-  menuBadge: {
-    backgroundColor: '#7B1FA2',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-    marginRight: 8,
-  },
-  menuBadgeText: {
-    fontSize: 10,
+  premiumTitle: {
+    fontSize: 17,
     fontWeight: '700',
     color: '#fff',
+  },
+  premiumDesc: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 2,
+  },
+
+  // Footer Card
+  footerCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginBottom: 16,
+    ...Platform.select({
+      web: { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
+      default: { elevation: 2 },
+    }),
+  },
+  footerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  footerLabel: {
+    flex: 1,
+    fontSize: 15,
+    color: '#333',
+    marginLeft: 14,
+    fontWeight: '500',
+  },
+  logoutItem: {
+    borderBottomWidth: 0,
+  },
+  logoutLabel: {
+    color: '#EF4444',
   },
 
   // Version
   version: {
+    textAlign: 'center',
     fontSize: 12,
     color: '#999',
-    textAlign: 'center',
-    marginBottom: 8,
+    marginTop: 8,
   },
 });

@@ -7,6 +7,7 @@ export interface User {
   name: string;
   phone?: string;
   avatar_url?: string;
+  banner_url?: string;
   bio?: string;
   city?: string;
   state?: string;
@@ -22,6 +23,9 @@ export interface User {
   balance: number;
   cashback_balance: number;
   is_verified: boolean;
+  is_official?: boolean;
+  commission_rate?: number;
+  promo_type?: string;
   created_at: string;
 }
 
