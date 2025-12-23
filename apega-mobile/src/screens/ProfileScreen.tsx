@@ -310,14 +310,17 @@ export default function ProfileScreen({ navigation }: Props) {
 
   // Authenticated - Profile
   const rating = typeof user.rating === 'number' ? user.rating : parseFloat(user.rating || '0');
-  const isPremium = user?.subscription_type === 'premium' || user?.isPremium;
+  const isPremium = user?.subscription_type === 'premium';
   const isOfficial = user?.is_official;
   const avatarUri = localAvatarUri || user.avatar_url;
   const bannerUri = localBannerUri || user.banner_url;
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1a1a2e" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FAF9F7" />
+
+      {/* Header */}
+      <MainHeader navigation={navigation} title="Meu Perfil" />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -329,7 +332,7 @@ export default function ProfileScreen({ navigation }: Props) {
         ]}>
           {/* Cover Photo - Clickable */}
           <TouchableOpacity
-            style={[styles.coverPhotoContainer, { paddingTop: insets.top }]}
+            style={styles.coverPhotoContainer}
             onPress={() => pickImage('banner')}
             activeOpacity={0.9}
           >
@@ -337,7 +340,7 @@ export default function ProfileScreen({ navigation }: Props) {
               <Image source={{ uri: bannerUri }} style={styles.coverPhotoImage} />
             ) : (
               <LinearGradient
-                colors={['#1a1a2e', '#16213e', '#0f3460']}
+                colors={['#2d2d44', '#1a1a2e', '#0f3460']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.coverPhotoGradient}
@@ -350,27 +353,19 @@ export default function ProfileScreen({ navigation }: Props) {
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <>
-                  <Ionicons name="camera" size={20} color="#fff" />
+                  <Ionicons name="camera" size={18} color="#fff" />
                   <Text style={styles.editBannerText}>Alterar capa</Text>
                 </>
               )}
             </View>
 
-            {/* Official/Premium Badge */}
-            {(isOfficial || isPremium) && (
+            {/* Official Badge on Cover */}
+            {isOfficial && (
               <View style={styles.topBadge}>
-                {isOfficial && (
-                  <View style={styles.officialBadge}>
-                    <Ionicons name="checkmark-circle" size={14} color="#fff" />
-                    <Text style={styles.officialBadgeText}>Loja Oficial</Text>
-                  </View>
-                )}
-                {isPremium && !isOfficial && (
-                  <View style={styles.premiumTopBadge}>
-                    <Ionicons name="diamond" size={14} color="#fff" />
-                    <Text style={styles.premiumTopBadgeText}>Premium</Text>
-                  </View>
-                )}
+                <View style={styles.officialBadge}>
+                  <Ionicons name="checkmark-circle" size={14} color="#fff" />
+                  <Text style={styles.officialBadgeText}>Loja Oficial</Text>
+                </View>
               </View>
             )}
           </TouchableOpacity>
@@ -383,11 +378,11 @@ export default function ProfileScreen({ navigation }: Props) {
               onPress={() => pickImage('avatar')}
               activeOpacity={0.9}
             >
-              <View style={[styles.avatarRing, isPremium && styles.avatarRingPremium]}>
+              <View style={styles.avatarRing}>
                 {avatarUri ? (
                   <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
                 ) : (
-                  <View style={[styles.avatarPlaceholder, isPremium && styles.avatarPlaceholderPremium]}>
+                  <View style={styles.avatarPlaceholder}>
                     <Text style={styles.avatarInitial}>
                       {user.name?.charAt(0)?.toUpperCase() || 'U'}
                     </Text>
@@ -403,12 +398,6 @@ export default function ProfileScreen({ navigation }: Props) {
                   <Ionicons name="camera" size={16} color="#fff" />
                 )}
               </View>
-
-              {isPremium && (
-                <View style={styles.premiumBadge}>
-                  <Ionicons name="diamond" size={14} color="#fff" />
-                </View>
-              )}
             </TouchableOpacity>
 
             {/* Name & Handle */}
@@ -737,9 +726,12 @@ const styles = StyleSheet.create({
 
   // Cover Photo (auth)
   coverPhotoContainer: {
-    height: 180,
+    height: 160,
     position: 'relative',
     overflow: 'hidden',
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 16,
   },
   coverPhotoImage: {
     width: '100%',
@@ -769,8 +761,8 @@ const styles = StyleSheet.create({
   },
   topBadge: {
     position: 'absolute',
-    top: 60,
-    left: 16,
+    top: 12,
+    left: 12,
   },
   officialBadge: {
     flexDirection: 'row',
@@ -807,13 +799,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 0,
     paddingBottom: 24,
-    marginTop: -50,
+    marginTop: -45,
     backgroundColor: '#fff',
     marginHorizontal: 16,
-    borderRadius: 24,
+    borderRadius: 20,
     ...Platform.select({
-      web: { boxShadow: '0 4px 20px rgba(0,0,0,0.08)' },
-      default: { elevation: 4 },
+      web: { boxShadow: '0 2px 12px rgba(0,0,0,0.06)' },
+      default: { elevation: 3 },
     }),
   },
   profileCardDesktop: {
@@ -824,18 +816,18 @@ const styles = StyleSheet.create({
   },
   avatarWrapper: {
     alignSelf: 'center',
-    marginTop: -50,
+    marginTop: -45,
     position: 'relative',
   },
   avatarRing: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: '#fff',
-    padding: 4,
+    padding: 3,
     ...Platform.select({
-      web: { boxShadow: '0 4px 15px rgba(0,0,0,0.15)' },
-      default: { elevation: 5 },
+      web: { boxShadow: '0 3px 12px rgba(0,0,0,0.12)' },
+      default: { elevation: 4 },
     }),
   },
   avatarRingPremium: {
@@ -845,35 +837,32 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 55,
+    borderRadius: 50,
   },
   avatarPlaceholder: {
     width: '100%',
     height: '100%',
-    borderRadius: 55,
+    borderRadius: 50,
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarPlaceholderPremium: {
-    backgroundColor: '#7B1FA2',
-  },
   avatarInitial: {
-    fontSize: 40,
+    fontSize: 36,
     fontWeight: '700',
     color: '#fff',
   },
   avatarCameraOverlay: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    bottom: 2,
+    right: 2,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: '#fff',
   },
   premiumBadge: {
