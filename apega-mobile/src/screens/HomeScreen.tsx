@@ -24,7 +24,6 @@ const isWeb = Platform.OS === 'web';
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export default function HomeScreen({ navigation }: Props) {
-  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isDesktop = isWeb && width > 1024;
   const isTablet = isWeb && width > 768 && width <= 1024;
