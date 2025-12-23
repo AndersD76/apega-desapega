@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   Platform,
-  Animated,
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,17 +17,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '../constants/theme';
 import BottomNavigation from '../components/BottomNavigation';
-import { MainHeader } from '../components';
 import { getFavorites, removeFromFavorites, FavoriteItem } from '../services/favorites';
 import { useAuth } from '../contexts/AuthContext';
 
 const isWeb = Platform.OS === 'web';
-
-// Banner images
-const BANNER_IMAGES = [
-  { uri: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&q=80', title: 'SEUS FAVORITOS', subtitle: 'Peças que você ama' },
-  { uri: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80', title: 'ESTILO ÚNICO', subtitle: 'Moda consciente' },
-];
 
 interface FavoritesScreenProps {
   navigation: any;
@@ -44,28 +36,6 @@ export default function FavoritesScreen({ navigation }: FavoritesScreenProps) {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  // Banner carousel
-  const [currentBanner, setCurrentBanner] = useState(0);
-  const bannerFade = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      Animated.timing(bannerFade, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
-        setCurrentBanner((prev) => (prev + 1) % BANNER_IMAGES.length);
-        Animated.timing(bannerFade, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }).start();
-      });
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [bannerFade]);
 
   const fetchFavorites = useCallback(async () => {
     if (!isAuthenticated) {
@@ -181,43 +151,24 @@ export default function FavoritesScreen({ navigation }: FavoritesScreenProps) {
   if (!isAuthenticated) {
     return (
       <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#FAF9F7" />
+        <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
 
         {/* Header */}
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <TouchableOpacity onPress={() => navigation.navigate('Home')}>
-            <Text style={styles.logo}>apega<Text style={styles.logoLight}>desapega</Text></Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
           </TouchableOpacity>
-          <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate('Profile')}>
-              <Ionicons name="person-outline" size={18} color={COLORS.primary} />
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.headerTitle}>Favoritos</Text>
+          <View style={{ width: 40 }} />
         </View>
-
-        {/* Banner */}
-        <Animated.View style={[styles.heroBanner, { opacity: bannerFade }]}>
-          <Image
-            source={{ uri: BANNER_IMAGES[currentBanner].uri }}
-            style={styles.heroBannerImage}
-          />
-          <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.7)']}
-            style={styles.heroBannerOverlay}
-          />
-          <View style={styles.heroBannerContent}>
-            <Text style={styles.heroBannerTitle}>{BANNER_IMAGES[currentBanner].title}</Text>
-            <Text style={styles.heroBannerSubtitle}>{BANNER_IMAGES[currentBanner].subtitle}</Text>
-          </View>
-        </Animated.View>
 
         <View style={styles.emptyState}>
           <View style={styles.emptyIcon}>
             <Ionicons name="heart-outline" size={64} color={COLORS.primaryLight} />
           </View>
-          <Text style={styles.emptyTitle}>Faça login para ver seus favoritos</Text>
+          <Text style={styles.emptyTitle}>Faca login para ver seus favoritos</Text>
           <Text style={styles.emptySubtitle}>
-            Salve suas peças favoritas e acompanhe preços
+            Salve suas pecas favoritas e acompanhe precos
           </Text>
           <TouchableOpacity
             style={styles.loginButton}
@@ -234,7 +185,15 @@ export default function FavoritesScreen({ navigation }: FavoritesScreenProps) {
 
   return (
     <View style={styles.container}>
-      <MainHeader navigation={navigation} title="Favoritos" />
+      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Favoritos</Text>
+        <View style={{ width: 40 }} />
+      </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -249,34 +208,10 @@ export default function FavoritesScreen({ navigation }: FavoritesScreenProps) {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
           }
         >
-          {/* Banner */}
-          <Animated.View style={[styles.heroBanner, { opacity: bannerFade }]}>
-            <Image
-              source={{ uri: BANNER_IMAGES[currentBanner].uri }}
-              style={styles.heroBannerImage}
-            />
-            <LinearGradient
-              colors={['transparent', 'rgba(0,0,0,0.7)']}
-              style={styles.heroBannerOverlay}
-            />
-            <View style={styles.heroBannerContent}>
-              <Text style={styles.heroBannerTitle}>{BANNER_IMAGES[currentBanner].title}</Text>
-              <Text style={styles.heroBannerSubtitle}>{BANNER_IMAGES[currentBanner].subtitle}</Text>
-            </View>
-            <View style={styles.bannerDots}>
-              {BANNER_IMAGES.map((_, index) => (
-                <View
-                  key={index}
-                  style={[styles.bannerDot, currentBanner === index && styles.bannerDotActive]}
-                />
-              ))}
-            </View>
-          </Animated.View>
-
           {/* Count */}
           <View style={styles.countSection}>
             <Text style={styles.countText}>
-              {favorites.length} {favorites.length === 1 ? 'peça favorita' : 'peças favoritas'}
+              {favorites.length} {favorites.length === 1 ? 'peca favorita' : 'pecas favoritas'}
             </Text>
           </View>
 
@@ -287,13 +222,13 @@ export default function FavoritesScreen({ navigation }: FavoritesScreenProps) {
               </View>
               <Text style={styles.emptyTitle}>Nenhum favorito ainda</Text>
               <Text style={styles.emptySubtitle}>
-                Toque no coração nas peças que você gostar para salvá-las aqui
+                Toque no coracao nas pecas que voce gostar para salva-las aqui
               </Text>
               <TouchableOpacity
                 style={styles.exploreButton}
                 onPress={() => navigation.navigate('Search')}
               >
-                <Text style={styles.exploreButtonText}>Explorar Peças</Text>
+                <Text style={styles.exploreButtonText}>Explorar Pecas</Text>
                 <Ionicons name="arrow-forward" size={18} color="#fff" />
               </TouchableOpacity>
             </View>
@@ -315,103 +250,29 @@ export default function FavoritesScreen({ navigation }: FavoritesScreenProps) {
 const createStyles = (isDesktop: boolean, cardWidth: number) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF9F7',
+    backgroundColor: '#F5F5F5',
   },
 
   // Header
   header: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: isDesktop ? 60 : 20,
-    paddingBottom: 16,
-    backgroundColor: '#FAF9F7',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    backgroundColor: '#F5F5F5',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8E8E8',
   },
-  logo: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#1a1a1a',
-    letterSpacing: -0.5,
-  },
-  logoLight: {
-    fontWeight: '400',
-    color: COLORS.gray[400],
-  },
-  navDesktop: {
-    flexDirection: 'row',
-    gap: 32,
-  },
-  navLink: {
-    fontSize: 15,
-    color: COLORS.gray[700],
-    fontWeight: '500',
-  },
-  navLinkActive: {
-    color: COLORS.primary,
-    fontWeight: '700',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  headerBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.primaryExtraLight,
+  backButton: {
+    width: 40,
+    height: 40,
     justifyContent: 'center',
-    alignItems: 'center',
   },
-
-  // Hero Banner
-  heroBanner: {
-    height: isDesktop ? 250 : 180,
-    marginHorizontal: isDesktop ? 60 : 16,
-    marginBottom: 24,
-    borderRadius: 24,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  heroBannerImage: {
-    width: '100%',
-    height: '100%',
-  },
-  heroBannerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  heroBannerContent: {
-    position: 'absolute',
-    bottom: 24,
-    left: 24,
-  },
-  heroBannerTitle: {
-    fontSize: isDesktop ? 42 : 32,
-    fontWeight: '900',
-    color: '#fff',
-    letterSpacing: 3,
-  },
-  heroBannerSubtitle: {
-    fontSize: isDesktop ? 18 : 14,
-    color: '#fff',
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  bannerDots: {
-    position: 'absolute',
-    bottom: 16,
-    right: 24,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  bannerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.5)',
-  },
-  bannerDotActive: {
-    backgroundColor: '#fff',
-    width: 20,
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#1a1a1a',
   },
 
   // Scroll
