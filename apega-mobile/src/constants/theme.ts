@@ -1,17 +1,24 @@
 // Sistema de Design Completo - Apega Desapega
-// Design inspirado no Enjoei - Roxo vibrante
+// Design moderno inspirado em Depop, Vinted e Instagram
 
 export const COLORS = {
-  // Cores principais - Roxo Enjoei
+  // Cores principais - Roxo vibrante
   primary: '#61005D',
   primaryDark: '#4A0047',
   primaryLight: '#8B1A85',
-  primaryExtraLight: '#F5E6F4',
+  primaryExtraLight: '#FAF0F9',
+  primarySoft: '#F3E5F5',
 
-  // Cores Secundárias - Coral/Laranja
+  // Cores Secundárias - Coral vibrante
   secondary: '#FF6B6B',
   secondaryDark: '#E54545',
   secondaryLight: '#FF8E8E',
+
+  // Accent - Violeta moderno
+  accent: '#A855F7',
+  accentDark: '#9333EA',
+  accentLight: '#C084FC',
+  accentSoft: '#F3E8FF',
 
   // Premium/Gold
   premium: '#FFD700',
@@ -34,54 +41,75 @@ export const COLORS = {
     900: '#212121',
   },
 
-  // Cores de estado
-  success: '#00C853',
-  successLight: '#69F0AE',
-  successDark: '#00A040',
-  warning: '#FFB300',
-  warningLight: '#FFCA28',
-  warningDark: '#FF8F00',
-  error: '#FF5252',
-  errorLight: '#FF8A80',
-  errorDark: '#D32F2F',
-  info: '#2196F3',
-  infoLight: '#64B5F6',
-  infoDark: '#1976D2',
+  // Cores de estado - Modernas
+  success: '#10B981',
+  successLight: '#6EE7B7',
+  successDark: '#059669',
+  successSoft: '#ECFDF5',
+  warning: '#F59E0B',
+  warningLight: '#FCD34D',
+  warningDark: '#D97706',
+  warningSoft: '#FFFBEB',
+  error: '#EF4444',
+  errorLight: '#FCA5A5',
+  errorDark: '#DC2626',
+  errorSoft: '#FEF2F2',
+  info: '#3B82F6',
+  infoLight: '#93C5FD',
+  infoDark: '#2563EB',
+  infoSoft: '#EFF6FF',
 
-  // Backgrounds e superfícies
+  // Backgrounds e superficies
   background: '#FAFAFA',
-  backgroundDark: '#F5F5F5',
+  backgroundDark: '#F3F4F6',
+  backgroundWarm: '#FEFDFB',
   surface: '#FFFFFF',
-  surfaceHover: '#FAFAFA',
+  surfaceHover: '#F9FAFB',
+  surfacePressed: '#F3F4F6',
   overlay: 'rgba(0, 0, 0, 0.5)',
   overlayLight: 'rgba(0, 0, 0, 0.3)',
+  overlayDark: 'rgba(0, 0, 0, 0.7)',
+
+  // Glassmorphism
+  glass: 'rgba(255, 255, 255, 0.85)',
+  glassDark: 'rgba(255, 255, 255, 0.95)',
+  glassLight: 'rgba(255, 255, 255, 0.7)',
+  glassBorder: 'rgba(255, 255, 255, 0.3)',
 
   // Gradientes
-  gradientPrimary: ['#61005D', '#8B1A85'],
+  gradientPrimary: ['#61005D', '#A855F7'],
   gradientPremium: ['#FFD700', '#FFC107'],
-  gradientDark: ['#424242', '#212121'],
+  gradientDark: ['#374151', '#111827'],
+  gradientSunset: ['#F97316', '#EC4899'],
+  gradientOcean: ['#06B6D4', '#3B82F6'],
+  gradientForest: ['#10B981', '#059669'],
+  gradientStory: ['#61005D', '#EC4899', '#F97316'],
 
   // Bordas
-  border: '#EEEEEE',
-  borderLight: '#F5F5F5',
-  borderDark: '#E0E0E0',
+  border: '#E5E7EB',
+  borderLight: '#F3F4F6',
+  borderDark: '#D1D5DB',
+  borderFocus: '#A855F7',
 
   // Text colors
-  textPrimary: '#1A1A1A',
-  textSecondary: '#616161',
-  textTertiary: '#9E9E9E',
-  textDisabled: '#BDBDBD',
+  textPrimary: '#111827',
+  textSecondary: '#4B5563',
+  textTertiary: '#9CA3AF',
+  textDisabled: '#D1D5DB',
   textInverse: '#FFFFFF',
 
-  // Preços
-  priceOld: '#9E9E9E',
-  priceNew: '#1A1A1A',
-  priceDiscount: '#FF5252',
+  // Precos
+  priceOld: '#9CA3AF',
+  priceNew: '#111827',
+  priceDiscount: '#EF4444',
+  priceSale: '#10B981',
 
   // Social colors
   whatsapp: '#25D366',
   instagram: '#E4405F',
   facebook: '#1877F2',
+  twitter: '#1DA1F2',
+  tiktok: '#000000',
 };
 
 export const TYPOGRAPHY = {
@@ -150,13 +178,20 @@ export const SPACING = {
 
 export const BORDER_RADIUS = {
   xs: 4,
-  sm: 6,
-  md: 8,
-  lg: 12,
-  xl: 16,
-  '2xl': 20,
-  '3xl': 24,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  '2xl': 24,
+  '3xl': 32,
   full: 9999,
+  // Aliases semanticos
+  card: 20,
+  button: 12,
+  input: 12,
+  badge: 8,
+  avatar: 9999,
+  image: 16,
 };
 
 export const SHADOWS = {
@@ -170,37 +205,68 @@ export const SHADOWS = {
   xs: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
     elevation: 1,
   },
   sm: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 2,
   },
   md: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
     elevation: 4,
   },
   lg: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
     elevation: 8,
   },
   xl: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.12,
+    shadowRadius: 32,
     elevation: 12,
+  },
+  // Sombras coloridas
+  primary: {
+    shadowColor: '#61005D',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  accent: {
+    shadowColor: '#A855F7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  // Sombra suave para cards
+  card: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  // Sombra para elementos flutuantes
+  float: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 10,
   },
 };
 

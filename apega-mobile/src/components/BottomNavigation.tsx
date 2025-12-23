@@ -1,9 +1,10 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS } from '../constants/theme';
+import { COLORS, SHADOWS } from '../constants/theme';
 import { useAuth } from '../contexts/AuthContext';
 
 const isWeb = Platform.OS === 'web';
@@ -18,7 +19,7 @@ const NAV_ITEMS = [
   { key: 'Search', icon: 'search', label: 'buscar' },
   { key: 'NewItem', icon: 'add', label: 'vender', isCenter: true },
   { key: 'Favorites', icon: 'heart', label: 'curtidos' },
-  { key: 'Profile', icon: 'person', label: 'eu' },
+  { key: 'Profile', icon: 'person', label: 'perfil' },
 ];
 
 export default function BottomNavigation({ navigation, activeRoute = 'Home' }: BottomNavigationProps) {
@@ -63,14 +64,13 @@ export default function BottomNavigation({ navigation, activeRoute = 'Home' }: B
           activeOpacity={0.9}
         >
           <LinearGradient
-            colors={[COLORS.primary, COLORS.primaryLight] as const}
+            colors={COLORS.gradientPrimary as [string, string]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.centerButtonGradient}
           >
-            <Ionicons name="add" size={26} color={COLORS.white} />
+            <Ionicons name="add" size={28} color={COLORS.white} />
           </LinearGradient>
-          <Text style={styles.centerLabel}>{item.label}</Text>
         </TouchableOpacity>
       );
     }
@@ -82,13 +82,12 @@ export default function BottomNavigation({ navigation, activeRoute = 'Home' }: B
         onPress={() => handlePress(item.key)}
         activeOpacity={0.7}
       >
-        <View style={styles.iconContainer}>
+        <View style={[styles.iconContainer, isActive && styles.iconContainerActive]}>
           <Ionicons
             name={isActive ? (item.icon as any) : (`${item.icon}-outline` as any)}
-            size={22}
-            color={isActive ? COLORS.textPrimary : COLORS.textTertiary}
+            size={24}
+            color={isActive ? COLORS.primary : COLORS.textTertiary}
           />
-          {isActive && <View style={styles.activeIndicator} />}
         </View>
         <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
           {item.label}
@@ -97,41 +96,56 @@ export default function BottomNavigation({ navigation, activeRoute = 'Home' }: B
     );
   };
 
+  const NavContent = () => (
+    <View style={[styles.navBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+      {NAV_ITEMS.map(renderNavItem)}
+    </View>
+  );
+
+  // Usa BlurView no iOS para efeito glassmorphism
+  if (Platform.OS === 'ios') {
+    return (
+      <BlurView intensity={80} tint="light" style={styles.container}>
+        <NavContent />
+      </BlurView>
+    );
+  }
+
+  // Fallback para Android e Web com fundo semi-transparente
   return (
-    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 6) }]}>
-      <View style={styles.navBar}>
-        {NAV_ITEMS.map(renderNavItem)}
-      </View>
+    <View style={[styles.container, styles.containerFallback]}>
+      <NavContent />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.surface,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-      },
+      ios: {},
       android: {
-        elevation: 8,
+        elevation: 12,
       },
       web: {
-        boxShadow: '0 -2px 12px rgba(0,0,0,0.04)',
+        boxShadow: '0 -4px 24px rgba(0,0,0,0.08)',
       },
     }),
   },
+  containerFallback: {
+    backgroundColor: COLORS.glassDark,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.glassBorder,
+  },
   navBar: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-around',
-    paddingTop: 6,
-    paddingHorizontal: 8,
+    paddingTop: 8,
+    paddingHorizontal: 12,
   },
   navItem: {
     flex: 1,
@@ -142,58 +156,37 @@ const styles = StyleSheet.create({
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 28,
-    position: 'relative',
+    width: 44,
+    height: 32,
+    borderRadius: 16,
   },
-  activeIndicator: {
-    position: 'absolute',
-    bottom: -4,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.primary,
+  iconContainerActive: {
+    backgroundColor: COLORS.primaryExtraLight,
   },
   navLabel: {
-    fontSize: 10,
+    fontSize: 11,
     color: COLORS.textTertiary,
     fontWeight: '500',
-    marginTop: 2,
+    marginTop: 4,
   },
   navLabelActive: {
-    color: COLORS.textPrimary,
+    color: COLORS.primary,
     fontWeight: '600',
   },
   centerButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -16,
-    marginHorizontal: 8,
+    marginTop: -24,
+    marginHorizontal: 4,
   },
   centerButtonGradient: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.35,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-      web: {
-        boxShadow: '0 4px 12px rgba(97,0,93,0.25)',
-      },
-    }),
-  },
-  centerLabel: {
-    fontSize: 10,
-    color: COLORS.primary,
-    fontWeight: '600',
-    marginTop: 4,
+    borderWidth: 4,
+    borderColor: COLORS.surface,
+    ...SHADOWS.primary,
   },
 });

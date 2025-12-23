@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,13 @@ import {
   RefreshControl,
   Platform,
   useWindowDimensions,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { AppHeader, BottomNavigation, MainHeader } from '../components';
 import ProductCard from '../components/ProductCard';
-import { COLORS, CATEGORIES } from '../constants/theme';
+import { COLORS, CATEGORIES, SHADOWS, BORDER_RADIUS } from '../constants/theme';
 import { getProducts, Product } from '../services/products';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -22,6 +24,54 @@ import type { RootStackParamList } from '../navigation/AppNavigator';
 const isWeb = Platform.OS === 'web';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+
+// Componente de Story para categorias (estilo Instagram)
+const CategoryStory = ({
+  category,
+  isActive,
+  onPress
+}: {
+  category: { id: string; name: string; icon: string };
+  isActive: boolean;
+  onPress: () => void;
+}) => {
+  const getIconName = () => {
+    switch (category.id) {
+      case 'all': return 'grid';
+      case 'vestidos': return 'shirt';
+      case 'blusas': return 'shirt-outline';
+      case 'calcas': return 'body';
+      case 'saias': return 'woman';
+      case 'shorts': return 'woman-outline';
+      case 'conjuntos': return 'layers';
+      case 'acessorios': return 'watch';
+      case 'calcados': return 'footsteps';
+      case 'bolsas': return 'bag-handle';
+      case 'premium': return 'diamond';
+      default: return 'pricetag';
+    }
+  };
+
+  return (
+    <TouchableOpacity style={styles.storyContainer} onPress={onPress} activeOpacity={0.8}>
+      <LinearGradient
+        colors={isActive ? COLORS.gradientPrimary as [string, string] : ['transparent', 'transparent']}
+        style={[styles.storyRing, !isActive && styles.storyRingInactive]}
+      >
+        <View style={styles.storyInner}>
+          <Ionicons
+            name={getIconName() as any}
+            size={22}
+            color={isActive ? COLORS.primary : COLORS.textSecondary}
+          />
+        </View>
+      </LinearGradient>
+      <Text style={[styles.storyLabel, isActive && styles.storyLabelActive]} numberOfLines={1}>
+        {category.name}
+      </Text>
+    </TouchableOpacity>
+  );
+};
 
 export default function HomeScreen({ navigation }: Props) {
   const { width } = useWindowDimensions();
@@ -34,6 +84,7 @@ export default function HomeScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchFocused, setSearchFocused] = useState(false);
 
   const contentPadding = isWeb ? 32 : 16;
 
@@ -90,71 +141,102 @@ export default function HomeScreen({ navigation }: Props) {
 
   const ListHeader = () => (
     <View style={{ paddingHorizontal: contentPadding }}>
-      <View style={styles.hero}>
-        <Text style={styles.heroTitle}>Ache pecas com historia</Text>
-        <Text style={styles.heroSubtitle}>Moda circular com curadoria e preco justo.</Text>
-      </View>
+      {/* Hero Section com gradiente */}
+      <LinearGradient
+        colors={COLORS.gradientPrimary as [string, string]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.heroCard}
+      >
+        <View style={styles.heroContent}>
+          <Text style={styles.heroTag}>MODA CIRCULAR</Text>
+          <Text style={styles.heroTitle}>Encontre pecas{'\n'}com historia</Text>
+          <Text style={styles.heroSubtitle}>
+            Curadoria especial, precos justos
+          </Text>
+        </View>
+        <View style={styles.heroIconWrap}>
+          <Ionicons name="leaf" size={48} color="rgba(255,255,255,0.25)" />
+        </View>
+      </LinearGradient>
 
-      <View style={styles.searchBar}>
-        <Ionicons name="search" size={18} color={COLORS.textTertiary} />
+      {/* Barra de busca moderna */}
+      <View style={[styles.searchBar, searchFocused && styles.searchBarFocused]}>
+        <Ionicons
+          name="search"
+          size={20}
+          color={searchFocused ? COLORS.primary : COLORS.textTertiary}
+        />
         <TextInput
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Buscar por marca, peca, tamanho..."
+          placeholder="Buscar marca, peca, tamanho..."
           placeholderTextColor={COLORS.textTertiary}
           style={styles.searchInput}
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setSearchFocused(false)}
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={18} color={COLORS.textTertiary} />
+          <TouchableOpacity
+            onPress={() => setSearchQuery('')}
+            hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+          >
+            <View style={styles.clearButton}>
+              <Ionicons name="close" size={14} color={COLORS.white} />
+            </View>
           </TouchableOpacity>
         )}
       </View>
 
-      <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionTitle}>Categorias</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Search')}>
-          <Text style={styles.sectionAction}>Ver tudo</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.categoryRow}>
+      {/* Categories Stories */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.storiesContainer}
+        style={styles.storiesScroll}
+      >
         {CATEGORIES.map((cat) => (
-          <TouchableOpacity
+          <CategoryStory
             key={cat.id}
-            style={[
-              styles.categoryChip,
-              selectedCategory === cat.id && styles.categoryChipActive,
-            ]}
+            category={cat}
+            isActive={selectedCategory === cat.id}
             onPress={() => setSelectedCategory(cat.id)}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.categoryText,
-                selectedCategory === cat.id && styles.categoryTextActive,
-              ]}
-            >
-              {cat.name}
-            </Text>
-          </TouchableOpacity>
+          />
         ))}
-      </View>
+      </ScrollView>
 
-      <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionTitle}>Destaques</Text>
-        <Text style={styles.sectionMeta}>{products.length} pecas</Text>
+      {/* Section Header */}
+      <View style={styles.sectionHeader}>
+        <View>
+          <Text style={styles.sectionTitle}>Destaques</Text>
+          <Text style={styles.sectionMeta}>{products.length} pecas disponiveis</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => navigation.navigate('Search')}
+        >
+          <Ionicons name="options-outline" size={18} color={COLORS.textSecondary} />
+        </TouchableOpacity>
       </View>
     </View>
   );
 
   const ListEmpty = () => (
     <View style={styles.emptyState}>
-      <View style={styles.emptyIcon}>
-        <Ionicons name="search-outline" size={44} color={COLORS.textSecondary} />
+      <View style={styles.emptyIconWrap}>
+        <Ionicons name="search-outline" size={48} color={COLORS.textTertiary} />
       </View>
-      <Text style={styles.emptyTitle}>Nada por aqui ainda</Text>
-      <Text style={styles.emptySubtitle}>Tente outra busca ou categoria.</Text>
+      <Text style={styles.emptyTitle}>Nada encontrado</Text>
+      <Text style={styles.emptySubtitle}>Tente outra busca ou categoria</Text>
+      <TouchableOpacity
+        style={styles.emptyButton}
+        onPress={() => {
+          setSearchQuery('');
+          setSelectedCategory('all');
+        }}
+      >
+        <Text style={styles.emptyButtonText}>Limpar filtros</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -186,9 +268,10 @@ export default function HomeScreen({ navigation }: Props) {
               refreshing={refreshing}
               onRefresh={onRefresh}
               tintColor={COLORS.primary}
+              colors={[COLORS.primary]}
             />
           }
-          contentContainerStyle={{ paddingBottom: isWeb ? 40 : 120 }}
+          contentContainerStyle={{ paddingBottom: isWeb ? 40 : 100 }}
         />
       )}
 
@@ -202,119 +285,184 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  hero: {
-    paddingTop: 12,
-    paddingBottom: 12,
+  heroCard: {
+    borderRadius: BORDER_RADIUS['2xl'],
+    padding: 24,
+    marginTop: 16,
+    marginBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    overflow: 'hidden',
+    ...SHADOWS.lg,
+  },
+  heroContent: {
+    flex: 1,
+  },
+  heroTag: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.7)',
+    letterSpacing: 2,
+    marginBottom: 8,
   },
   heroTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    marginBottom: 4,
+    fontSize: 24,
+    fontWeight: '800',
+    color: COLORS.white,
+    lineHeight: 30,
+    marginBottom: 8,
   },
   heroSubtitle: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: 'rgba(255,255,255,0.85)',
+    fontWeight: '500',
+  },
+  heroIconWrap: {
+    opacity: 0.8,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
-    marginTop: 12,
-    marginBottom: 16,
+    borderRadius: BORDER_RADIUS.xl,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+    marginBottom: 20,
+    ...SHADOWS.xs,
+  },
+  searchBarFocused: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.white,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     color: COLORS.textPrimary,
   },
-  sectionHeaderRow: {
+  clearButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: COLORS.textTertiary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  storiesScroll: {
+    marginHorizontal: -16,
+    marginBottom: 20,
+  },
+  storiesContainer: {
+    paddingHorizontal: 16,
+    gap: 16,
+  },
+  storyContainer: {
+    alignItems: 'center',
+    width: 70,
+  },
+  storyRing: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    padding: 3,
+    marginBottom: 8,
+  },
+  storyRingInactive: {
+    borderWidth: 2,
+    borderColor: COLORS.border,
+  },
+  storyInner: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  storyLabel: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  storyLabelActive: {
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 12,
-    marginBottom: 10,
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '700',
     color: COLORS.textPrimary,
+    letterSpacing: -0.3,
   },
   sectionMeta: {
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.textTertiary,
+    marginTop: 2,
   },
-  sectionAction: {
-    fontSize: 12,
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 10,
-  },
-  categoryChip: {
+  filterButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  categoryChipActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primaryExtraLight,
-  },
-  categoryText: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    fontWeight: '600',
-  },
-  categoryTextActive: {
-    color: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 16,
   },
   loadingText: {
-    marginTop: 12,
+    fontSize: 15,
     color: COLORS.textSecondary,
   },
   emptyState: {
     alignItems: 'center',
     paddingVertical: 60,
-    paddingHorizontal: 24,
+    paddingHorizontal: 32,
   },
-  emptyIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    justifyContent: 'center',
+  emptyIconWrap: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: COLORS.backgroundDark,
     alignItems: 'center',
-    marginBottom: 16,
+    justifyContent: 'center',
+    marginBottom: 20,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: COLORS.textPrimary,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: COLORS.textSecondary,
     textAlign: 'center',
+    marginBottom: 24,
+  },
+  emptyButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: COLORS.primaryExtraLight,
+    borderRadius: BORDER_RADIUS.button,
+  },
+  emptyButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
 });

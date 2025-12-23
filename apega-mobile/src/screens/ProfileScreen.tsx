@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,8 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SHADOWS, BORDER_RADIUS } from '../constants/theme';
 import { BottomNavigation, Header, MainHeader } from '../components';
 import ProductCard from '../components/ProductCard';
 import { useAuth } from '../contexts/AuthContext';
@@ -25,6 +26,40 @@ const isWeb = Platform.OS === 'web';
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
 type ProfileTab = 'all' | 'active' | 'sold';
+
+// Componente de estatistica
+const StatItem = ({ value, label }: { value: number; label: string }) => (
+  <View style={styles.statItem}>
+    <Text style={styles.statValue}>{value}</Text>
+    <Text style={styles.statLabel}>{label}</Text>
+  </View>
+);
+
+// Componente de Tab
+const TabButton = ({
+  label,
+  icon,
+  isActive,
+  onPress
+}: {
+  label: string;
+  icon: string;
+  isActive: boolean;
+  onPress: () => void;
+}) => (
+  <TouchableOpacity
+    style={[styles.tabButton, isActive && styles.tabButtonActive]}
+    onPress={onPress}
+    activeOpacity={0.7}
+  >
+    <Ionicons
+      name={icon as any}
+      size={18}
+      color={isActive ? COLORS.primary : COLORS.textTertiary}
+    />
+    <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{label}</Text>
+  </TouchableOpacity>
+);
 
 export default function ProfileScreen({ navigation }: Props) {
   const { width } = useWindowDimensions();
@@ -112,17 +147,32 @@ export default function ProfileScreen({ navigation }: Props) {
         ) : (
           <Header navigation={navigation} title="Perfil" showBack={false} />
         )}
-        <View style={styles.emptyProfile}>
-          <View style={styles.emptyIcon}>
-            <Ionicons name="person-circle-outline" size={80} color={COLORS.textTertiary} />
-          </View>
-          <Text style={styles.emptyTitle}>Entre para ver seu perfil</Text>
-          <Text style={styles.emptySubtitle}>Crie sua loja, anuncie pecas e acompanhe suas vendas.</Text>
-          <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.primaryButtonText}>Entrar</Text>
+        <View style={styles.guestContainer}>
+          <LinearGradient
+            colors={COLORS.gradientPrimary as [string, string]}
+            style={styles.guestIconWrap}
+          >
+            <Ionicons name="person" size={48} color={COLORS.white} />
+          </LinearGradient>
+          <Text style={styles.guestTitle}>Entre para continuar</Text>
+          <Text style={styles.guestSubtitle}>
+            Crie sua loja, anuncie pecas e acompanhe suas vendas
+          </Text>
+          <TouchableOpacity
+            style={styles.loginButton}
+            onPress={() => navigation.navigate('Login')}
+          >
+            <LinearGradient
+              colors={COLORS.gradientPrimary as [string, string]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.loginButtonGradient}
+            >
+              <Text style={styles.loginButtonText}>Entrar</Text>
+            </LinearGradient>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.secondaryLink}>Criar conta</Text>
+            <Text style={styles.registerLink}>Criar conta gratuita</Text>
           </TouchableOpacity>
         </View>
         <BottomNavigation navigation={navigation} activeRoute="Profile" />
@@ -148,74 +198,102 @@ export default function ProfileScreen({ navigation }: Props) {
         columnWrapperStyle={numColumns > 1 ? { gap: 12, paddingHorizontal: contentPadding } : undefined}
         ListHeaderComponent={
           <View style={{ paddingHorizontal: contentPadding }}>
+            {/* Profile Header */}
             <View style={styles.profileHeader}>
-              <View style={styles.avatarWrap}>
-                {user.avatar_url ? (
-                  <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
-                ) : (
-                  <Text style={styles.avatarInitial}>{user.name?.charAt(0).toUpperCase() || 'U'}</Text>
-                )}
-              </View>
+              {/* Avatar com gradiente */}
+              <LinearGradient
+                colors={COLORS.gradientPrimary as [string, string]}
+                style={styles.avatarRing}
+              >
+                <View style={styles.avatarInner}>
+                  {user.avatar_url ? (
+                    <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
+                  ) : (
+                    <Text style={styles.avatarInitial}>
+                      {user.name?.charAt(0).toUpperCase() || 'U'}
+                    </Text>
+                  )}
+                </View>
+              </LinearGradient>
+
+              {/* Stats */}
               <View style={styles.statsRow}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{stats.total}</Text>
-                  <Text style={styles.statLabel}>pecas</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{user.total_followers || 0}</Text>
-                  <Text style={styles.statLabel}>seguidores</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{user.total_following || 0}</Text>
-                  <Text style={styles.statLabel}>seguindo</Text>
-                </View>
+                <StatItem value={stats.total} label="pecas" />
+                <StatItem value={user.total_followers || 0} label="seguidores" />
+                <StatItem value={user.total_following || 0} label="seguindo" />
               </View>
             </View>
 
+            {/* Profile Info */}
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{user.store_name || user.name}</Text>
-              {user.store_description || user.bio ? (
+              <View style={styles.nameRow}>
+                <Text style={styles.profileName}>{user.store_name || user.name}</Text>
+                {user.is_verified && (
+                  <Ionicons name="checkmark-circle" size={18} color={COLORS.info} />
+                )}
+              </View>
+
+              {(user.store_description || user.bio) && (
                 <Text style={styles.profileBio}>{user.store_description || user.bio}</Text>
-              ) : null}
-              {user.city && user.state ? (
-                <Text style={styles.profileLocation}>{user.city}, {user.state}</Text>
-              ) : null}
+              )}
+
+              {user.city && user.state && (
+                <View style={styles.locationRow}>
+                  <Ionicons name="location-outline" size={14} color={COLORS.textTertiary} />
+                  <Text style={styles.locationText}>{user.city}, {user.state}</Text>
+                </View>
+              )}
+
               {user.total_reviews > 0 && (
-                <View style={styles.profileRating}>
-                  <Ionicons name="star" size={12} color={COLORS.premium} />
-                  <Text style={styles.profileRatingText}>{rating.toFixed(1)} ({user.total_reviews})</Text>
+                <View style={styles.ratingRow}>
+                  <Ionicons name="star" size={14} color={COLORS.premium} />
+                  <Text style={styles.ratingText}>
+                    {rating.toFixed(1)} ({user.total_reviews} avaliacoes)
+                  </Text>
                 </View>
               )}
             </View>
 
+            {/* Action Buttons */}
             <View style={styles.actionRow}>
-              <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('EditProfile')}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => navigation.navigate('EditProfile')}
+              >
+                <Ionicons name="pencil-outline" size={16} color={COLORS.textPrimary} />
                 <Text style={styles.actionButtonText}>Editar perfil</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Sales')}>
-                <Text style={styles.actionButtonText}>Painel de vendas</Text>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.actionButtonPrimary]}
+                onPress={() => navigation.navigate('Sales')}
+              >
+                <Ionicons name="stats-chart" size={16} color={COLORS.primary} />
+                <Text style={[styles.actionButtonText, styles.actionButtonTextPrimary]}>
+                  Painel de vendas
+                </Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.tabRow}>
-              <TouchableOpacity
-                style={[styles.tabButton, activeTab === 'all' && styles.tabButtonActive]}
+            {/* Tabs */}
+            <View style={styles.tabsRow}>
+              <TabButton
+                label="Todos"
+                icon="grid-outline"
+                isActive={activeTab === 'all'}
                 onPress={() => setActiveTab('all')}
-              >
-                <Text style={[styles.tabText, activeTab === 'all' && styles.tabTextActive]}>Todos</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tabButton, activeTab === 'active' && styles.tabButtonActive]}
+              />
+              <TabButton
+                label="Ativos"
+                icon="pricetag-outline"
+                isActive={activeTab === 'active'}
                 onPress={() => setActiveTab('active')}
-              >
-                <Text style={[styles.tabText, activeTab === 'active' && styles.tabTextActive]}>Ativos</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tabButton, activeTab === 'sold' && styles.tabButtonActive]}
+              />
+              <TabButton
+                label="Vendidos"
+                icon="checkmark-circle-outline"
+                isActive={activeTab === 'sold'}
                 onPress={() => setActiveTab('sold')}
-              >
-                <Text style={[styles.tabText, activeTab === 'sold' && styles.tabTextActive]}>Vendidos</Text>
-              </TouchableOpacity>
+              />
             </View>
           </View>
         }
@@ -226,19 +304,32 @@ export default function ProfileScreen({ navigation }: Props) {
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <View style={styles.emptyIconSmall}>
-                <Ionicons name="camera-outline" size={40} color={COLORS.textSecondary} />
+              <View style={styles.emptyIconWrap}>
+                <Ionicons name="camera-outline" size={40} color={COLORS.textTertiary} />
               </View>
               <Text style={styles.emptyTitle}>Nenhuma peca ainda</Text>
-              <Text style={styles.emptySubtitle}>Comece a vender e suas pecas vao aparecer aqui.</Text>
-              <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('NewItem')}>
-                <Text style={styles.primaryButtonText}>Anunciar agora</Text>
+              <Text style={styles.emptySubtitle}>
+                Comece a vender suas pecas agora
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyButton}
+                onPress={() => navigation.navigate('NewItem')}
+              >
+                <LinearGradient
+                  colors={COLORS.gradientPrimary as [string, string]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.emptyButtonGradient}
+                >
+                  <Ionicons name="add" size={20} color={COLORS.white} />
+                  <Text style={styles.emptyButtonText}>Anunciar peca</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           )
         }
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-        contentContainerStyle={{ paddingBottom: isWeb ? 40 : 120 }}
+        contentContainerStyle={{ paddingBottom: isWeb ? 40 : 100 }}
       />
 
       <BottomNavigation navigation={navigation} activeRoute="Profile" />
@@ -256,69 +347,75 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emptyProfile: {
+  guestContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
   },
-  emptyIcon: {
-    marginBottom: 16,
-  },
-  emptyIconSmall: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+  guestIconWrap: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 24,
+    ...SHADOWS.primary,
   },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+  guestTitle: {
+    fontSize: 24,
+    fontWeight: '700',
     color: COLORS.textPrimary,
-    marginBottom: 6,
+    marginBottom: 8,
     textAlign: 'center',
   },
-  emptySubtitle: {
-    fontSize: 14,
+  guestSubtitle: {
+    fontSize: 15,
     color: COLORS.textSecondary,
     textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 22,
+  },
+  loginButton: {
+    width: '100%',
+    maxWidth: 280,
     marginBottom: 16,
   },
-  primaryButton: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+  loginButtonGradient: {
+    paddingVertical: 16,
+    borderRadius: BORDER_RADIUS.button,
+    alignItems: 'center',
+    ...SHADOWS.primary,
   },
-  primaryButtonText: {
-    color: COLORS.textInverse,
+  loginButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.white,
+  },
+  registerLink: {
+    fontSize: 15,
     fontWeight: '600',
-  },
-  secondaryLink: {
-    marginTop: 10,
     color: COLORS.primary,
-    fontWeight: '600',
   },
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
+    paddingTop: 20,
+    paddingBottom: 16,
   },
-  avatarWrap: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
+  avatarRing: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    padding: 3,
+    marginRight: 20,
+  },
+  avatarInner: {
+    flex: 1,
     backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    borderRadius: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
     overflow: 'hidden',
   },
   avatar: {
@@ -326,7 +423,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   avatarInitial: {
-    fontSize: 30,
+    fontSize: 32,
     fontWeight: '700',
     color: COLORS.primary,
   },
@@ -339,95 +436,158 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '700',
     color: COLORS.textPrimary,
   },
   statLabel: {
     fontSize: 12,
     color: COLORS.textSecondary,
+    marginTop: 2,
   },
   profileInfo: {
-    marginTop: 12,
+    marginBottom: 20,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
   },
   profileName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: COLORS.textPrimary,
   },
   profileBio: {
-    fontSize: 13,
+    fontSize: 14,
     color: COLORS.textSecondary,
-    marginTop: 6,
-  },
-  profileLocation: {
-    fontSize: 12,
-    color: COLORS.textTertiary,
+    lineHeight: 20,
     marginTop: 4,
   },
-  profileRating: {
+  locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 6,
+    gap: 4,
+    marginTop: 8,
   },
-  profileRatingText: {
-    fontSize: 12,
+  locationText: {
+    fontSize: 13,
+    color: COLORS.textTertiary,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+  },
+  ratingText: {
+    fontSize: 13,
     color: COLORS.textSecondary,
   },
   actionRow: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 16,
+    marginBottom: 20,
   },
   actionButton: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingVertical: 10,
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.button,
+    ...SHADOWS.xs,
+  },
+  actionButtonPrimary: {
+    borderColor: COLORS.primaryExtraLight,
+    backgroundColor: COLORS.primaryExtraLight,
   },
   actionButtonText: {
     fontSize: 13,
     fontWeight: '600',
     color: COLORS.textPrimary,
   },
-  tabRow: {
+  actionButtonTextPrimary: {
+    color: COLORS.primary,
+  },
+  tabsRow: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 18,
-    marginBottom: 12,
+    marginBottom: 20,
   },
   tabButton: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 999,
-    paddingVertical: 8,
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.full,
   },
   tabButtonActive: {
     borderColor: COLORS.primary,
     backgroundColor: COLORS.primaryExtraLight,
   },
-  tabText: {
+  tabLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: COLORS.textTertiary,
   },
-  tabTextActive: {
+  tabLabelActive: {
     color: COLORS.primary,
   },
   loadingProducts: {
-    paddingVertical: 40,
+    paddingVertical: 60,
     alignItems: 'center',
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+  },
+  emptyIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.backgroundDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  emptyButton: {
+    borderRadius: BORDER_RADIUS.button,
+    overflow: 'hidden',
+  },
+  emptyButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     paddingHorizontal: 24,
+    paddingVertical: 14,
+  },
+  emptyButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.white,
   },
 });
