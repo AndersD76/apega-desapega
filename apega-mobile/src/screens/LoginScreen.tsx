@@ -34,11 +34,11 @@ interface LoginScreenProps {
 
 type Screen = 'main' | 'email-login' | 'email-signup' | 'forgot';
 
-// Fashion images for background
+// Fashion images for background - Alta resolução
 const FASHION_IMAGES = [
-  'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&q=80',
-  'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80',
-  'https://images.unsplash.com/photo-1558171813-4c088753af8f?w=800&q=80',
+  'https://images.unsplash.com/photo-1558171813-01342e9fa63c?w=1920&q=95', // Arara de roupas coloridas
+  'https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=1920&q=95', // Roupas em cabides
+  'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1920&q=95', // Loja de moda
 ];
 
 export default function LoginScreen({ navigation, route }: LoginScreenProps) {
@@ -259,7 +259,6 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
             >
               {/* Welcome Text */}
               <View style={styles.welcomeSection}>
-                <Text style={styles.welcomeEmoji}>👗</Text>
                 <Text style={styles.welcomeTitle}>Bem-vinda!</Text>
                 <Text style={styles.welcomeSubtitle}>
                   Descubra peças únicas e dê uma nova vida{'\n'}ao seu guarda-roupa
@@ -862,10 +861,6 @@ const createStyles = (isDesktop: boolean) => StyleSheet.create({
   welcomeSection: {
     alignItems: 'center',
     marginBottom: 20,
-  },
-  welcomeEmoji: {
-    fontSize: 48,
-    marginBottom: 8,
   },
   welcomeTitle: {
     fontSize: 32,
