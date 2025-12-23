@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
   Image,
@@ -13,7 +12,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SHADOWS, BORDER_RADIUS } from '../constants/theme';
 import { BottomNavigation, Header, MainHeader } from '../components';
 import ProductCard from '../components/ProductCard';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,18 +22,17 @@ import type { RootStackParamList } from '../navigation/AppNavigator';
 const isWeb = Platform.OS === 'web';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
-
 type ProfileTab = 'all' | 'active' | 'sold';
 
-// Componente de estatistica
+// Stat Item Component
 const StatItem = ({ value, label }: { value: number; label: string }) => (
-  <View style={styles.statItem}>
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
+  <View className="items-center">
+    <Text className="text-xl font-bold text-text-primary">{value}</Text>
+    <Text className="text-xs text-text-secondary mt-0.5">{label}</Text>
   </View>
 );
 
-// Componente de Tab
+// Tab Button Component
 const TabButton = ({
   label,
   icon,
@@ -48,16 +45,22 @@ const TabButton = ({
   onPress: () => void;
 }) => (
   <TouchableOpacity
-    style={[styles.tabButton, isActive && styles.tabButtonActive]}
+    className={`flex-1 flex-row items-center justify-center gap-1.5 py-2.5 rounded-full border ${
+      isActive
+        ? 'border-primary bg-primary-extraLight'
+        : 'border-border bg-surface'
+    }`}
     onPress={onPress}
     activeOpacity={0.7}
   >
     <Ionicons
       name={icon as any}
       size={18}
-      color={isActive ? COLORS.primary : COLORS.textTertiary}
+      color={isActive ? '#61005D' : '#9CA3AF'}
     />
-    <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{label}</Text>
+    <Text className={`text-xs font-semibold ${isActive ? 'text-primary' : 'text-text-tertiary'}`}>
+      {label}
+    </Text>
   </TouchableOpacity>
 );
 
@@ -131,50 +134,61 @@ export default function ProfileScreen({ navigation }: Props) {
     );
   };
 
+  // Loading state
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+      <View className="flex-1 justify-center items-center bg-background">
+        <ActivityIndicator size="large" color="#61005D" />
       </View>
     );
   }
 
+  // Guest state
   if (!isAuthenticated || !user) {
     return (
-      <View style={styles.container}>
+      <View className="flex-1 bg-background">
         {isWeb ? (
           <MainHeader navigation={navigation} title="Perfil" />
         ) : (
           <Header navigation={navigation} title="Perfil" showBack={false} />
         )}
-        <View style={styles.guestContainer}>
+
+        <View className="flex-1 items-center justify-center p-8">
           <LinearGradient
-            colors={COLORS.gradientPrimary as [string, string]}
-            style={styles.guestIconWrap}
+            colors={['#61005D', '#A855F7']}
+            className="w-24 h-24 rounded-full items-center justify-center mb-6 shadow-primary"
           >
-            <Ionicons name="person" size={48} color={COLORS.white} />
+            <Ionicons name="person" size={48} color="#FFFFFF" />
           </LinearGradient>
-          <Text style={styles.guestTitle}>Entre para continuar</Text>
-          <Text style={styles.guestSubtitle}>
+
+          <Text className="text-2xl font-bold text-text-primary mb-2 text-center">
+            Entre para continuar
+          </Text>
+          <Text className="text-[15px] text-text-secondary text-center mb-8 leading-6">
             Crie sua loja, anuncie pecas e acompanhe suas vendas
           </Text>
+
           <TouchableOpacity
-            style={styles.loginButton}
+            className="w-full max-w-[280px] mb-4"
             onPress={() => navigation.navigate('Login')}
           >
             <LinearGradient
-              colors={COLORS.gradientPrimary as [string, string]}
+              colors={['#61005D', '#A855F7']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={styles.loginButtonGradient}
+              className="py-4 rounded-xl items-center shadow-primary"
             >
-              <Text style={styles.loginButtonText}>Entrar</Text>
+              <Text className="text-base font-bold text-white">Entrar</Text>
             </LinearGradient>
           </TouchableOpacity>
+
           <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.registerLink}>Criar conta gratuita</Text>
+            <Text className="text-[15px] font-semibold text-primary">
+              Criar conta gratuita
+            </Text>
           </TouchableOpacity>
         </View>
+
         <BottomNavigation navigation={navigation} activeRoute="Profile" />
       </View>
     );
@@ -183,7 +197,7 @@ export default function ProfileScreen({ navigation }: Props) {
   const rating = typeof user.rating === 'number' ? user.rating : parseFloat(user.rating || '0');
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-background">
       {isWeb ? (
         <MainHeader navigation={navigation} title="Perfil" />
       ) : (
@@ -199,17 +213,20 @@ export default function ProfileScreen({ navigation }: Props) {
         ListHeaderComponent={
           <View style={{ paddingHorizontal: contentPadding }}>
             {/* Profile Header */}
-            <View style={styles.profileHeader}>
-              {/* Avatar com gradiente */}
+            <View className="flex-row items-center pt-5 pb-4">
+              {/* Avatar with gradient ring */}
               <LinearGradient
-                colors={COLORS.gradientPrimary as [string, string]}
-                style={styles.avatarRing}
+                colors={['#61005D', '#A855F7']}
+                className="w-[90px] h-[90px] rounded-full p-[3px] mr-5"
               >
-                <View style={styles.avatarInner}>
+                <View className="flex-1 bg-surface rounded-full items-center justify-center overflow-hidden">
                   {user.avatar_url ? (
-                    <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
+                    <Image
+                      source={{ uri: user.avatar_url }}
+                      className="w-full h-full"
+                    />
                   ) : (
-                    <Text style={styles.avatarInitial}>
+                    <Text className="text-3xl font-bold text-primary">
                       {user.name?.charAt(0).toUpperCase() || 'U'}
                     </Text>
                   )}
@@ -217,7 +234,7 @@ export default function ProfileScreen({ navigation }: Props) {
               </LinearGradient>
 
               {/* Stats */}
-              <View style={styles.statsRow}>
+              <View className="flex-1 flex-row justify-around">
                 <StatItem value={stats.total} label="pecas" />
                 <StatItem value={user.total_followers || 0} label="seguidores" />
                 <StatItem value={user.total_following || 0} label="seguindo" />
@@ -225,29 +242,35 @@ export default function ProfileScreen({ navigation }: Props) {
             </View>
 
             {/* Profile Info */}
-            <View style={styles.profileInfo}>
-              <View style={styles.nameRow}>
-                <Text style={styles.profileName}>{user.store_name || user.name}</Text>
+            <View className="mb-5">
+              <View className="flex-row items-center gap-1.5 mb-1">
+                <Text className="text-lg font-bold text-text-primary">
+                  {user.store_name || user.name}
+                </Text>
                 {user.is_verified && (
-                  <Ionicons name="checkmark-circle" size={18} color={COLORS.info} />
+                  <Ionicons name="checkmark-circle" size={18} color="#3B82F6" />
                 )}
               </View>
 
               {(user.store_description || user.bio) && (
-                <Text style={styles.profileBio}>{user.store_description || user.bio}</Text>
+                <Text className="text-sm text-text-secondary leading-5 mt-1">
+                  {user.store_description || user.bio}
+                </Text>
               )}
 
               {user.city && user.state && (
-                <View style={styles.locationRow}>
-                  <Ionicons name="location-outline" size={14} color={COLORS.textTertiary} />
-                  <Text style={styles.locationText}>{user.city}, {user.state}</Text>
+                <View className="flex-row items-center gap-1 mt-2">
+                  <Ionicons name="location-outline" size={14} color="#9CA3AF" />
+                  <Text className="text-[13px] text-text-tertiary">
+                    {user.city}, {user.state}
+                  </Text>
                 </View>
               )}
 
               {user.total_reviews > 0 && (
-                <View style={styles.ratingRow}>
-                  <Ionicons name="star" size={14} color={COLORS.premium} />
-                  <Text style={styles.ratingText}>
+                <View className="flex-row items-center gap-1 mt-2">
+                  <Ionicons name="star" size={14} color="#F59E0B" />
+                  <Text className="text-[13px] text-text-secondary">
                     {rating.toFixed(1)} ({user.total_reviews} avaliacoes)
                   </Text>
                 </View>
@@ -255,27 +278,30 @@ export default function ProfileScreen({ navigation }: Props) {
             </View>
 
             {/* Action Buttons */}
-            <View style={styles.actionRow}>
+            <View className="flex-row gap-3 mb-5">
               <TouchableOpacity
-                style={styles.actionButton}
+                className="flex-1 flex-row items-center justify-center gap-1.5 py-3 bg-surface border border-border rounded-xl shadow-card"
                 onPress={() => navigation.navigate('EditProfile')}
               >
-                <Ionicons name="pencil-outline" size={16} color={COLORS.textPrimary} />
-                <Text style={styles.actionButtonText}>Editar perfil</Text>
+                <Ionicons name="pencil-outline" size={16} color="#111827" />
+                <Text className="text-[13px] font-semibold text-text-primary">
+                  Editar perfil
+                </Text>
               </TouchableOpacity>
+
               <TouchableOpacity
-                style={[styles.actionButton, styles.actionButtonPrimary]}
+                className="flex-1 flex-row items-center justify-center gap-1.5 py-3 bg-primary-extraLight border border-primary-extraLight rounded-xl"
                 onPress={() => navigation.navigate('Sales')}
               >
-                <Ionicons name="stats-chart" size={16} color={COLORS.primary} />
-                <Text style={[styles.actionButtonText, styles.actionButtonTextPrimary]}>
+                <Ionicons name="stats-chart" size={16} color="#61005D" />
+                <Text className="text-[13px] font-semibold text-primary">
                   Painel de vendas
                 </Text>
               </TouchableOpacity>
             </View>
 
             {/* Tabs */}
-            <View style={styles.tabsRow}>
+            <View className="flex-row gap-2 mb-5">
               <TabButton
                 label="Todos"
                 icon="grid-outline"
@@ -299,36 +325,47 @@ export default function ProfileScreen({ navigation }: Props) {
         }
         ListEmptyComponent={
           loadingProducts ? (
-            <View style={styles.loadingProducts}>
-              <ActivityIndicator size="large" color={COLORS.primary} />
+            <View className="py-16 items-center">
+              <ActivityIndicator size="large" color="#61005D" />
             </View>
           ) : (
-            <View style={styles.emptyState}>
-              <View style={styles.emptyIconWrap}>
-                <Ionicons name="camera-outline" size={40} color={COLORS.textTertiary} />
+            <View className="items-center py-16 px-8">
+              <View className="w-20 h-20 rounded-full bg-background-dark items-center justify-center mb-4">
+                <Ionicons name="camera-outline" size={40} color="#9CA3AF" />
               </View>
-              <Text style={styles.emptyTitle}>Nenhuma peca ainda</Text>
-              <Text style={styles.emptySubtitle}>
+              <Text className="text-lg font-bold text-text-primary mb-1.5">
+                Nenhuma peca ainda
+              </Text>
+              <Text className="text-sm text-text-secondary text-center mb-6">
                 Comece a vender suas pecas agora
               </Text>
               <TouchableOpacity
-                style={styles.emptyButton}
+                className="rounded-xl overflow-hidden"
                 onPress={() => navigation.navigate('NewItem')}
               >
                 <LinearGradient
-                  colors={COLORS.gradientPrimary as [string, string]}
+                  colors={['#61005D', '#A855F7']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  style={styles.emptyButtonGradient}
+                  className="flex-row items-center gap-2 px-6 py-3.5"
                 >
-                  <Ionicons name="add" size={20} color={COLORS.white} />
-                  <Text style={styles.emptyButtonText}>Anunciar peca</Text>
+                  <Ionicons name="add" size={20} color="#FFFFFF" />
+                  <Text className="text-[15px] font-semibold text-white">
+                    Anunciar peca
+                  </Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
           )
         }
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="#61005D"
+            colors={['#61005D']}
+          />
+        }
         contentContainerStyle={{ paddingBottom: isWeb ? 40 : 100 }}
       />
 
@@ -336,258 +373,3 @@ export default function ProfileScreen({ navigation }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  guestContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-  },
-  guestIconWrap: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-    ...SHADOWS.primary,
-  },
-  guestTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  guestSubtitle: {
-    fontSize: 15,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 22,
-  },
-  loginButton: {
-    width: '100%',
-    maxWidth: 280,
-    marginBottom: 16,
-  },
-  loginButtonGradient: {
-    paddingVertical: 16,
-    borderRadius: BORDER_RADIUS.button,
-    alignItems: 'center',
-    ...SHADOWS.primary,
-  },
-  loginButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.white,
-  },
-  registerLink: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 20,
-    paddingBottom: 16,
-  },
-  avatarRing: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    padding: 3,
-    marginRight: 20,
-  },
-  avatarInner: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-    borderRadius: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  avatar: {
-    width: '100%',
-    height: '100%',
-  },
-  avatarInitial: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: COLORS.primary,
-  },
-  statsRow: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  profileInfo: {
-    marginBottom: 20,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
-  },
-  profileName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-  },
-  profileBio: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
-    marginTop: 4,
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 8,
-  },
-  locationText: {
-    fontSize: 13,
-    color: COLORS.textTertiary,
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 8,
-  },
-  ratingText: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: BORDER_RADIUS.button,
-    ...SHADOWS.xs,
-  },
-  actionButtonPrimary: {
-    borderColor: COLORS.primaryExtraLight,
-    backgroundColor: COLORS.primaryExtraLight,
-  },
-  actionButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  actionButtonTextPrimary: {
-    color: COLORS.primary,
-  },
-  tabsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
-  },
-  tabButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: BORDER_RADIUS.full,
-  },
-  tabButtonActive: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primaryExtraLight,
-  },
-  tabLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.textTertiary,
-  },
-  tabLabelActive: {
-    color: COLORS.primary,
-  },
-  loadingProducts: {
-    paddingVertical: 60,
-    alignItems: 'center',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 32,
-  },
-  emptyIconWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.backgroundDark,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    marginBottom: 6,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  emptyButton: {
-    borderRadius: BORDER_RADIUS.button,
-    overflow: 'hidden',
-  },
-  emptyButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-  },
-  emptyButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.white,
-  },
-});

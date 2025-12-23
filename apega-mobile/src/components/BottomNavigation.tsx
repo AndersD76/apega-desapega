@@ -1,10 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SHADOWS } from '../constants/theme';
 import { useAuth } from '../contexts/AuthContext';
 
 const isWeb = Platform.OS === 'web';
@@ -59,17 +58,17 @@ export default function BottomNavigation({ navigation, activeRoute = 'Home' }: B
       return (
         <TouchableOpacity
           key={item.key}
-          style={styles.centerButton}
+          className="items-center justify-center -mt-6 mx-1"
           onPress={() => handlePress(item.key)}
           activeOpacity={0.9}
         >
           <LinearGradient
-            colors={COLORS.gradientPrimary as [string, string]}
+            colors={['#61005D', '#A855F7']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.centerButtonGradient}
+            className="w-14 h-14 rounded-full items-center justify-center border-4 border-surface shadow-primary"
           >
-            <Ionicons name="add" size={28} color={COLORS.white} />
+            <Ionicons name="add" size={28} color="#FFFFFF" />
           </LinearGradient>
         </TouchableOpacity>
       );
@@ -78,18 +77,18 @@ export default function BottomNavigation({ navigation, activeRoute = 'Home' }: B
     return (
       <TouchableOpacity
         key={item.key}
-        style={styles.navItem}
+        className="flex-1 items-center justify-center py-1"
         onPress={() => handlePress(item.key)}
         activeOpacity={0.7}
       >
-        <View style={[styles.iconContainer, isActive && styles.iconContainerActive]}>
+        <View className={`items-center justify-center w-11 h-8 rounded-2xl ${isActive ? 'bg-primary-extraLight' : ''}`}>
           <Ionicons
             name={isActive ? (item.icon as any) : (`${item.icon}-outline` as any)}
             size={24}
-            color={isActive ? COLORS.primary : COLORS.textTertiary}
+            color={isActive ? '#61005D' : '#9CA3AF'}
           />
         </View>
-        <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
+        <Text className={`text-[11px] mt-1 ${isActive ? 'text-primary font-semibold' : 'text-text-tertiary font-medium'}`}>
           {item.label}
         </Text>
       </TouchableOpacity>
@@ -97,96 +96,31 @@ export default function BottomNavigation({ navigation, activeRoute = 'Home' }: B
   };
 
   const NavContent = () => (
-    <View style={[styles.navBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+    <View
+      className="flex-row items-end justify-around pt-2 px-3"
+      style={{ paddingBottom: Math.max(insets.bottom, 8) }}
+    >
       {NAV_ITEMS.map(renderNavItem)}
     </View>
   );
 
-  // Usa BlurView no iOS para efeito glassmorphism
+  // Use BlurView on iOS for glassmorphism effect
   if (Platform.OS === 'ios') {
     return (
-      <BlurView intensity={80} tint="light" style={styles.container}>
+      <BlurView
+        intensity={80}
+        tint="light"
+        className="absolute bottom-0 left-0 right-0"
+      >
         <NavContent />
       </BlurView>
     );
   }
 
-  // Fallback para Android e Web com fundo semi-transparente
+  // Fallback for Android and Web
   return (
-    <View style={[styles.container, styles.containerFallback]}>
+    <View className="absolute bottom-0 left-0 right-0 bg-glass-dark border-t border-glass-border shadow-nav">
       <NavContent />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    ...Platform.select({
-      ios: {},
-      android: {
-        elevation: 12,
-      },
-      web: {
-        boxShadow: '0 -4px 24px rgba(0,0,0,0.08)',
-      },
-    }),
-  },
-  containerFallback: {
-    backgroundColor: COLORS.glassDark,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.glassBorder,
-  },
-  navBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-around',
-    paddingTop: 8,
-    paddingHorizontal: 12,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 4,
-  },
-  iconContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 44,
-    height: 32,
-    borderRadius: 16,
-  },
-  iconContainerActive: {
-    backgroundColor: COLORS.primaryExtraLight,
-  },
-  navLabel: {
-    fontSize: 11,
-    color: COLORS.textTertiary,
-    fontWeight: '500',
-    marginTop: 4,
-  },
-  navLabelActive: {
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-  centerButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -24,
-    marginHorizontal: 4,
-  },
-  centerButtonGradient: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 4,
-    borderColor: COLORS.surface,
-    ...SHADOWS.primary,
-  },
-});

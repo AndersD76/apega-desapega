@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   TouchableOpacity,
   TextInput,
@@ -11,12 +10,13 @@ import {
   Platform,
   useWindowDimensions,
   ScrollView,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppHeader, BottomNavigation, MainHeader } from '../components';
 import ProductCard from '../components/ProductCard';
-import { COLORS, CATEGORIES, SHADOWS, BORDER_RADIUS } from '../constants/theme';
+import { COLORS, CATEGORIES } from '../constants/theme';
 import { getProducts, Product } from '../services/products';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -25,7 +25,7 @@ const isWeb = Platform.OS === 'web';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
-// Componente de Story para categorias (estilo Instagram)
+// Category Story Component - Instagram style
 const CategoryStory = ({
   category,
   isActive,
@@ -53,20 +53,41 @@ const CategoryStory = ({
   };
 
   return (
-    <TouchableOpacity style={styles.storyContainer} onPress={onPress} activeOpacity={0.8}>
-      <LinearGradient
-        colors={isActive ? COLORS.gradientPrimary as [string, string] : ['transparent', 'transparent']}
-        style={[styles.storyRing, !isActive && styles.storyRingInactive]}
-      >
-        <View style={styles.storyInner}>
-          <Ionicons
-            name={getIconName() as any}
-            size={22}
-            color={isActive ? COLORS.primary : COLORS.textSecondary}
-          />
+    <TouchableOpacity
+      className="items-center w-[72px]"
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      {isActive ? (
+        <LinearGradient
+          colors={['#61005D', '#A855F7']}
+          className="w-16 h-16 rounded-full p-[3px] mb-2"
+        >
+          <View className="flex-1 bg-white rounded-full items-center justify-center">
+            <Ionicons
+              name={getIconName() as any}
+              size={22}
+              color="#61005D"
+            />
+          </View>
+        </LinearGradient>
+      ) : (
+        <View className="w-16 h-16 rounded-full border-2 border-border p-[3px] mb-2">
+          <View className="flex-1 bg-surface rounded-full items-center justify-center">
+            <Ionicons
+              name={getIconName() as any}
+              size={22}
+              color="#6B7280"
+            />
+          </View>
         </View>
-      </LinearGradient>
-      <Text style={[styles.storyLabel, isActive && styles.storyLabelActive]} numberOfLines={1}>
+      )}
+      <Text
+        className={`text-[11px] text-center font-medium ${
+          isActive ? 'text-primary font-semibold' : 'text-text-secondary'
+        }`}
+        numberOfLines={1}
+      >
         {category.name}
       </Text>
     </TouchableOpacity>
@@ -141,38 +162,48 @@ export default function HomeScreen({ navigation }: Props) {
 
   const ListHeader = () => (
     <View style={{ paddingHorizontal: contentPadding }}>
-      {/* Hero Section com gradiente */}
+      {/* Hero Section */}
       <LinearGradient
-        colors={COLORS.gradientPrimary as [string, string]}
+        colors={['#61005D', '#8B5CF6']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.heroCard}
+        className="rounded-3xl p-6 mt-4 mb-5 overflow-hidden"
       >
-        <View style={styles.heroContent}>
-          <Text style={styles.heroTag}>MODA CIRCULAR</Text>
-          <Text style={styles.heroTitle}>Encontre pecas{'\n'}com historia</Text>
-          <Text style={styles.heroSubtitle}>
-            Curadoria especial, precos justos
-          </Text>
-        </View>
-        <View style={styles.heroIconWrap}>
-          <Ionicons name="leaf" size={48} color="rgba(255,255,255,0.25)" />
+        <View className="flex-row justify-between items-center">
+          <View className="flex-1 pr-4">
+            <Text className="text-[10px] font-bold text-white/70 tracking-widest mb-2">
+              MODA CIRCULAR
+            </Text>
+            <Text className="text-2xl font-extrabold text-white leading-8 mb-2">
+              Encontre pecas{'\n'}com historia
+            </Text>
+            <Text className="text-sm text-white/85 font-medium">
+              Curadoria especial, precos justos
+            </Text>
+          </View>
+          <View className="opacity-80">
+            <Ionicons name="leaf" size={48} color="rgba(255,255,255,0.25)" />
+          </View>
         </View>
       </LinearGradient>
 
-      {/* Barra de busca moderna */}
-      <View style={[styles.searchBar, searchFocused && styles.searchBarFocused]}>
+      {/* Search Bar */}
+      <View
+        className={`flex-row items-center bg-surface border-[1.5px] rounded-2xl px-4 py-3.5 gap-3 mb-5 ${
+          searchFocused ? 'border-primary bg-white' : 'border-border'
+        }`}
+      >
         <Ionicons
           name="search"
           size={20}
-          color={searchFocused ? COLORS.primary : COLORS.textTertiary}
+          color={searchFocused ? '#61005D' : '#9CA3AF'}
         />
         <TextInput
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder="Buscar marca, peca, tamanho..."
-          placeholderTextColor={COLORS.textTertiary}
-          style={styles.searchInput}
+          placeholderTextColor="#9CA3AF"
+          className="flex-1 text-[15px] text-text-primary"
           onFocus={() => setSearchFocused(true)}
           onBlur={() => setSearchFocused(false)}
         />
@@ -181,19 +212,19 @@ export default function HomeScreen({ navigation }: Props) {
             onPress={() => setSearchQuery('')}
             hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
           >
-            <View style={styles.clearButton}>
-              <Ionicons name="close" size={14} color={COLORS.white} />
+            <View className="w-5 h-5 rounded-full bg-text-tertiary items-center justify-center">
+              <Ionicons name="close" size={14} color="#FFFFFF" />
             </View>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Categories Stories */}
+      {/* Categories */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.storiesContainer}
-        style={styles.storiesScroll}
+        contentContainerStyle={{ paddingHorizontal: 4, gap: 16 }}
+        className="mb-5 -mx-4"
       >
         {CATEGORIES.map((cat) => (
           <CategoryStory
@@ -206,42 +237,52 @@ export default function HomeScreen({ navigation }: Props) {
       </ScrollView>
 
       {/* Section Header */}
-      <View style={styles.sectionHeader}>
+      <View className="flex-row items-center justify-between mb-4">
         <View>
-          <Text style={styles.sectionTitle}>Destaques</Text>
-          <Text style={styles.sectionMeta}>{products.length} pecas disponiveis</Text>
+          <Text className="text-xl font-bold text-text-primary tracking-tight">
+            Destaques
+          </Text>
+          <Text className="text-[13px] text-text-tertiary mt-0.5">
+            {products.length} pecas disponiveis
+          </Text>
         </View>
         <TouchableOpacity
-          style={styles.filterButton}
+          className="w-10 h-10 rounded-full bg-surface border border-border items-center justify-center"
           onPress={() => navigation.navigate('Search')}
         >
-          <Ionicons name="options-outline" size={18} color={COLORS.textSecondary} />
+          <Ionicons name="options-outline" size={18} color="#6B7280" />
         </TouchableOpacity>
       </View>
     </View>
   );
 
   const ListEmpty = () => (
-    <View style={styles.emptyState}>
-      <View style={styles.emptyIconWrap}>
-        <Ionicons name="search-outline" size={48} color={COLORS.textTertiary} />
+    <View className="items-center py-16 px-8">
+      <View className="w-24 h-24 rounded-full bg-background-dark items-center justify-center mb-5">
+        <Ionicons name="search-outline" size={48} color="#9CA3AF" />
       </View>
-      <Text style={styles.emptyTitle}>Nada encontrado</Text>
-      <Text style={styles.emptySubtitle}>Tente outra busca ou categoria</Text>
+      <Text className="text-xl font-bold text-text-primary mb-2">
+        Nada encontrado
+      </Text>
+      <Text className="text-[15px] text-text-secondary text-center mb-6">
+        Tente outra busca ou categoria
+      </Text>
       <TouchableOpacity
-        style={styles.emptyButton}
+        className="px-6 py-3 bg-primary-extraLight rounded-xl"
         onPress={() => {
           setSearchQuery('');
           setSelectedCategory('all');
         }}
       >
-        <Text style={styles.emptyButtonText}>Limpar filtros</Text>
+        <Text className="text-sm font-semibold text-primary">
+          Limpar filtros
+        </Text>
       </TouchableOpacity>
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-background">
       {isWeb ? (
         <MainHeader navigation={navigation} />
       ) : (
@@ -249,9 +290,11 @@ export default function HomeScreen({ navigation }: Props) {
       )}
 
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Carregando pecas...</Text>
+        <View className="flex-1 justify-center items-center gap-4">
+          <ActivityIndicator size="large" color="#61005D" />
+          <Text className="text-[15px] text-text-secondary">
+            Carregando pecas...
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -267,8 +310,8 @@ export default function HomeScreen({ navigation }: Props) {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={COLORS.primary}
-              colors={[COLORS.primary]}
+              tintColor="#61005D"
+              colors={['#61005D']}
             />
           }
           contentContainerStyle={{ paddingBottom: isWeb ? 40 : 100 }}
@@ -279,190 +322,3 @@ export default function HomeScreen({ navigation }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  heroCard: {
-    borderRadius: BORDER_RADIUS['2xl'],
-    padding: 24,
-    marginTop: 16,
-    marginBottom: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    overflow: 'hidden',
-    ...SHADOWS.lg,
-  },
-  heroContent: {
-    flex: 1,
-  },
-  heroTag: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.7)',
-    letterSpacing: 2,
-    marginBottom: 8,
-  },
-  heroTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: COLORS.white,
-    lineHeight: 30,
-    marginBottom: 8,
-  },
-  heroSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.85)',
-    fontWeight: '500',
-  },
-  heroIconWrap: {
-    opacity: 0.8,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    borderRadius: BORDER_RADIUS.xl,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-    marginBottom: 20,
-    ...SHADOWS.xs,
-  },
-  searchBarFocused: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.white,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: COLORS.textPrimary,
-  },
-  clearButton: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: COLORS.textTertiary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  storiesScroll: {
-    marginHorizontal: -16,
-    marginBottom: 20,
-  },
-  storiesContainer: {
-    paddingHorizontal: 16,
-    gap: 16,
-  },
-  storyContainer: {
-    alignItems: 'center',
-    width: 70,
-  },
-  storyRing: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    padding: 3,
-    marginBottom: 8,
-  },
-  storyRingInactive: {
-    borderWidth: 2,
-    borderColor: COLORS.border,
-  },
-  storyInner: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  storyLabel: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  storyLabelActive: {
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    letterSpacing: -0.3,
-  },
-  sectionMeta: {
-    fontSize: 13,
-    color: COLORS.textTertiary,
-    marginTop: 2,
-  },
-  filterButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 15,
-    color: COLORS.textSecondary,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 32,
-  },
-  emptyIconWrap: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: COLORS.backgroundDark,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 15,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  emptyButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: COLORS.primaryExtraLight,
-    borderRadius: BORDER_RADIUS.button,
-  },
-  emptyButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-});
