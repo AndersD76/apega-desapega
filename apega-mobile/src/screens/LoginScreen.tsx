@@ -66,6 +66,10 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
   // Loading state
   const [isLoading, setIsLoading] = useState(false);
 
+  // Error state - para mostrar erro inline
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [signupError, setSignupError] = useState<string | null>(null);
+
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -118,16 +122,18 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
   }, [currentScreen]);
 
   const handleLogin = async () => {
+    setLoginError(null);
+
     if (!email.trim()) {
-      Alert.alert('Atenção', 'Digite seu email');
+      setLoginError('Digite seu email');
       return;
     }
     if (!password.trim()) {
-      Alert.alert('Atenção', 'Digite sua senha');
+      setLoginError('Digite sua senha');
       return;
     }
     if (!email.includes('@')) {
-      Alert.alert('Atenção', 'Digite um email válido');
+      setLoginError('Digite um email valido');
       return;
     }
 
@@ -135,7 +141,7 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
     try {
       const result = await authLogin(email.trim().toLowerCase(), password);
       if (!result.success) {
-        throw new Error(result.message || 'Email ou senha incorretos. Verifique seus dados e tente novamente.');
+        throw new Error(result.message || 'Email ou senha incorretos');
       }
       if (redirectTo) {
         navigation.reset({
@@ -153,26 +159,26 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      Alert.alert(
-        'Erro no Login',
-        error.message || 'Email ou senha incorretos. Verifique seus dados e tente novamente.'
-      );
+      const errorMsg = error.message || 'Email ou senha incorretos. Verifique seus dados e tente novamente.';
+      setLoginError(errorMsg);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSignup = async () => {
+    setSignupError(null);
+
     if (!signupName.trim() || signupName.length < 2) {
-      Alert.alert('Atenção', 'Digite seu nome (mínimo 2 caracteres)');
+      setSignupError('Digite seu nome (minimo 2 caracteres)');
       return;
     }
     if (!signupEmail.trim() || !signupEmail.includes('@')) {
-      Alert.alert('Atenção', 'Digite um email válido');
+      setSignupError('Digite um email valido');
       return;
     }
     if (!signupPassword || signupPassword.length < 6) {
-      Alert.alert('Atenção', 'A senha deve ter no mínimo 6 caracteres');
+      setSignupError('A senha deve ter no minimo 6 caracteres');
       return;
     }
 
@@ -180,9 +186,9 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
     try {
       const result = await authRegister(signupEmail.trim().toLowerCase(), signupPassword, signupName.trim());
       if (!result.success) {
-        throw new Error(result.message || 'NÇœo foi possÇðvel criar sua conta. Tente novamente.');
+        throw new Error(result.message || 'Nao foi possivel criar sua conta');
       }
-      // Se tem redirectTo, vai para lá após criar conta
+      // Se tem redirectTo, vai para la apos criar conta
       if (redirectTo) {
         navigation.reset({
           index: 1,
@@ -192,7 +198,7 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
           ],
         });
       } else {
-        // Após criar conta, vai para EditProfile para completar cadastro
+        // Apos criar conta, vai para EditProfile para completar cadastro
         navigation.reset({
           index: 1,
           routes: [
@@ -203,7 +209,8 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
       }
     } catch (error: any) {
       console.error('Signup error:', error);
-      Alert.alert('Erro no Cadastro', error.message || 'Não foi possível criar sua conta. Tente novamente.');
+      const errorMsg = error.message || 'Nao foi possivel criar sua conta. Tente novamente.';
+      setSignupError(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -399,8 +406,19 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
 
           <Text style={styles.formTitle}>Entrar</Text>
           <Text style={styles.formSubtitle}>
-            Bom te ver de volta! Continue sua{'\n'}jornada sustentável
+            Bom te ver de volta! Continue sua{'\n'}jornada sustentavel
           </Text>
+
+          {/* Error Banner */}
+          {loginError && (
+            <View style={styles.errorBanner}>
+              <Ionicons name="alert-circle" size={20} color="#DC2626" />
+              <Text style={styles.errorBannerText}>{loginError}</Text>
+              <TouchableOpacity onPress={() => setLoginError(null)}>
+                <Ionicons name="close-circle" size={20} color="#DC2626" />
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Email Input */}
           <View style={styles.inputContainer}>
@@ -574,6 +592,17 @@ export default function LoginScreen({ navigation, route }: LoginScreenProps) {
               : 'Junte-se a milhares de pessoas que\namam moda sustentavel'
             }
           </Text>
+
+          {/* Error Banner */}
+          {signupError && (
+            <View style={styles.errorBanner}>
+              <Ionicons name="alert-circle" size={20} color="#DC2626" />
+              <Text style={styles.errorBannerText}>{signupError}</Text>
+              <TouchableOpacity onPress={() => setSignupError(null)}>
+                <Ionicons name="close-circle" size={20} color="#DC2626" />
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Name Input */}
           <View style={styles.inputContainer}>
@@ -1111,6 +1140,26 @@ const createStyles = (isDesktop: boolean) => StyleSheet.create({
     fontSize: 14,
     color: COLORS.primary,
     fontWeight: '500',
+  },
+
+  // Error Banner
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    gap: 10,
+  },
+  errorBannerText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#DC2626',
   },
 
   // Switch Row
