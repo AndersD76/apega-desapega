@@ -684,11 +684,11 @@ export default function HomeScreen({ navigation }: Props) {
               </View>
               <View style={styles.headerUserInfo}>
                 <Text style={styles.headerUserName} numberOfLines={1}>{user.name || 'Usuario'}</Text>
-                <View style={[styles.headerUserBadge, user.isPremium ? styles.headerUserBadgePremium : styles.headerUserBadgeFree]}>
-                  <Text style={[styles.headerUserBadgeText, user.isPremium && styles.headerUserBadgeTextPremium]}>
-                    {user.isPremium ? 'PREMIUM' : 'FREE'}
-                  </Text>
-                </View>
+                {user.isPremium && (
+                  <View style={styles.headerUserBadgePremium}>
+                    <Text style={styles.headerUserBadgeTextPremium}>PREMIUM</Text>
+                  </View>
+                )}
               </View>
             </TouchableOpacity>
           ) : (
@@ -2904,7 +2904,7 @@ const createStyles = (isDesktop: boolean, isTablet: boolean, isMobile: boolean) 
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
     marginBottom: 16,
     borderWidth: 1,
     borderColor: 'rgba(201,162,39,0.4)',
@@ -2918,6 +2918,7 @@ const createStyles = (isDesktop: boolean, isTablet: boolean, isMobile: boolean) 
   bannerBrandRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
+    justifyContent: 'center',
     marginBottom: 12,
   },
   bannerBrandApega: {
@@ -2962,6 +2963,7 @@ const createStyles = (isDesktop: boolean, isTablet: boolean, isMobile: boolean) 
     flexWrap: 'wrap',
     gap: 12,
     marginBottom: 28,
+    justifyContent: 'center',
   },
   footerAppButtonGoogle: {
     flexDirection: 'row',
