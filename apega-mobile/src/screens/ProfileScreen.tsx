@@ -255,219 +255,222 @@ export default function ProfileScreen({ navigation }: Props) {
     );
   }
 
-  // Authenticated - Profile Dashboard
+  // Authenticated - Profile Dashboard (Instagram Style)
   const rating = typeof user.rating === 'number' ? user.rating : parseFloat(user.rating || '0');
+  const isPremium = user?.subscription_type === 'premium' || user?.isPremium;
 
   return (
     <View style={styles.container}>
-      <MainHeader navigation={navigation} title="Meu Perfil" />
+      <StatusBar barStyle="light-content" backgroundColor="#1a1a2e" />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scrollContent,
-          isDesktop && styles.scrollContentDesktop,
-        ]}
-      >
-        <View style={[
-          styles.contentWrapper,
-          isDesktop && { maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center', width: '100%' }
-        ]}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Cover Photo & Profile Header */}
+        <View style={styles.profileHeader}>
+          <LinearGradient
+            colors={['#1a1a2e', '#16213e', '#0f3460']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.coverPhoto, { paddingTop: insets.top }]}
+          >
+            {/* Settings button */}
+            <TouchableOpacity
+              style={styles.settingsBtn}
+              onPress={() => navigation.navigate('Settings')}
+            >
+              <Ionicons name="settings-outline" size={24} color="#fff" />
+            </TouchableOpacity>
+
+            {/* Decorative elements */}
+            <View style={styles.coverDecor1} />
+            <View style={styles.coverDecor2} />
+          </LinearGradient>
+
           {/* Profile Card */}
           <View style={styles.profileCard}>
+            {/* Avatar */}
             <TouchableOpacity
-              style={styles.avatarContainer}
+              style={styles.avatarWrapper}
               onPress={() => navigation.navigate('EditProfile')}
             >
-              {user.avatar_url ? (
-                <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarInitial}>
-                    {user.name?.charAt(0)?.toLowerCase() || 'u'}
-                  </Text>
+              <View style={[styles.avatarRing, isPremium && styles.avatarRingPremium]}>
+                {user.avatar_url ? (
+                  <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
+                ) : (
+                  <View style={[styles.avatarPlaceholder, isPremium && styles.avatarPlaceholderPremium]}>
+                    <Text style={styles.avatarInitial}>
+                      {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              {isPremium && (
+                <View style={styles.premiumBadge}>
+                  <Ionicons name="diamond" size={14} color="#fff" />
                 </View>
               )}
             </TouchableOpacity>
 
-            <Text style={styles.userName}>{user.name?.toLowerCase()}</Text>
-            <Text style={styles.userEmail}>{user.email}</Text>
+            {/* Name & Handle */}
+            <Text style={styles.userName}>{user.name || 'Usuário'}</Text>
+            <Text style={styles.userHandle}>@{user.name?.toLowerCase().replace(/\s/g, '') || 'usuario'}</Text>
 
-            {/* Rating */}
-            <View style={styles.ratingRow}>
-              {[...Array(5)].map((_, i) => (
-                <Ionicons
-                  key={i}
-                  name={i < Math.floor(rating) ? 'star' : 'star-outline'}
-                  size={16}
-                  color={i < Math.floor(rating) ? '#FFD700' : '#ddd'}
-                />
-              ))}
-              <Text style={styles.ratingText}>
-                {rating.toFixed(1)} ({user.total_reviews || 0})
+            {/* Premium/Free Badge */}
+            <View style={[styles.planBadge, isPremium ? styles.planBadgePremium : styles.planBadgeFree]}>
+              {isPremium && <Ionicons name="diamond" size={12} color="#7B1FA2" style={{ marginRight: 4 }} />}
+              <Text style={[styles.planBadgeText, isPremium && styles.planBadgeTextPremium]}>
+                {isPremium ? 'PREMIUM' : 'FREE'}
               </Text>
             </View>
 
-            {/* Stats */}
+            {/* Stats Row */}
             <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{user.total_sales || 0}</Text>
+              <TouchableOpacity style={styles.statBox}>
+                <Text style={styles.statNumber}>{user.total_sales || 0}</Text>
                 <Text style={styles.statLabel}>vendas</Text>
-              </View>
+              </TouchableOpacity>
               <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{user.total_reviews || 0}</Text>
+              <TouchableOpacity style={styles.statBox}>
+                <Text style={styles.statNumber}>{user.total_reviews || 0}</Text>
                 <Text style={styles.statLabel}>avaliações</Text>
+              </TouchableOpacity>
+              <View style={styles.statDivider} />
+              <View style={styles.statBox}>
+                <View style={styles.ratingStars}>
+                  {[...Array(5)].map((_, i) => (
+                    <Ionicons
+                      key={i}
+                      name={i < Math.floor(rating) ? 'star' : 'star-outline'}
+                      size={14}
+                      color={i < Math.floor(rating) ? '#FFD700' : '#ddd'}
+                    />
+                  ))}
+                </View>
+                <Text style={styles.statLabel}>{rating.toFixed(1)}</Text>
               </View>
             </View>
+
+            {/* Action Buttons */}
+            <View style={styles.actionButtonsRow}>
+              <TouchableOpacity
+                style={styles.primaryActionBtn}
+                onPress={() => navigation.navigate('NewItem')}
+              >
+                <Ionicons name="add" size={20} color="#fff" />
+                <Text style={styles.primaryActionBtnText}>Vender</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.secondaryActionBtn}
+                onPress={() => navigation.navigate('EditProfile')}
+              >
+                <Ionicons name="create-outline" size={18} color={COLORS.gray[700]} />
+                <Text style={styles.secondaryActionBtnText}>Editar Perfil</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-
-          {/* Quick Actions */}
-          <View style={styles.quickActions}>
-            <TouchableOpacity
-              style={styles.quickAction}
-              onPress={() => navigation.navigate('Favorites')}
-            >
-              <View style={[styles.quickIcon, { backgroundColor: '#FEE2E2' }]}>
-                <Ionicons name="heart" size={20} color="#EF4444" />
-              </View>
-              <Text style={styles.quickLabel}>favoritos</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickAction}
-              onPress={() => navigation.navigate('Orders')}
-            >
-              <View style={[styles.quickIcon, { backgroundColor: '#E0E7FF' }]}>
-                <Ionicons name="cube" size={20} color="#6366F1" />
-              </View>
-              <Text style={styles.quickLabel}>pedidos</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickAction}
-              onPress={() => navigation.navigate('MyStore')}
-            >
-              <View style={[styles.quickIcon, { backgroundColor: '#D1FAE5' }]}>
-                <Ionicons name="storefront" size={20} color="#10B981" />
-              </View>
-              <Text style={styles.quickLabel}>minha loja</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.quickAction}
-              onPress={() => navigation.navigate('NewItem')}
-            >
-              <View style={[styles.quickIcon, { backgroundColor: '#E8F5E9' }]}>
-                <Ionicons name="add-circle" size={20} color={COLORS.primary} />
-              </View>
-              <Text style={styles.quickLabel}>vender</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Menu Items */}
-          <View style={styles.menuSection}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('MyStore')}
-            >
-              <Ionicons name="storefront-outline" size={20} color="#333" />
-              <Text style={styles.menuText}>minha loja</Text>
-              <Ionicons name="chevron-forward" size={18} color="#ccc" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('Sales')}
-            >
-              <Ionicons name="stats-chart-outline" size={20} color="#333" />
-              <Text style={styles.menuText}>minhas vendas</Text>
-              <Ionicons name="chevron-forward" size={18} color="#ccc" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('Balance')}
-            >
-              <Ionicons name="wallet-outline" size={20} color="#333" />
-              <Text style={styles.menuText}>saldo</Text>
-              <Ionicons name="chevron-forward" size={18} color="#ccc" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('Addresses')}
-            >
-              <Ionicons name="location-outline" size={20} color="#333" />
-              <Text style={styles.menuText}>endereços</Text>
-              <Ionicons name="chevron-forward" size={18} color="#ccc" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('Help')}
-            >
-              <Ionicons name="help-circle-outline" size={20} color="#333" />
-              <Text style={styles.menuText}>ajuda</Text>
-              <Ionicons name="chevron-forward" size={18} color="#ccc" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.menuItem, styles.menuItemLast]}
-              onPress={handleLogout}
-            >
-              <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-              <Text style={[styles.menuText, { color: '#EF4444' }]}>sair</Text>
-              <Ionicons name="chevron-forward" size={18} color="#ccc" />
-            </TouchableOpacity>
-          </View>
-
-          {/* About Section */}
-          <View style={styles.aboutSection}>
-            <LinearGradient
-              colors={['#f8f4f0', '#fff5eb']}
-              style={styles.aboutGradient}
-            >
-              <Text style={styles.aboutTitle}>nossa história</Text>
-
-              <View style={styles.founderCard}>
-                <View style={styles.founderImagePlaceholder}>
-                  <Ionicons name="person" size={32} color={COLORS.primary} />
-                </View>
-                <View style={styles.founderInfo}>
-                  <Text style={styles.founderName}>amanda maier</Text>
-                  <Text style={styles.founderRole}>fundadora</Text>
-                </View>
-              </View>
-
-              <Text style={styles.aboutText}>
-                a apega desapega nasceu de uma lojinha física em passo fundo, rio grande do sul.
-                começou pequena, com a paixão da amanda por moda circular e sustentabilidade.
-              </Text>
-
-              <Text style={styles.aboutText}>
-                hoje somos um brechó destaque no RS, conectando pessoas que amam moda consciente.
-                cada peça tem história, e agora você pode fazer parte da nossa.
-              </Text>
-
-              <View style={styles.aboutBadges}>
-                <View style={styles.aboutBadge}>
-                  <Ionicons name="location" size={14} color={COLORS.primary} />
-                  <Text style={styles.aboutBadgeText}>passo fundo, rs</Text>
-                </View>
-                <View style={styles.aboutBadge}>
-                  <Ionicons name="leaf" size={14} color="#10B981" />
-                  <Text style={styles.aboutBadgeText}>moda sustentável</Text>
-                </View>
-              </View>
-            </LinearGradient>
-          </View>
-
-          {/* Version */}
-          <Text style={styles.version}>apega desapega v1.0.0</Text>
-
-          <View style={{ height: 120 }} />
         </View>
+
+        {/* Quick Actions Grid */}
+        <View style={styles.quickActionsGrid}>
+          <TouchableOpacity
+            style={styles.quickActionCard}
+            onPress={() => navigation.navigate('MyStore')}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: '#E8F5E9' }]}>
+              <Ionicons name="storefront" size={24} color={COLORS.primary} />
+            </View>
+            <Text style={styles.quickActionLabel}>Minha Loja</Text>
+            <Text style={styles.quickActionDesc}>Gerencie seus anúncios</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickActionCard}
+            onPress={() => navigation.navigate('Sales')}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: '#E3F2FD' }]}>
+              <Ionicons name="trending-up" size={24} color="#1976D2" />
+            </View>
+            <Text style={styles.quickActionLabel}>Vendas</Text>
+            <Text style={styles.quickActionDesc}>Acompanhe resultados</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickActionCard}
+            onPress={() => navigation.navigate('Orders')}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: '#FFF3E0' }]}>
+              <Ionicons name="cube" size={24} color="#F57C00" />
+            </View>
+            <Text style={styles.quickActionLabel}>Pedidos</Text>
+            <Text style={styles.quickActionDesc}>Suas compras</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickActionCard}
+            onPress={() => navigation.navigate('Favorites')}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: '#FCE4EC' }]}>
+              <Ionicons name="heart" size={24} color="#E91E63" />
+            </View>
+            <Text style={styles.quickActionLabel}>Favoritos</Text>
+            <Text style={styles.quickActionDesc}>Peças salvas</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Menu Section */}
+        <View style={styles.menuSection}>
+          <Text style={styles.menuSectionTitle}>Configurações</Text>
+
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Balance')}>
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="wallet-outline" size={22} color={COLORS.gray[600]} />
+              <Text style={styles.menuItemText}>Saldo e Pagamentos</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Addresses')}>
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="location-outline" size={22} color={COLORS.gray[600]} />
+              <Text style={styles.menuItemText}>Endereços</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Subscription')}>
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="diamond-outline" size={22} color="#7B1FA2" />
+              <Text style={styles.menuItemText}>{isPremium ? 'Gerenciar Premium' : 'Seja Premium'}</Text>
+            </View>
+            {!isPremium && (
+              <View style={styles.menuBadge}>
+                <Text style={styles.menuBadgeText}>UPGRADE</Text>
+              </View>
+            )}
+            <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Help')}>
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="help-circle-outline" size={22} color={COLORS.gray[600]} />
+              <Text style={styles.menuItemText}>Ajuda</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={handleLogout}>
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="log-out-outline" size={22} color="#EF4444" />
+              <Text style={[styles.menuItemText, { color: '#EF4444' }]}>Sair</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#EF4444" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Version */}
+        <Text style={styles.version}>apega desapega v1.0.0</Text>
+
+        <View style={{ height: 120 }} />
       </ScrollView>
 
       <BottomNavigation navigation={navigation} activeRoute="Profile" />
@@ -898,5 +901,293 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     marginBottom: 8,
+  },
+
+  // ===== NEW INSTAGRAM STYLE PROFILE =====
+  profileHeader: {
+    backgroundColor: '#fff',
+    marginBottom: 16,
+  },
+  coverPhoto: {
+    height: 140,
+    position: 'relative',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingRight: 16,
+    paddingTop: 16,
+  },
+  settingsBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  coverDecor1: {
+    position: 'absolute',
+    top: 20,
+    left: 30,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(201,162,39,0.15)',
+  },
+  coverDecor2: {
+    position: 'absolute',
+    bottom: 30,
+    right: 60,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(201,162,39,0.1)',
+  },
+  avatarWrapper: {
+    alignSelf: 'center',
+    marginTop: -50,
+    position: 'relative',
+  },
+  avatarRing: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#fff',
+    padding: 3,
+    ...Platform.select({
+      web: { boxShadow: '0 4px 15px rgba(0,0,0,0.15)' },
+      default: { elevation: 5 },
+    }),
+  },
+  avatarRingPremium: {
+    borderWidth: 3,
+    borderColor: '#FFD700',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 50,
+  },
+  avatarPlaceholder: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 50,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarPlaceholderPremium: {
+    backgroundColor: '#7B1FA2',
+  },
+  avatarInitial: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  premiumBadge: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFD700',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  userName: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: COLORS.gray[800],
+    textAlign: 'center',
+    marginTop: 12,
+  },
+  userHandle: {
+    fontSize: 14,
+    color: COLORS.gray[500],
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  planBadge: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  planBadgeFree: {
+    backgroundColor: COLORS.gray[200],
+  },
+  planBadgePremium: {
+    backgroundColor: '#FFD700',
+  },
+  planBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.gray[600],
+    letterSpacing: 0.5,
+  },
+  planBadgeTextPremium: {
+    color: '#7B1FA2',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f8f9fa',
+    marginHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 16,
+    paddingVertical: 16,
+  },
+  statBox: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.gray[800],
+  },
+  statLabel: {
+    fontSize: 12,
+    color: COLORS.gray[500],
+    marginTop: 2,
+  },
+  statDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: COLORS.gray[300],
+  },
+  ratingStars: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 20,
+  },
+  primaryActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  primaryActionBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  secondaryActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#f0f0f0',
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  secondaryActionBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.gray[700],
+  },
+
+  // Quick Actions Grid
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 12,
+    gap: 12,
+    marginBottom: 20,
+  },
+  quickActionCard: {
+    width: '47%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    ...Platform.select({
+      web: { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
+      default: { elevation: 2 },
+    }),
+  },
+  quickActionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  quickActionLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.gray[800],
+  },
+  quickActionDesc: {
+    fontSize: 12,
+    color: COLORS.gray[500],
+    marginTop: 2,
+  },
+
+  // Menu Section
+  menuSection: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+  },
+  menuSectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.gray[500],
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  menuItemLogout: {
+    borderBottomWidth: 0,
+  },
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  menuItemText: {
+    fontSize: 15,
+    color: COLORS.gray[700],
+  },
+  menuBadge: {
+    backgroundColor: '#7B1FA2',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginRight: 8,
+  },
+  menuBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#fff',
   },
 });
