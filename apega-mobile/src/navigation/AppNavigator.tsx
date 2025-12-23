@@ -63,28 +63,24 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-// Telas públicas (não precisam de login)
-function PublicStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Terms" component={TermsScreen} />
-    </Stack.Navigator>
-  );
-}
-
-// Telas privadas (precisam de login)
-function PrivateStack() {
+// Stack principal - Home acessível para todos (com onboarding)
+// Telas protegidas verificam autenticação internamente
+function MainStack() {
   return (
     <Stack.Navigator
       initialRouteName="Home"
       screenOptions={{ headerShown: false }}
     >
+      {/* Públicas - acessíveis sem login */}
       <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="ItemDetail" component={ItemDetailScreen} />
+      <Stack.Screen name="Search" component={SearchScreen} />
+      <Stack.Screen name="Terms" component={TermsScreen} />
+
+      {/* Protegidas - verificam auth internamente */}
       <Stack.Screen name="NewItem" component={NewItemScreen} />
       <Stack.Screen name="Subscription" component={SubscriptionScreen} />
-      <Stack.Screen name="Search" component={SearchScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
@@ -103,7 +99,6 @@ function PrivateStack() {
       <Stack.Screen name="AddAddress" component={AddAddressScreen} />
       <Stack.Screen name="Payments" component={PaymentsScreen} />
       <Stack.Screen name="Help" component={HelpScreen} />
-      <Stack.Screen name="Terms" component={TermsScreen} />
       <Stack.Screen name="EditProduct" component={EditProductScreen} />
     </Stack.Navigator>
   );
@@ -119,7 +114,7 @@ function LoadingScreen() {
 }
 
 export default function AppNavigator() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isLoading } = useAuth();
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -127,7 +122,7 @@ export default function AppNavigator() {
 
   return (
     <NavigationContainer>
-      {isAuthenticated ? <PrivateStack /> : <PublicStack />}
+      <MainStack />
     </NavigationContainer>
   );
 }
