@@ -605,20 +605,18 @@ export default function HomeScreen({ navigation }: Props) {
                 <TouchableOpacity
                   style={styles.onboardingCTA}
                   onPress={nextOnboardingSlide}
-                  activeOpacity={0.9}
+                  activeOpacity={0.85}
                 >
                   <LinearGradient
-                    colors={['#C9A227', '#B8860B', '#A67C00']}
+                    colors={['#D4AF37', '#C9A227', '#B8860B']}
                     start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
+                    end={{ x: 1, y: 1 }}
                     style={styles.onboardingCTAGradient}
                   >
                     <Text style={styles.onboardingCTAText}>
-                      {onboardingStep === ONBOARDING_SLIDES.length - 1 ? 'Garantir minha vaga' : 'Continuar'}
+                      {onboardingStep === ONBOARDING_SLIDES.length - 1 ? 'Garantir minha vaga' : 'Próximo'}
                     </Text>
-                    <View style={styles.onboardingCTAArrow}>
-                      <Ionicons name="arrow-forward" size={20} color="#1a1a1a" />
-                    </View>
+                    <Ionicons name="chevron-forward" size={22} color="#1a1a1a" />
                   </LinearGradient>
                 </TouchableOpacity>
 
@@ -3293,21 +3291,21 @@ const createStyles = (isDesktop: boolean, isTablet: boolean, isMobile: boolean) 
   },
   onboardingCTA: {
     width: '100%',
-    maxWidth: 320,
+    maxWidth: 280,
     marginBottom: 18,
-    borderRadius: 30,
+    borderRadius: 16,
     overflow: 'hidden',
     ...Platform.select({
       web: {
-        boxShadow: '0 8px 30px rgba(201,162,39,0.45)',
+        boxShadow: '0 6px 24px rgba(212,175,55,0.5)',
         transition: 'all 0.3s ease',
       },
       default: {
-        shadowColor: '#C9A227',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.45,
-        shadowRadius: 16,
-        elevation: 12,
+        shadowColor: '#D4AF37',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.5,
+        shadowRadius: 12,
+        elevation: 10,
       },
     }),
   },
@@ -3315,25 +3313,16 @@ const createStyles = (isDesktop: boolean, isTablet: boolean, isMobile: boolean) 
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingLeft: 28,
-    paddingRight: 12,
-    borderRadius: 30,
+    justifyContent: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    gap: 10,
   },
   onboardingCTAText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
     color: '#1a1a1a',
-    letterSpacing: 0.5,
-  },
-  onboardingCTAArrow: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    letterSpacing: 0.3,
   },
   onboardingStepText: {
     fontSize: 14,
