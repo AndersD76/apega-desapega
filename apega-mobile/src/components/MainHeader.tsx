@@ -98,17 +98,11 @@ export default function MainHeader({ navigation, showBack = false, title }: Main
                       <Text style={styles.headerUserName} numberOfLines={1}>
                         {user.name || 'Usuario'}
                       </Text>
-                      <View style={[
-                        styles.headerUserBadge,
-                        isPremium ? styles.headerUserBadgePremium : styles.headerUserBadgeFree
-                      ]}>
-                        <Text style={[
-                          styles.headerUserBadgeText,
-                          isPremium && styles.headerUserBadgeTextPremium
-                        ]}>
-                          {isPremium ? 'PREMIUM' : 'FREE'}
-                        </Text>
-                      </View>
+                      {isPremium && (
+                        <View style={styles.headerUserBadgePremium}>
+                          <Text style={styles.headerUserBadgeTextPremium}>PREMIUM</Text>
+                        </View>
+                      )}
                     </View>
                   </>
                 );
