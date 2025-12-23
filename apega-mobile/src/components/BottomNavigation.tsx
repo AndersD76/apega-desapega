@@ -1,111 +1,81 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Platform,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuth } from '../contexts/AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, spacing, radius, shadows } from '../theme';
 
-const isWeb = Platform.OS === 'web';
+type TabName = 'Home' | 'Search' | 'Sell' | 'Favorites' | 'Profile';
 
 interface BottomNavigationProps {
-  navigation: any;
-  activeRoute?: string;
+  currentTab: TabName;
+  onTabPress: (tab: TabName) => void;
 }
 
-const NAV_ITEMS = [
-  { key: 'Home', icon: 'home', label: 'Inicio' },
-  { key: 'Search', icon: 'search', label: 'Buscar' },
-  { key: 'NewItem', icon: 'add', label: 'Vender', isCenter: true },
-  { key: 'Favorites', icon: 'heart', label: 'Salvos' },
-  { key: 'Profile', icon: 'person', label: 'Perfil' },
+const tabs: { key: TabName; icon: keyof typeof Ionicons.glyphMap; iconFilled: keyof typeof Ionicons.glyphMap; label: string }[] = [
+  { key: 'Home', icon: 'home-outline', iconFilled: 'home', label: 'Início' },
+  { key: 'Search', icon: 'search-outline', iconFilled: 'search', label: 'Buscar' },
+  { key: 'Sell', icon: 'add', iconFilled: 'add', label: 'Vender' },
+  { key: 'Favorites', icon: 'heart-outline', iconFilled: 'heart', label: 'Favoritos' },
+  { key: 'Profile', icon: 'person-outline', iconFilled: 'person', label: 'Perfil' },
 ];
 
-export default function BottomNavigation({ navigation, activeRoute = 'Home' }: BottomNavigationProps) {
+export function BottomNavigation({ currentTab, onTabPress }: BottomNavigationProps) {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const { isAuthenticated } = useAuth();
-  const isDesktop = isWeb && width > 768;
-
-  if (isDesktop) return null;
-
-  const navigateWithAuth = (route: string, redirectTo?: string) => {
-    if (isAuthenticated) {
-      navigation.navigate(route);
-    } else {
-      navigation.navigate('Login', redirectTo ? { redirectTo } : undefined);
-    }
-  };
-
-  const handlePress = (key: string) => {
-    if (key === 'NewItem' || key === 'Favorites') {
-      navigateWithAuth(key, key);
-    } else {
-      navigation.navigate(key);
-    }
-  };
-
-  const renderNavItem = (item: typeof NAV_ITEMS[0]) => {
-    const isActive = activeRoute === item.key;
-
-    if (item.isCenter) {
-      return (
-        <TouchableOpacity
-          key={item.key}
-          style={styles.centerBtnWrap}
-          onPress={() => handlePress(item.key)}
-          activeOpacity={0.85}
-        >
-          <LinearGradient
-            colors={['#8B5CF6', '#EC4899']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.centerBtn}
-          >
-            <Ionicons name="add" size={32} color="#FFF" />
-          </LinearGradient>
-        </TouchableOpacity>
-      );
-    }
-
-    return (
-      <TouchableOpacity
-        key={item.key}
-        style={styles.navItem}
-        onPress={() => handlePress(item.key)}
-        activeOpacity={0.7}
-      >
-        <View style={[styles.iconWrap, isActive && styles.iconWrapActive]}>
-          <Ionicons
-            name={isActive ? (item.icon as any) : (`${item.icon}-outline` as any)}
-            size={24}
-            color={isActive ? '#8B5CF6' : '#94A3B8'}
-          />
-        </View>
-        <Text style={[styles.label, isActive && styles.labelActive]}>
-          {item.label}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
-
-  const NavContent = () => (
-    <View style={[styles.navBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-      {NAV_ITEMS.map(renderNavItem)}
-    </View>
-  );
-
-  if (Platform.OS === 'ios') {
-    return (
-      <BlurView intensity={90} tint="light" style={styles.container}>
-        <NavContent />
-      </BlurView>
-    );
-  }
 
   return (
-    <View style={[styles.container, styles.containerSolid]}>
-      <NavContent />
+    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
+      {/* Blur effect background */}
+      <View style={styles.blur} />
+
+      <View style={styles.content}>
+        {tabs.map((tab) => {
+          const isActive = currentTab === tab.key;
+          const isSell = tab.key === 'Sell';
+
+          if (isSell) {
+            return (
+              <Pressable
+                key={tab.key}
+                style={styles.sellButtonContainer}
+                onPress={() => onTabPress(tab.key)}
+              >
+                <LinearGradient
+                  colors={[colors.brand, colors.brandLight]}
+                  style={styles.sellButton}
+                >
+                  <Ionicons name="add" size={28} color={colors.white} />
+                </LinearGradient>
+              </Pressable>
+            );
+          }
+
+          return (
+            <Pressable
+              key={tab.key}
+              style={styles.tab}
+              onPress={() => onTabPress(tab.key)}
+            >
+              <View style={[styles.iconContainer, isActive && styles.iconContainerActive]}>
+                <Ionicons
+                  name={isActive ? tab.iconFilled : tab.icon}
+                  size={22}
+                  color={isActive ? colors.brand : colors.gray400}
+                />
+              </View>
+              <Text style={[styles.label, isActive && styles.labelActive]}>
+                {tab.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -116,71 +86,65 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    ...Platform.select({
-      ios: {},
-      android: { elevation: 20 },
-      web: { boxShadow: '0 -4px 30px rgba(0,0,0,0.1)' },
-    }),
+    backgroundColor: 'transparent',
   },
-  containerSolid: {
-    backgroundColor: 'rgba(255,255,255,0.98)',
+  blur: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.95)',
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-  },
-  navBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-around',
-    paddingTop: 12,
-    paddingHorizontal: 8,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 4,
-  },
-  iconWrap: {
-    width: 48,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 16,
-  },
-  iconWrapActive: {
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
-  },
-  label: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#94A3B8',
-    marginTop: 4,
-  },
-  labelActive: {
-    color: '#8B5CF6',
-    fontWeight: '700',
-  },
-  centerBtnWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -28,
-    marginHorizontal: 4,
-  },
-  centerBtn: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderTopColor: colors.gray100,
     ...Platform.select({
       ios: {
-        shadowColor: '#8B5CF6',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 16,
+        backdropFilter: 'blur(20px)',
       },
-      android: { elevation: 8 },
-      web: { boxShadow: '0 8px 24px rgba(139, 92, 246, 0.4)' },
     }),
   },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingTop: spacing.sm,
+    paddingHorizontal: spacing.sm,
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+  },
+  iconContainer: {
+    width: 44,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.lg,
+  },
+  iconContainerActive: {
+    backgroundColor: colors.brandMuted,
+  },
+  label: {
+    marginTop: 2,
+    fontSize: 10,
+    fontWeight: '500',
+    color: colors.gray400,
+  },
+  labelActive: {
+    color: colors.brand,
+    fontWeight: '600',
+  },
+  sellButtonContainer: {
+    flex: 1,
+    alignItems: 'center',
+    marginTop: -20,
+  },
+  sellButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.lg,
+    shadowColor: colors.brand,
+    shadowOpacity: 0.4,
+  },
 });
+
+export default BottomNavigation;

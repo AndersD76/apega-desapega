@@ -1,700 +1,223 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  YStack,
-  XStack,
-  Text,
-  Image,
-  ScrollView,
-  Stack,
-  styled,
-  useTheme,
-  Spinner,
-  Separator,
-} from 'tamagui';
-import { RefreshControl, Pressable, useWindowDimensions, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuth } from '../contexts/AuthContext';
-import { getMyProducts, Product } from '../services/products';
-import { Button, Avatar } from '../components/ui';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/AppNavigator';
+import { Image } from 'expo-image';
+import { useAuth } from '../context/AuthContext';
 
-const isWeb = Platform.OS === 'web';
-
-type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
-
-// Styled Components
-const Container = styled(YStack, {
-  flex: 1,
-  backgroundColor: '$background',
-});
-
-const Header = styled(XStack, {
-  paddingHorizontal: '$4',
-  paddingVertical: '$3',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  borderBottomWidth: 1,
-  borderBottomColor: '$borderColor',
-  backgroundColor: '$background',
-});
-
-const Logo = styled(Text, {
-  fontSize: 20,
-  fontWeight: '700',
-  color: '$brand',
-  fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-});
-
-const ProfileSection = styled(YStack, {
-  alignItems: 'center',
-  paddingVertical: '$6',
-  paddingHorizontal: '$4',
-  borderBottomWidth: 1,
-  borderBottomColor: '$borderColor',
-});
-
-const AvatarContainer = styled(Stack, {
-  position: 'relative',
-  marginBottom: '$4',
-});
-
-const EditAvatarButton = styled(Stack, {
-  position: 'absolute',
-  bottom: 0,
-  right: 0,
-  width: 32,
-  height: 32,
-  borderRadius: 16,
-  backgroundColor: '$brand',
-  alignItems: 'center',
-  justifyContent: 'center',
-  borderWidth: 3,
-  borderColor: '$background',
-});
-
-const UserName = styled(Text, {
-  fontSize: 22,
-  fontWeight: '600',
-  color: '$color',
-  marginBottom: '$1',
-});
-
-const UserEmail = styled(Text, {
-  fontSize: 14,
-  color: '$placeholderColor',
-});
-
-const RatingContainer = styled(XStack, {
-  alignItems: 'center',
-  gap: '$1',
-  marginTop: '$2',
-});
-
-const StatsContainer = styled(XStack, {
-  paddingVertical: '$4',
-  paddingHorizontal: '$4',
-  borderBottomWidth: 1,
-  borderBottomColor: '$borderColor',
-});
-
-const StatItem = styled(YStack, {
-  flex: 1,
-  alignItems: 'center',
-});
-
-const StatValue = styled(Text, {
-  fontSize: 24,
-  fontWeight: '700',
-  color: '$color',
-});
-
-const StatLabel = styled(Text, {
-  fontSize: 13,
-  color: '$placeholderColor',
-  marginTop: '$1',
-});
-
-const StatDivider = styled(Stack, {
-  width: 1,
-  backgroundColor: '$borderColor',
-});
-
-const MenuSection = styled(YStack, {
-  paddingTop: '$5',
-  paddingHorizontal: '$4',
-});
-
-const MenuSectionTitle = styled(Text, {
-  fontSize: 13,
-  fontWeight: '600',
-  color: '$placeholderColor',
-  textTransform: 'lowercase',
-  marginBottom: '$3',
-  paddingLeft: '$1',
-});
-
-const MenuItem = styled(XStack, {
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  paddingVertical: '$3',
-  pressStyle: {
-    opacity: 0.7,
-  },
-});
-
-const MenuLeft = styled(XStack, {
-  alignItems: 'center',
-  flex: 1,
-  gap: '$3',
-});
-
-const MenuIconWrap = styled(Stack, {
-  width: 40,
-  height: 40,
-  borderRadius: 20,
-  backgroundColor: '$backgroundStrong',
-  alignItems: 'center',
-  justifyContent: 'center',
-
-  variants: {
-    complete: {
-      true: {
-        backgroundColor: '$brand',
-      },
-    },
-  } as const,
-});
-
-const MenuContent = styled(YStack, {
-  flex: 1,
-});
-
-const MenuLabel = styled(Text, {
-  fontSize: 15,
-  fontWeight: '500',
-  color: '$color',
-});
-
-const MenuValue = styled(Text, {
-  fontSize: 13,
-  color: '$placeholderColor',
-  marginTop: 2,
-});
-
-const MenuDivider = styled(Stack, {
-  height: 1,
-  backgroundColor: '$borderColor',
-  marginLeft: 52,
-});
-
-const LogoutButton = styled(XStack, {
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: '$2',
-  paddingVertical: '$4',
-  marginTop: '$5',
-  marginHorizontal: '$4',
-  borderTopWidth: 1,
-  borderTopColor: '$borderColor',
-  pressStyle: {
-    opacity: 0.7,
-  },
-});
-
-const VersionText = styled(Text, {
-  fontSize: 12,
-  color: '$placeholderColor',
-  textAlign: 'center',
-  paddingVertical: '$4',
-});
-
-// Guest State Components
-const GuestContainer = styled(YStack, {
-  flex: 1,
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '$6',
-});
-
-const GuestAvatar = styled(Stack, {
-  width: 100,
-  height: 100,
-  borderRadius: 50,
-  backgroundColor: '$backgroundStrong',
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginBottom: '$5',
-});
-
-const GuestTitle = styled(Text, {
-  fontSize: 24,
-  fontWeight: '600',
-  color: '$color',
-  marginBottom: '$2',
-});
-
-const GuestSubtitle = styled(Text, {
-  fontSize: 15,
-  color: '$placeholderColor',
-  textAlign: 'center',
-  marginBottom: '$6',
-  lineHeight: 22,
-});
-
-// Bottom Navigation
-const BottomNav = styled(XStack, {
-  position: 'absolute',
-  bottom: 0,
-  left: 0,
-  right: 0,
-  backgroundColor: 'rgba(255,255,255,0.98)',
-  borderTopWidth: 1,
-  borderTopColor: '$borderColor',
-  paddingTop: '$3',
-  justifyContent: 'space-around',
-  alignItems: 'flex-end',
-});
-
-const NavItem = styled(YStack, {
-  flex: 1,
-  alignItems: 'center',
-  justifyContent: 'center',
-  paddingVertical: '$1',
-  pressStyle: {
-    opacity: 0.7,
-  },
-});
-
-const NavIconWrap = styled(Stack, {
-  width: 48,
-  height: 32,
-  alignItems: 'center',
-  justifyContent: 'center',
-  borderRadius: 16,
-
-  variants: {
-    active: {
-      true: {
-        backgroundColor: '$brandMuted',
-      },
-    },
-  } as const,
-});
-
-const NavLabel = styled(Text, {
-  fontSize: 11,
-  fontWeight: '600',
-  color: '$placeholderColor',
-  marginTop: '$1',
-
-  variants: {
-    active: {
-      true: {
-        color: '$brand',
-        fontWeight: '700',
-      },
-    },
-  } as const,
-});
-
-const CenterNavButton = styled(Stack, {
-  marginTop: -28,
-  width: 60,
-  height: 60,
-  borderRadius: 30,
-  alignItems: 'center',
-  justifyContent: 'center',
-  shadowColor: '$brand',
-  shadowOffset: { width: 0, height: 8 },
-  shadowOpacity: 0.4,
-  shadowRadius: 16,
-  elevation: 8,
-  pressStyle: {
-    scale: 0.95,
-  },
-  animation: 'bouncy',
-});
-
-// Menu Item Component
-function MenuItemRow({
-  icon,
-  label,
-  value,
-  onPress,
-  isComplete = false,
-}: {
-  icon: string;
-  label: string;
-  value?: string;
-  onPress?: () => void;
-  isComplete?: boolean;
-}) {
-  const theme = useTheme();
-
-  return (
-    <Pressable onPress={onPress}>
-      <MenuItem>
-        <MenuLeft>
-          <MenuIconWrap complete={isComplete}>
-            <Ionicons
-              name={icon as any}
-              size={18}
-              color={isComplete ? 'white' : theme.placeholderColor?.val}
-            />
-          </MenuIconWrap>
-          <MenuContent>
-            <MenuLabel>{label}</MenuLabel>
-            {value && <MenuValue>{value}</MenuValue>}
-          </MenuContent>
-        </MenuLeft>
-        <Ionicons name="chevron-forward" size={20} color={theme.borderColor?.val} />
-      </MenuItem>
-    </Pressable>
-  );
-}
-
-export default function ProfileScreen({ navigation }: Props) {
-  const { width } = useWindowDimensions();
+export function ProfileScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const theme = useTheme();
-  const isDesktop = isWeb && width > 900;
+  const { user, isAuthenticated, logout } = useAuth();
 
-  const { user, isAuthenticated, isLoading, refreshUser, logout } = useAuth();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const loadProducts = useCallback(async () => {
-    if (!isAuthenticated) return;
-    try {
-      const response = await getMyProducts();
-      setProducts(response.products || []);
-    } catch (error) {
-      console.error('Erro:', error);
-      setProducts([]);
-    }
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      refreshUser();
-      loadProducts();
-    }
-  }, [isAuthenticated, refreshUser, loadProducts]);
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await refreshUser();
-    await loadProducts();
-    setRefreshing(false);
+  const handleLogout = () => {
+    Alert.alert('Sair', 'Deseja sair da sua conta?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Sair', style: 'destructive', onPress: () => logout() },
+    ]);
   };
 
-  const stats = useMemo(
-    () => ({
-      active: products.filter((p) => p.status === 'active').length,
-      sold: products.filter((p) => p.status === 'sold').length,
-      total: products.length,
-    }),
-    [products]
-  );
-
-  const navItems = [
-    { key: 'Home', icon: 'home', label: 'Início' },
-    { key: 'Search', icon: 'search', label: 'Buscar' },
-    { key: 'NewItem', icon: 'add', label: 'Vender', isCenter: true },
-    { key: 'Favorites', icon: 'heart', label: 'Salvos' },
-    { key: 'Profile', icon: 'person', label: 'Perfil' },
+  const menuItems = [
+    { icon: 'pricetag-outline', title: 'Meus Anúncios', subtitle: 'Gerencie seus produtos' },
+    { icon: 'trending-up-outline', title: 'Minhas Vendas', subtitle: 'Acompanhe suas vendas' },
+    { icon: 'bag-outline', title: 'Minhas Compras', subtitle: 'Histórico de compras' },
+    { icon: 'heart-outline', title: 'Favoritos', subtitle: 'Peças salvas' },
+    { icon: 'chatbubble-outline', title: 'Mensagens', subtitle: '3 novas', badge: 3 },
+    { icon: 'wallet-outline', title: 'Carteira', subtitle: 'Saldo e saques' },
+    { icon: 'location-outline', title: 'Endereços', subtitle: 'Endereços de entrega' },
+    { icon: 'settings-outline', title: 'Configurações', subtitle: 'Preferências' },
+    { icon: 'help-circle-outline', title: 'Ajuda', subtitle: 'Central de ajuda' },
   ];
 
-  if (isLoading) {
+  if (!isAuthenticated) {
     return (
-      <Container alignItems="center" justifyContent="center">
-        <Spinner size="large" color="$brand" />
-      </Container>
-    );
-  }
-
-  // Guest State
-  if (!isAuthenticated || !user) {
-    return (
-      <Container>
-        <Header paddingTop={isWeb ? '$3' : insets.top + 8}>
-          <Pressable onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color={theme.color?.val} />
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.guestContainer}>
+          <View style={styles.guestIcon}>
+            <Ionicons name="person-outline" size={48} color="#5D8A7D" />
+          </View>
+          <Text style={styles.guestTitle}>Entre na sua conta</Text>
+          <Text style={styles.guestSubtitle}>
+            Faça login para acessar seus anúncios, compras e muito mais
+          </Text>
+          <Pressable style={styles.loginBtn} onPress={() => navigation.navigate('Login')}>
+            <Text style={styles.loginBtnText}>Entrar</Text>
           </Pressable>
-          <Logo>brechó</Logo>
-          <Stack width={24} />
-        </Header>
-
-        <GuestContainer>
-          <GuestAvatar>
-            <Ionicons name="person-outline" size={48} color={theme.placeholderColor?.val} />
-          </GuestAvatar>
-
-          <GuestTitle>entre na sua conta</GuestTitle>
-          <GuestSubtitle>para vender, comprar e acompanhar seus pedidos</GuestSubtitle>
-
-          <YStack width="100%" maxWidth={300} gap="$3">
-            <Button
-              variant="primary"
-              size="lg"
-              fullWidth
-              onPress={() => navigation.navigate('Login')}
-            >
-              entrar
-            </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              fullWidth
-              onPress={() => navigation.navigate('Register')}
-            >
-              criar conta
-            </Button>
-          </YStack>
-        </GuestContainer>
-
-        {!isDesktop && (
-          <BottomNav paddingBottom={Math.max(insets.bottom, 12)}>
-            {navItems.map((item) => {
-              const isActive = item.key === 'Profile';
-
-              if (item.isCenter) {
-                return (
-                  <Pressable key={item.key} onPress={() => navigation.navigate(item.key as any)}>
-                    <CenterNavButton>
-                      <LinearGradient
-                        colors={['#5D8A7D', '#7BA396']}
-                        style={{ width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center' }}
-                      >
-                        <Ionicons name="add" size={32} color="white" />
-                      </LinearGradient>
-                    </CenterNavButton>
-                  </Pressable>
-                );
-              }
-
-              return (
-                <Pressable key={item.key} onPress={() => navigation.navigate(item.key as any)}>
-                  <NavItem>
-                    <NavIconWrap active={isActive}>
-                      <Ionicons
-                        name={isActive ? (item.icon as any) : (`${item.icon}-outline` as any)}
-                        size={24}
-                        color={isActive ? theme.brand?.val : theme.placeholderColor?.val}
-                      />
-                    </NavIconWrap>
-                    <NavLabel active={isActive}>{item.label}</NavLabel>
-                  </NavItem>
-                </Pressable>
-              );
-            })}
-          </BottomNav>
-        )}
-      </Container>
+          <Pressable style={styles.registerBtn}>
+            <Text style={styles.registerBtnText}>Criar conta</Text>
+          </Pressable>
+        </View>
+      </View>
     );
   }
-
-  const rating = typeof user.rating === 'number' ? user.rating : parseFloat(user.rating || '0');
-  const hasAddress = user.city && user.state;
-  const hasPhone = user.phone;
 
   return (
-    <Container>
-      <Header paddingTop={isWeb ? '$3' : insets.top + 8}>
-        <Pressable onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={theme.color?.val} />
-        </Pressable>
-        <Logo>brechó</Logo>
-        <Pressable onPress={() => navigation.navigate('EditProfile')}>
-          <Avatar src={user.avatar_url} name={user.name} size="sm" />
-        </Pressable>
-      </Header>
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <LinearGradient colors={['#5D8A7D', '#7BA396']} style={[styles.header, { paddingTop: insets.top + 16 }]}>
+          <Pressable style={styles.settingsBtn}>
+            <Ionicons name="settings-outline" size={24} color="#fff" />
+          </Pressable>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={theme.brand?.val}
-            colors={[theme.brand?.val || '#5D8A7D']}
-          />
-        }
-        contentContainerStyle={{ paddingBottom: isWeb ? 40 : 120 }}
-      >
-        {/* Profile Section */}
-        <ProfileSection>
-          <AvatarContainer>
-            <Avatar src={user.avatar_url} name={user.name} size="xl" />
-            <Pressable onPress={() => navigation.navigate('EditProfile')}>
-              <EditAvatarButton>
-                <Ionicons name="camera" size={14} color="white" />
-              </EditAvatarButton>
+          <View style={styles.avatarWrap}>
+            {user?.avatar_url ? (
+              <Image source={{ uri: user.avatar_url }} style={styles.avatar} contentFit="cover" />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Ionicons name="person" size={40} color="#5D8A7D" />
+              </View>
+            )}
+            <Pressable style={styles.editAvatarBtn}>
+              <Ionicons name="camera" size={14} color="#fff" />
             </Pressable>
-          </AvatarContainer>
+          </View>
 
-          <UserName>{user.store_name || user.name}</UserName>
-          <UserEmail>{user.email}</UserEmail>
-
-          {user.total_reviews > 0 && (
-            <RatingContainer>
-              <Ionicons name="star" size={14} color="#F5A623" />
-              <Text fontSize={14} fontWeight="600" color="$color">{rating.toFixed(1)}</Text>
-              <Text fontSize={13} color="$placeholderColor">({user.total_reviews} avaliações)</Text>
-            </RatingContainer>
+          <Text style={styles.userName}>{user?.name || 'Usuário'}</Text>
+          {user?.city && (
+            <View style={styles.locationRow}>
+              <Ionicons name="location" size={14} color="rgba(255,255,255,0.8)" />
+              <Text style={styles.locationText}>{user.city}</Text>
+            </View>
           )}
-        </ProfileSection>
 
-        {/* Stats */}
-        <StatsContainer>
-          <StatItem>
-            <StatValue>{stats.total}</StatValue>
-            <StatLabel>anúncios</StatLabel>
-          </StatItem>
-          <StatDivider />
-          <StatItem>
-            <StatValue>{stats.sold}</StatValue>
-            <StatLabel>vendas</StatLabel>
-          </StatItem>
-          <StatDivider />
-          <StatItem>
-            <StatValue>{user.total_followers || 0}</StatValue>
-            <StatLabel>seguidores</StatLabel>
-          </StatItem>
-        </StatsContainer>
+          {/* Stats */}
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{user?.total_sales || 0}</Text>
+              <Text style={styles.statLabel}>Vendas</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{user?.total_followers || 0}</Text>
+              <Text style={styles.statLabel}>Seguidores</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <View style={styles.ratingRow}>
+                <Ionicons name="star" size={14} color="#FFD700" />
+                <Text style={styles.statValue}>{user?.rating?.toFixed(1) || '5.0'}</Text>
+              </View>
+              <Text style={styles.statLabel}>{user?.total_reviews || 0} avaliações</Text>
+            </View>
+          </View>
+        </LinearGradient>
 
-        {/* Menu Sections */}
-        <MenuSection>
-          <MenuSectionTitle>minha conta</MenuSectionTitle>
-          <MenuItemRow
-            icon="mail-outline"
-            label="email"
-            value={user.email}
-            isComplete={!!user.email}
-            onPress={() => navigation.navigate('EditProfile')}
-          />
-          <MenuDivider />
-          <MenuItemRow
-            icon="person-outline"
-            label="dados pessoais"
-            value={user.name ? 'completo' : 'pendente'}
-            isComplete={!!user.name}
-            onPress={() => navigation.navigate('EditProfile')}
-          />
-          <MenuDivider />
-          <MenuItemRow
-            icon="call-outline"
-            label="telefone"
-            value={hasPhone ? user.phone : 'adicionar'}
-            isComplete={!!hasPhone}
-            onPress={() => navigation.navigate('EditProfile')}
-          />
-          <MenuDivider />
-          <MenuItemRow
-            icon="location-outline"
-            label="endereço"
-            value={hasAddress ? `${user.city}, ${user.state}` : 'adicionar'}
-            isComplete={!!hasAddress}
-            onPress={() => navigation.navigate('EditProfile')}
-          />
-        </MenuSection>
+        {/* Premium Banner */}
+        {user?.subscription_type === 'free' && (
+          <Pressable style={styles.premiumBanner}>
+            <LinearGradient colors={['#FFD700', '#FFA500']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.premiumGrad}>
+              <Ionicons name="star" size={24} color="#fff" />
+              <View style={styles.premiumText}>
+                <Text style={styles.premiumTitle}>Seja Premium</Text>
+                <Text style={styles.premiumSub}>Anúncios ilimitados + destaque</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#fff" />
+            </LinearGradient>
+          </Pressable>
+        )}
 
-        <MenuSection>
-          <MenuSectionTitle>minhas vendas</MenuSectionTitle>
-          <MenuItemRow
-            icon="pricetag-outline"
-            label="meus anúncios"
-            value={`${stats.total} itens`}
-            onPress={() => navigation.navigate('MyProducts' as any)}
-          />
-          <MenuDivider />
-          <MenuItemRow
-            icon="stats-chart-outline"
-            label="painel de vendas"
-            onPress={() => navigation.navigate('Sales')}
-          />
-          <MenuDivider />
-          <MenuItemRow
-            icon="wallet-outline"
-            label="meus ganhos"
-            onPress={() => navigation.navigate('Sales')}
-          />
-        </MenuSection>
+        {/* Balance */}
+        <View style={styles.balanceCard}>
+          <View style={styles.balanceHeader}>
+            <Text style={styles.balanceLabel}>Saldo disponível</Text>
+            <Pressable><Text style={styles.withdrawBtn}>Sacar</Text></Pressable>
+          </View>
+          <Text style={styles.balanceValue}>R$ {(user?.balance || 0).toFixed(2)}</Text>
+        </View>
 
-        <MenuSection>
-          <MenuSectionTitle>minhas compras</MenuSectionTitle>
-          <MenuItemRow
-            icon="bag-outline"
-            label="meus pedidos"
-            onPress={() => navigation.navigate('Orders')}
-          />
-          <MenuDivider />
-          <MenuItemRow
-            icon="heart-outline"
-            label="favoritos"
-            onPress={() => navigation.navigate('Favorites')}
-          />
-        </MenuSection>
+        {/* Menu */}
+        <View style={styles.menuCard}>
+          {menuItems.map((item, idx) => (
+            <Pressable key={item.title} style={[styles.menuItem, idx === menuItems.length - 1 && styles.menuItemLast]}>
+              <View style={styles.menuIcon}>
+                <Ionicons name={item.icon as any} size={22} color="#525252" />
+              </View>
+              <View style={styles.menuContent}>
+                <Text style={styles.menuTitle}>{item.title}</Text>
+                <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
+              </View>
+              {item.badge && (
+                <View style={styles.menuBadge}>
+                  <Text style={styles.menuBadgeText}>{item.badge}</Text>
+                </View>
+              )}
+              <Ionicons name="chevron-forward" size={20} color="#A3A3A3" />
+            </Pressable>
+          ))}
+        </View>
 
-        <MenuSection>
-          <MenuSectionTitle>configurações</MenuSectionTitle>
-          <MenuItemRow icon="notifications-outline" label="notificações" onPress={() => {}} />
-          <MenuDivider />
-          <MenuItemRow icon="shield-checkmark-outline" label="privacidade" onPress={() => {}} />
-          <MenuDivider />
-          <MenuItemRow icon="help-circle-outline" label="ajuda" onPress={() => {}} />
-        </MenuSection>
-
-        <Pressable onPress={logout}>
-          <LogoutButton>
-            <Ionicons name="log-out-outline" size={20} color={theme.placeholderColor?.val} />
-            <Text fontSize={15} fontWeight="500" color="$placeholderColor">sair da conta</Text>
-          </LogoutButton>
+        {/* Logout */}
+        <Pressable style={styles.logoutBtn} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={22} color="#EF4444" />
+          <Text style={styles.logoutText}>Sair da conta</Text>
         </Pressable>
 
-        <VersionText>versão 1.0.0</VersionText>
+        <Text style={styles.version}>Versão 1.0.0</Text>
       </ScrollView>
-
-      {!isDesktop && (
-        <BottomNav paddingBottom={Math.max(insets.bottom, 12)}>
-          {navItems.map((item) => {
-            const isActive = item.key === 'Profile';
-
-            if (item.isCenter) {
-              return (
-                <Pressable key={item.key} onPress={() => navigation.navigate(item.key as any)}>
-                  <CenterNavButton>
-                    <LinearGradient
-                      colors={['#5D8A7D', '#7BA396']}
-                      style={{ width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      <Ionicons name="add" size={32} color="white" />
-                    </LinearGradient>
-                  </CenterNavButton>
-                </Pressable>
-              );
-            }
-
-            return (
-              <Pressable key={item.key} onPress={() => navigation.navigate(item.key as any)}>
-                <NavItem>
-                  <NavIconWrap active={isActive}>
-                    <Ionicons
-                      name={isActive ? (item.icon as any) : (`${item.icon}-outline` as any)}
-                      size={24}
-                      color={isActive ? theme.brand?.val : theme.placeholderColor?.val}
-                    />
-                  </NavIconWrap>
-                  <NavLabel active={isActive}>{item.label}</NavLabel>
-                </NavItem>
-              </Pressable>
-            );
-          })}
-        </BottomNav>
-      )}
-    </Container>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#FAFAFA' },
+
+  // Guest
+  guestContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
+  guestIcon: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#E8F0ED', alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
+  guestTitle: { fontSize: 24, fontWeight: '700', color: '#1A1A1A', marginBottom: 8 },
+  guestSubtitle: { fontSize: 15, color: '#737373', textAlign: 'center', marginBottom: 32, lineHeight: 22 },
+  loginBtn: { backgroundColor: '#5D8A7D', paddingHorizontal: 48, paddingVertical: 14, borderRadius: 28, marginBottom: 12 },
+  loginBtnText: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  registerBtn: { paddingVertical: 14 },
+  registerBtnText: { fontSize: 15, fontWeight: '600', color: '#5D8A7D' },
+
+  // Header
+  header: { paddingHorizontal: 16, paddingBottom: 24, alignItems: 'center' },
+  settingsBtn: { position: 'absolute', top: 60, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  avatarWrap: { position: 'relative', marginBottom: 12 },
+  avatar: { width: 88, height: 88, borderRadius: 44, borderWidth: 3, borderColor: '#fff' },
+  avatarPlaceholder: { width: 88, height: 88, borderRadius: 44, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#fff' },
+  editAvatarBtn: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: '#5D8A7D', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff' },
+  userName: { fontSize: 22, fontWeight: '700', color: '#fff', marginBottom: 4 },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 16 },
+  locationText: { fontSize: 14, color: 'rgba(255,255,255,0.8)' },
+  statsRow: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 16, paddingVertical: 12, paddingHorizontal: 24 },
+  statItem: { flex: 1, alignItems: 'center' },
+  statDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.3)', marginHorizontal: 16 },
+  statValue: { fontSize: 18, fontWeight: '700', color: '#fff' },
+  statLabel: { fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+
+  // Premium
+  premiumBanner: { marginHorizontal: 16, marginTop: -12, borderRadius: 16, overflow: 'hidden', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8 },
+  premiumGrad: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, gap: 12 },
+  premiumText: { flex: 1 },
+  premiumTitle: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  premiumSub: { fontSize: 12, color: 'rgba(255,255,255,0.9)' },
+
+  // Balance
+  balanceCard: { marginHorizontal: 16, marginTop: 16, backgroundColor: '#fff', borderRadius: 16, padding: 16, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 },
+  balanceHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  balanceLabel: { fontSize: 14, color: '#737373' },
+  withdrawBtn: { fontSize: 14, fontWeight: '600', color: '#5D8A7D' },
+  balanceValue: { fontSize: 28, fontWeight: '700', color: '#1A1A1A' },
+
+  // Menu
+  menuCard: { marginHorizontal: 16, marginTop: 16, backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
+  menuItemLast: { borderBottomWidth: 0 },
+  menuIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F5F5F5', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  menuContent: { flex: 1 },
+  menuTitle: { fontSize: 15, fontWeight: '500', color: '#1A1A1A' },
+  menuSubtitle: { fontSize: 12, color: '#A3A3A3', marginTop: 2 },
+  menuBadge: { backgroundColor: '#5D8A7D', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, marginRight: 8 },
+  menuBadgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
+
+  // Logout
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 24, paddingVertical: 16 },
+  logoutText: { fontSize: 15, fontWeight: '600', color: '#EF4444' },
+  version: { fontSize: 12, color: '#A3A3A3', textAlign: 'center', marginTop: 8, marginBottom: 100 },
+});
+
+export default ProfileScreen;

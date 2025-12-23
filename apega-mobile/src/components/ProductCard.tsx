@@ -1,191 +1,163 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
-  Image,
   StyleSheet,
-  TouchableOpacity,
-  Platform,
-  useWindowDimensions,
+  Pressable,
+  Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { colors, spacing, radius, shadows } from '../theme';
+import { Product } from '../api';
 
-const isWeb = Platform.OS === 'web';
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface ProductCardProps {
-  id: string;
-  image: string;
-  title: string;
-  price: number;
-  originalPrice?: number | null;
-  likes?: number;
-  isFavorited?: boolean;
-  isSold?: boolean;
-  condition?: string;
-  size?: string;
-  isNew?: boolean;
+  product: Product;
   onPress: () => void;
   onFavorite?: () => void;
-  numColumns?: number;
-  compact?: boolean;
+  width?: number;
+  showSeller?: boolean;
 }
 
-export default function ProductCard({
-  image,
-  title,
-  price,
-  originalPrice,
-  likes = 0,
-  isFavorited = false,
-  isSold = false,
-  condition,
-  size,
-  isNew = false,
+export function ProductCard({
+  product,
   onPress,
   onFavorite,
-  numColumns = 2,
-  compact = false,
+  width = (SCREEN_WIDTH - spacing.lg * 2 - spacing.sm) / 2,
+  showSeller = true,
 }: ProductCardProps) {
-  const { width } = useWindowDimensions();
-  const containerPadding = isWeb ? 24 : 12;
-  const gap = 10;
-  const cardWidth = (width - containerPadding * 2 - gap * (numColumns - 1)) / numColumns;
-  const imageHeight = cardWidth * 1.35;
+  const [isFavorited, setIsFavorited] = useState(product.is_favorited || false);
+  const imageUrl = product.image_url || product.images?.[0]?.image_url;
 
-  const hasDiscount = originalPrice && originalPrice > price;
-  const discountPercent = hasDiscount
-    ? Math.round(((originalPrice - price) / originalPrice) * 100)
+  const handleFavorite = () => {
+    setIsFavorited(!isFavorited);
+    onFavorite?.();
+  };
+
+  const discount = product.original_price
+    ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
     : 0;
 
+  const conditionLabel = {
+    novo: 'Novo',
+    seminovo: 'Seminovo',
+    usado: 'Usado',
+    vintage: 'Vintage',
+  }[product.condition] || product.condition;
+
   return (
-    <TouchableOpacity
-      style={[styles.card, { width: cardWidth }]}
+    <Pressable
+      style={[styles.container, { width }]}
       onPress={onPress}
-      activeOpacity={0.92}
     >
-      {/* Imagem com overlay */}
-      <View style={[styles.imageContainer, { height: imageHeight }]}>
-        {image ? (
-          <Image source={{ uri: image }} style={styles.image} resizeMode="cover" />
+      {/* Image Container */}
+      <View style={[styles.imageContainer, { height: width * 1.25 }]}>
+        {imageUrl ? (
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.image}
+            contentFit="cover"
+            transition={200}
+          />
         ) : (
           <View style={styles.placeholder}>
-            <Ionicons name="image-outline" size={40} color="#CBD5E1" />
+            <Ionicons name="image-outline" size={40} color={colors.gray300} />
           </View>
         )}
 
-        {/* Gradiente escuro no topo */}
-        <LinearGradient
-          colors={['rgba(0,0,0,0.4)', 'transparent', 'transparent', 'rgba(0,0,0,0.2)']}
-          style={StyleSheet.absoluteFill}
-        />
-
-        {/* Badge de desconto */}
-        {hasDiscount && (
-          <View style={styles.discountBadge}>
-            <Text style={styles.discountText}>-{discountPercent}%</Text>
-          </View>
-        )}
-
-        {/* Badge NOVO */}
-        {isNew && !hasDiscount && (
-          <View style={styles.newBadge}>
-            <Text style={styles.newText}>NOVO</Text>
-          </View>
-        )}
-
-        {/* Botao favorito */}
-        {onFavorite && (
-          <TouchableOpacity
-            style={styles.favoriteBtn}
-            onPress={(e) => {
-              e.stopPropagation();
-              onFavorite();
-            }}
-          >
+        {/* Favorite Button */}
+        <Pressable style={styles.favoriteButton} onPress={handleFavorite}>
+          <View style={styles.favoriteCircle}>
             <Ionicons
               name={isFavorited ? 'heart' : 'heart-outline'}
-              size={22}
-              color={isFavorited ? '#F43F5E' : '#FFF'}
+              size={18}
+              color={isFavorited ? colors.error : colors.white}
             />
-          </TouchableOpacity>
-        )}
+          </View>
+        </Pressable>
 
-        {/* Overlay vendido */}
-        {isSold && (
-          <View style={styles.soldOverlay}>
-            <View style={styles.soldBadge}>
-              <Ionicons name="checkmark-done" size={20} color="#FFF" />
-              <Text style={styles.soldText}>VENDIDO</Text>
-            </View>
+        {/* Discount Badge */}
+        {discount > 0 && (
+          <View style={styles.discountBadge}>
+            <Text style={styles.discountText}>-{discount}%</Text>
           </View>
         )}
 
-        {/* Info no rodape da imagem */}
-        <View style={styles.imageFooter}>
-          {size && (
-            <View style={styles.sizeTag}>
-              <Text style={styles.sizeText}>{size}</Text>
+        {/* Condition Badge */}
+        <View style={styles.conditionBadge}>
+          <Text style={styles.conditionText}>{conditionLabel}</Text>
+        </View>
+
+        {/* Price Tag */}
+        <View style={styles.priceContainer}>
+          <LinearGradient
+            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.7)']}
+            style={styles.priceGradient}
+          >
+            <View style={styles.priceRow}>
+              {product.original_price && product.original_price > product.price && (
+                <Text style={styles.originalPrice}>
+                  R$ {product.original_price.toFixed(0)}
+                </Text>
+              )}
+              <Text style={styles.price}>R$ {product.price.toFixed(0)}</Text>
             </View>
-          )}
-          {likes > 0 && (
-            <View style={styles.likesTag}>
-              <Ionicons name="heart" size={11} color="#FFF" />
-              <Text style={styles.likesText}>{likes}</Text>
-            </View>
-          )}
+          </LinearGradient>
         </View>
       </View>
 
-      {/* Informacoes */}
-      <View style={styles.info}>
-        <View style={styles.priceRow}>
-          <Text style={styles.price}>R${price.toFixed(0)}</Text>
-          {hasDiscount && (
-            <Text style={styles.oldPrice}>R${originalPrice?.toFixed(0)}</Text>
-          )}
-        </View>
-        <Text style={styles.title} numberOfLines={1}>{title}</Text>
-        {condition && (
-          <View style={styles.conditionRow}>
-            <View style={[
-              styles.conditionDot,
-              condition.toLowerCase().includes('novo') ? styles.conditionNew :
-              condition.toLowerCase().includes('semi') ? styles.conditionGood :
-              styles.conditionUsed
-            ]} />
-            <Text style={styles.conditionText}>{condition}</Text>
+      {/* Info Container */}
+      <View style={styles.infoContainer}>
+        <Text style={styles.title} numberOfLines={2}>
+          {product.title}
+        </Text>
+
+        {product.brand && (
+          <Text style={styles.brand}>{product.brand}</Text>
+        )}
+
+        {showSeller && product.seller_name && (
+          <View style={styles.sellerRow}>
+            {product.seller_avatar ? (
+              <Image
+                source={{ uri: product.seller_avatar }}
+                style={styles.sellerAvatar}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={[styles.sellerAvatar, styles.sellerAvatarPlaceholder]}>
+                <Ionicons name="person" size={10} color={colors.gray400} />
+              </View>
+            )}
+            <Text style={styles.sellerName} numberOfLines={1}>
+              {product.seller_name}
+            </Text>
+            {product.seller_city && (
+              <Text style={styles.sellerCity}> • {product.seller_city}</Text>
+            )}
           </View>
         )}
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    marginBottom: 12,
+  container: {
+    backgroundColor: colors.white,
+    borderRadius: radius.xl,
+    marginBottom: spacing.md,
+    ...shadows.md,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 4,
-      },
-      web: {
-        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-      },
-    }),
   },
   imageContainer: {
-    backgroundColor: '#F1F5F9',
     position: 'relative',
+    backgroundColor: colors.gray100,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     overflow: 'hidden',
   },
   image: {
@@ -193,152 +165,120 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   placeholder: {
-    flex: 1,
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.gray100,
+  },
+  favoriteButton: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    zIndex: 10,
+  },
+  favoriteCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   discountBadge: {
     position: 'absolute',
-    top: 10,
-    left: 10,
-    backgroundColor: '#F43F5E',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
+    top: spacing.sm,
+    left: spacing.sm,
+    backgroundColor: colors.error,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.sm,
   },
   discountText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  newBadge: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    backgroundColor: '#8B5CF6',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
-  },
-  newText: {
-    color: '#FFF',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  favoriteBtn: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  soldOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  soldBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 30,
-  },
-  soldText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  imageFooter: {
-    position: 'absolute',
-    bottom: 10,
-    left: 10,
-    right: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  sizeTag: {
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  sizeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-  likesTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  likesText: {
-    color: '#FFF',
+    color: colors.white,
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  info: {
-    padding: 12,
+  conditionBadge: {
+    position: 'absolute',
+    bottom: 50,
+    left: spacing.sm,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radius.full,
+  },
+  conditionText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.gray700,
+  },
+  priceContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  priceGradient: {
+    paddingTop: spacing['2xl'],
+    paddingBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   priceRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-    marginBottom: 4,
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  originalPrice: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+    textDecorationLine: 'line-through',
   },
   price: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#0F172A',
-    letterSpacing: -0.5,
+    color: colors.white,
   },
-  oldPrice: {
-    fontSize: 14,
-    color: '#94A3B8',
-    textDecorationLine: 'line-through',
+  infoContainer: {
+    padding: spacing.md,
   },
   title: {
     fontSize: 14,
-    color: '#64748B',
-    marginBottom: 6,
+    fontWeight: '500',
+    color: colors.gray800,
+    lineHeight: 18,
+    marginBottom: spacing.xs,
   },
-  conditionRow: {
+  brand: {
+    fontSize: 12,
+    color: colors.brand,
+    fontWeight: '600',
+    marginBottom: spacing.sm,
+  },
+  sellerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
   },
-  conditionDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  sellerAvatar: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    marginRight: spacing.xs,
   },
-  conditionNew: {
-    backgroundColor: '#10B981',
+  sellerAvatarPlaceholder: {
+    backgroundColor: colors.gray200,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  conditionGood: {
-    backgroundColor: '#8B5CF6',
+  sellerName: {
+    fontSize: 11,
+    color: colors.gray500,
+    flex: 1,
   },
-  conditionUsed: {
-    backgroundColor: '#F59E0B',
-  },
-  conditionText: {
-    fontSize: 12,
-    color: '#94A3B8',
+  sellerCity: {
+    fontSize: 11,
+    color: colors.gray400,
   },
 });
+
+export default ProductCard;

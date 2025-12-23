@@ -1,85 +1,138 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  TextInput,
+  Platform,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING } from '../constants/theme';
+import { colors, spacing, radius, shadows } from '../theme';
 
 interface HeaderProps {
-  navigation: any;
-  title: string;
-  showBack?: boolean;
-  variant?: 'light' | 'dark' | 'primary';
-  rightActions?: React.ReactNode;
+  onSearchPress?: () => void;
+  onNotificationPress?: () => void;
+  onCartPress?: () => void;
+  showSearch?: boolean;
+  cartCount?: number;
 }
 
-export default function Header({
-  navigation,
-  title,
-  showBack = true,
-  variant = 'light',
-  rightActions
+export function Header({
+  onSearchPress,
+  onNotificationPress,
+  onCartPress,
+  showSearch = true,
+  cartCount = 0,
 }: HeaderProps) {
-  const isDark = variant === 'dark' || variant === 'primary';
-  const backgroundColor = variant === 'primary' ? COLORS.primary : variant === 'dark' ? COLORS.textPrimary : COLORS.white;
-  const textColor = isDark ? COLORS.white : COLORS.textPrimary;
-  const iconColor = isDark ? COLORS.white : COLORS.textPrimary;
+  const insets = useSafeAreaInsets();
 
   return (
-    <>
-      <StatusBar
-        barStyle={isDark ? "light-content" : "dark-content"}
-        backgroundColor={backgroundColor}
-      />
-      <View style={[styles.header, { backgroundColor }]}>
-        <View style={styles.headerLeft}>
-          {showBack && (
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.backButton}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="arrow-back" size={24} color={iconColor} />
-            </TouchableOpacity>
-          )}
-          <Text style={[styles.headerTitle, { color: textColor }]}>{title}</Text>
-        </View>
-
-        {rightActions && (
-          <View style={styles.headerRight}>
-            {rightActions}
-          </View>
-        )}
+    <View style={[styles.container, { paddingTop: insets.top + spacing.sm }]}>
+      {/* Logo */}
+      <View style={styles.logoContainer}>
+        <Text style={styles.logo}>apega</Text>
+        <Text style={styles.logoAccent}>desapega</Text>
       </View>
-    </>
+
+      {/* Search Bar */}
+      {showSearch && (
+        <Pressable style={styles.searchContainer} onPress={onSearchPress}>
+          <Ionicons name="search" size={18} color={colors.gray400} />
+          <Text style={styles.searchPlaceholder}>Buscar produtos, marcas...</Text>
+        </Pressable>
+      )}
+
+      {/* Actions */}
+      <View style={styles.actions}>
+        <Pressable style={styles.iconButton} onPress={onNotificationPress}>
+          <Ionicons name="notifications-outline" size={24} color={colors.gray700} />
+        </Pressable>
+
+        <Pressable style={styles.iconButton} onPress={onCartPress}>
+          <Ionicons name="bag-outline" size={24} color={colors.gray700} />
+          {cartCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{cartCount > 9 ? '9+' : cartCount}</Text>
+            </View>
+          )}
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
+  container: {
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: (StatusBar.currentHeight || 40) + 12,
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.sm,
-    borderBottomWidth: 0.5,
-    borderBottomColor: COLORS.border,
+    gap: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray100,
   },
-  headerLeft: {
+  logoContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
+  },
+  logo: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: colors.brand,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+  },
+  logoAccent: {
+    fontSize: 22,
+    fontWeight: '300',
+    color: colors.gray500,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+  },
+  searchContainer: {
     flex: 1,
-  },
-  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
+    backgroundColor: colors.gray100,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
   },
-  backButton: {
-    marginRight: SPACING.sm,
-    padding: 4,
+  searchPlaceholder: {
+    fontSize: 14,
+    color: colors.gray400,
   },
-  headerTitle: {
-    fontSize: TYPOGRAPHY.sizes.xl,
-    fontWeight: TYPOGRAPHY.weights.semibold,
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: colors.brand,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: '700',
   },
 });
+
+export default Header;

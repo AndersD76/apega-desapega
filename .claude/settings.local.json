@@ -78,7 +78,10 @@
       "Bash(grep:*)",
       "Bash(ls -la \"e:\\\\APPS EM DESENVOLVIMENTO\\\\App Brechó\\\\apega-backend\\\\src\"\" 2>/dev/null || dir \"e:APPS EM DESENVOLVIMENTOApp Brechóapega-backendsrc\"\")",
       "Bash(del \"e:\\\\APPS EM DESENVOLVIMENTO\\\\App Brechó\\\\apega-backend\\\\public\\\\admin.html\")",
-      "Bash(RAILWAY_TOKEN=63c04a30-b2b6-4f55-8c33-f86f21a1c7ef railway status:*)"
+      "Bash(RAILWAY_TOKEN=63c04a30-b2b6-4f55-8c33-f86f21a1c7ef railway status:*)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(npm ls:*)",
+      "Bash(npx create-expo-app@latest apega-mobile --template blank-typescript)"
     ],
     "deny": [],
     "ask": []
