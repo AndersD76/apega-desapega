@@ -11,21 +11,24 @@ import {
   Platform,
   Animated,
   useWindowDimensions,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
 import { COLORS } from '../constants/theme';
 import { BottomNavigation, MainHeader } from '../components';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../services/api';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
 const isWeb = Platform.OS === 'web';
-const MAX_CONTENT_WIDTH = 600;
+const MAX_CONTENT_WIDTH = 800;
 
-// Banner images
+// Banner images for non-authenticated state
 const BANNER_IMAGES = [
   { uri: 'https://images.unsplash.com/photo-1558171813-4c088753af8f?w=800&q=80', title: 'SUA CONTA', subtitle: 'Gerencie seus dados' },
   { uri: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80', title: 'VENDA CONOSCO', subtitle: 'Lucre com moda circular' },
@@ -37,12 +40,20 @@ export default function ProfileScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   const isDesktop = isWeb && windowWidth > 768;
+  const isTablet = isWeb && windowWidth > 480 && windowWidth <= 768;
+  const contentWidth = Math.min(windowWidth, MAX_CONTENT_WIDTH);
 
   const { user, isAuthenticated, isLoading, refreshUser, logout } = useAuth();
 
-  // Banner carousel
+  // Banner carousel for non-authenticated
   const [currentBanner, setCurrentBanner] = useState(0);
   const bannerFade = useRef(new Animated.Value(1)).current;
+
+  // Upload states
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
+  const [localBannerUri, setLocalBannerUri] = useState<string | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -83,23 +94,118 @@ export default function ProfileScreen({ navigation }: Props) {
     });
   };
 
+  // Image picking functions
+  const pickImage = async (type: 'avatar' | 'banner') => {
+    if (isWeb) {
+      pickImageFromGallery(type);
+      return;
+    }
+
+    Alert.alert(
+      type === 'avatar' ? 'Foto de Perfil' : 'Foto de Capa',
+      'Escolha uma opcao:',
+      [
+        { text: 'Tirar Foto', onPress: () => pickImageFromCamera(type) },
+        { text: 'Escolher da Galeria', onPress: () => pickImageFromGallery(type) },
+        { text: 'Cancelar', style: 'cancel' },
+      ]
+    );
+  };
+
+  const pickImageFromCamera = async (type: 'avatar' | 'banner') => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert('Permissao Necessaria', 'E necessario permitir acesso a camera.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: type === 'avatar' ? [1, 1] : [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await uploadImage(result.assets[0].uri, type);
+    }
+  };
+
+  const pickImageFromGallery = async (type: 'avatar' | 'banner') => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert('Permissao Necessaria', 'E necessario permitir acesso a galeria.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: type === 'avatar' ? [1, 1] : [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await uploadImage(result.assets[0].uri, type);
+    }
+  };
+
+  const uploadImage = async (uri: string, type: 'avatar' | 'banner') => {
+    if (type === 'avatar') {
+      setUploadingAvatar(true);
+      setLocalAvatarUri(uri);
+    } else {
+      setUploadingBanner(true);
+      setLocalBannerUri(uri);
+    }
+
+    try {
+      const formData = new FormData();
+      const filename = uri.split('/').pop() || `${type}.jpg`;
+      const match = /\.(\w+)$/.exec(filename);
+      const mimeType = match ? `image/${match[1]}` : 'image/jpeg';
+
+      formData.append('image', {
+        uri,
+        name: filename,
+        type: mimeType,
+      } as any);
+      formData.append('type', type);
+
+      const response = await api.upload('/users/upload-image', formData);
+
+      if (response.success) {
+        await refreshUser();
+        Alert.alert('Sucesso', 'Imagem atualizada com sucesso!');
+      } else {
+        throw new Error(response.message || 'Erro ao atualizar imagem');
+      }
+    } catch (error: any) {
+      console.error('Erro ao fazer upload:', error);
+      Alert.alert('Erro', 'Nao foi possivel atualizar a imagem. Tente novamente.');
+      if (type === 'avatar') setLocalAvatarUri(null);
+      else setLocalBannerUri(null);
+    } finally {
+      if (type === 'avatar') setUploadingAvatar(false);
+      else setUploadingBanner(false);
+    }
+  };
+
   // Loading state
   if (isLoading) {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-        <View style={[styles.webWrapper, isDesktop && styles.webWrapperDesktop]}>
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loadingText}>carregando...</Text>
-          </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>carregando...</Text>
         </View>
         <BottomNavigation navigation={navigation} activeRoute="Profile" />
       </View>
     );
   }
 
-  // Not authenticated - Enjoei style login prompt
+  // Not authenticated
   if (!isAuthenticated || !user) {
     return (
       <View style={styles.container}>
@@ -109,19 +215,15 @@ export default function ProfileScreen({ navigation }: Props) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.scrollContent,
-            isDesktop && styles.scrollContentDesktop,
+            isDesktop && { alignItems: 'center' },
           ]}
         >
           <View style={[
             styles.contentWrapper,
-            isDesktop && { maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center', width: '100%' }
+            isDesktop && { maxWidth: MAX_CONTENT_WIDTH, width: '100%' }
           ]}>
             {/* Banner Hero */}
-            <Animated.View style={[
-              styles.heroBanner,
-              { opacity: bannerFade },
-              isDesktop && styles.heroBannerDesktop
-            ]}>
+            <Animated.View style={[styles.heroBanner, { opacity: bannerFade }]}>
               <Image
                 source={{ uri: BANNER_IMAGES[currentBanner].uri }}
                 style={styles.heroBannerImage}
@@ -131,20 +233,12 @@ export default function ProfileScreen({ navigation }: Props) {
                 style={styles.heroBannerOverlay}
               />
               <View style={styles.heroBannerContent}>
-                <Text style={[styles.heroBannerTitle, isDesktop && styles.heroBannerTitleDesktop]}>
+                <Text style={styles.heroBannerTitle}>
                   {BANNER_IMAGES[currentBanner].title}
                 </Text>
-                <Text style={[styles.heroBannerSubtitle, isDesktop && styles.heroBannerSubtitleDesktop]}>
+                <Text style={styles.heroBannerSubtitle}>
                   {BANNER_IMAGES[currentBanner].subtitle}
                 </Text>
-              </View>
-              <View style={styles.bannerDots}>
-                {BANNER_IMAGES.map((_, index) => (
-                  <View
-                    key={index}
-                    style={[styles.bannerDot, currentBanner === index && styles.bannerDotActive]}
-                  />
-                ))}
               </View>
             </Animated.View>
 
@@ -155,7 +249,7 @@ export default function ProfileScreen({ navigation }: Props) {
               </View>
               <Text style={styles.loginTitle}>Oi, bora desapegar?</Text>
               <Text style={styles.loginSubtitle}>
-                Entre pra salvar favoritos, vender suas peças e acompanhar seus pedidos
+                Entre pra salvar favoritos, vender suas pecas e acompanhar seus pedidos
               </Text>
             </View>
 
@@ -180,7 +274,7 @@ export default function ProfileScreen({ navigation }: Props) {
                 </View>
                 <View style={styles.featureContent}>
                   <Text style={styles.featureLabel}>favoritos</Text>
-                  <Text style={styles.featureDesc}>salve as peças que você amou</Text>
+                  <Text style={styles.featureDesc}>salve as pecas que voce amou</Text>
                 </View>
               </View>
 
@@ -189,7 +283,7 @@ export default function ProfileScreen({ navigation }: Props) {
                   <Ionicons name="pricetag" size={20} color="#10B981" />
                 </View>
                 <View style={styles.featureContent}>
-                  <Text style={styles.featureLabel}>venda fácil</Text>
+                  <Text style={styles.featureLabel}>venda facil</Text>
                   <Text style={styles.featureDesc}>anuncie e ganhe dinheiro</Text>
                 </View>
               </View>
@@ -205,47 +299,6 @@ export default function ProfileScreen({ navigation }: Props) {
               </View>
             </View>
 
-            {/* About Section - Story of Apega Desapega */}
-            <View style={styles.aboutSection}>
-              <LinearGradient
-                colors={['#f8f4f0', '#fff5eb']}
-                style={styles.aboutGradient}
-              >
-                <Text style={styles.aboutTitle}>nossa história</Text>
-
-                <View style={styles.founderCard}>
-                  <View style={styles.founderImagePlaceholder}>
-                    <Ionicons name="person" size={32} color={COLORS.primary} />
-                  </View>
-                  <View style={styles.founderInfo}>
-                    <Text style={styles.founderName}>amanda maier</Text>
-                    <Text style={styles.founderRole}>fundadora</Text>
-                  </View>
-                </View>
-
-                <Text style={styles.aboutText}>
-                  a apega desapega nasceu de uma lojinha física em passo fundo, rio grande do sul.
-                  começou pequena, com a paixão da amanda por moda circular e sustentabilidade.
-                </Text>
-
-                <Text style={styles.aboutText}>
-                  hoje somos um brechó destaque no RS, conectando pessoas que amam moda consciente.
-                  cada peça tem história, e agora você pode fazer parte da nossa.
-                </Text>
-
-                <View style={styles.aboutBadges}>
-                  <View style={styles.aboutBadge}>
-                    <Ionicons name="location" size={14} color={COLORS.primary} />
-                    <Text style={styles.aboutBadgeText}>passo fundo, rs</Text>
-                  </View>
-                  <View style={styles.aboutBadge}>
-                    <Ionicons name="leaf" size={14} color="#10B981" />
-                    <Text style={styles.aboutBadgeText}>moda sustentável</Text>
-                  </View>
-                </View>
-              </LinearGradient>
-            </View>
-
             <View style={{ height: 120 }} />
           </View>
         </ScrollView>
@@ -255,46 +308,84 @@ export default function ProfileScreen({ navigation }: Props) {
     );
   }
 
-  // Authenticated - Profile Dashboard (Instagram Style)
+  // Authenticated - Profile
   const rating = typeof user.rating === 'number' ? user.rating : parseFloat(user.rating || '0');
   const isPremium = user?.subscription_type === 'premium' || user?.isPremium;
+  const isOfficial = user?.is_official;
+  const avatarUri = localAvatarUri || user.avatar_url;
+  const bannerUri = localBannerUri || user.banner_url;
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a2e" />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Cover Photo & Profile Header */}
-        <View style={styles.profileHeader}>
-          <LinearGradient
-            colors={['#1a1a2e', '#16213e', '#0f3460']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.coverPhoto, { paddingTop: insets.top }]}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={isDesktop && { alignItems: 'center' }}
+      >
+        <View style={[
+          styles.profileWrapper,
+          isDesktop && { maxWidth: MAX_CONTENT_WIDTH, width: '100%' }
+        ]}>
+          {/* Cover Photo - Clickable */}
+          <TouchableOpacity
+            style={[styles.coverPhotoContainer, { paddingTop: insets.top }]}
+            onPress={() => pickImage('banner')}
+            activeOpacity={0.9}
           >
-            {/* Settings button */}
-            <TouchableOpacity
-              style={styles.settingsBtn}
-              onPress={() => navigation.navigate('Settings')}
-            >
-              <Ionicons name="settings-outline" size={24} color="#fff" />
-            </TouchableOpacity>
+            {bannerUri ? (
+              <Image source={{ uri: bannerUri }} style={styles.coverPhotoImage} />
+            ) : (
+              <LinearGradient
+                colors={['#1a1a2e', '#16213e', '#0f3460']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.coverPhotoGradient}
+              />
+            )}
 
-            {/* Decorative elements */}
-            <View style={styles.coverDecor1} />
-            <View style={styles.coverDecor2} />
-          </LinearGradient>
+            {/* Edit Banner Overlay */}
+            <View style={styles.editBannerOverlay}>
+              {uploadingBanner ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="camera" size={20} color="#fff" />
+                  <Text style={styles.editBannerText}>Alterar capa</Text>
+                </>
+              )}
+            </View>
+
+            {/* Official/Premium Badge */}
+            {(isOfficial || isPremium) && (
+              <View style={styles.topBadge}>
+                {isOfficial && (
+                  <View style={styles.officialBadge}>
+                    <Ionicons name="checkmark-circle" size={14} color="#fff" />
+                    <Text style={styles.officialBadgeText}>Loja Oficial</Text>
+                  </View>
+                )}
+                {isPremium && !isOfficial && (
+                  <View style={styles.premiumTopBadge}>
+                    <Ionicons name="diamond" size={14} color="#fff" />
+                    <Text style={styles.premiumTopBadgeText}>Premium</Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </TouchableOpacity>
 
           {/* Profile Card */}
-          <View style={styles.profileCard}>
-            {/* Avatar */}
+          <View style={[styles.profileCard, isDesktop && styles.profileCardDesktop]}>
+            {/* Avatar - Clickable */}
             <TouchableOpacity
               style={styles.avatarWrapper}
-              onPress={() => navigation.navigate('EditProfile')}
+              onPress={() => pickImage('avatar')}
+              activeOpacity={0.9}
             >
               <View style={[styles.avatarRing, isPremium && styles.avatarRingPremium]}>
-                {user.avatar_url ? (
-                  <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
+                {avatarUri ? (
+                  <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
                 ) : (
                   <View style={[styles.avatarPlaceholder, isPremium && styles.avatarPlaceholderPremium]}>
                     <Text style={styles.avatarInitial}>
@@ -303,6 +394,16 @@ export default function ProfileScreen({ navigation }: Props) {
                   </View>
                 )}
               </View>
+
+              {/* Camera icon overlay */}
+              <View style={styles.avatarCameraOverlay}>
+                {uploadingAvatar ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name="camera" size={16} color="#fff" />
+                )}
+              </View>
+
               {isPremium && (
                 <View style={styles.premiumBadge}>
                   <Ionicons name="diamond" size={14} color="#fff" />
@@ -311,10 +412,17 @@ export default function ProfileScreen({ navigation }: Props) {
             </TouchableOpacity>
 
             {/* Name & Handle */}
-            <Text style={styles.userName}>{user.name || 'Usuário'}</Text>
-            <Text style={styles.userHandle}>@{user.name?.toLowerCase().replace(/\s/g, '') || 'usuario'}</Text>
+            <View style={styles.nameSection}>
+              <View style={styles.nameRow}>
+                <Text style={styles.userName}>{user.name || 'Usuario'}</Text>
+                {isOfficial && (
+                  <Ionicons name="checkmark-circle" size={20} color="#2196F3" style={{ marginLeft: 6 }} />
+                )}
+              </View>
+              <Text style={styles.userHandle}>@{user.name?.toLowerCase().replace(/\s/g, '') || 'usuario'}</Text>
+            </View>
 
-            {/* Premium/Free Badge */}
+            {/* Plan Badge */}
             <View style={[styles.planBadge, isPremium ? styles.planBadgePremium : styles.planBadgeFree]}>
               {isPremium && <Ionicons name="diamond" size={12} color="#7B1FA2" style={{ marginRight: 4 }} />}
               <Text style={[styles.planBadgeText, isPremium && styles.planBadgeTextPremium]}>
@@ -323,7 +431,7 @@ export default function ProfileScreen({ navigation }: Props) {
             </View>
 
             {/* Stats Row */}
-            <View style={styles.statsRow}>
+            <View style={[styles.statsRow, isDesktop && styles.statsRowDesktop]}>
               <TouchableOpacity style={styles.statBox}>
                 <Text style={styles.statNumber}>{user.total_sales || 0}</Text>
                 <Text style={styles.statLabel}>vendas</Text>
@@ -331,7 +439,7 @@ export default function ProfileScreen({ navigation }: Props) {
               <View style={styles.statDivider} />
               <TouchableOpacity style={styles.statBox}>
                 <Text style={styles.statNumber}>{user.total_reviews || 0}</Text>
-                <Text style={styles.statLabel}>avaliações</Text>
+                <Text style={styles.statLabel}>avaliacoes</Text>
               </TouchableOpacity>
               <View style={styles.statDivider} />
               <View style={styles.statBox}>
@@ -350,7 +458,7 @@ export default function ProfileScreen({ navigation }: Props) {
             </View>
 
             {/* Action Buttons */}
-            <View style={styles.actionButtonsRow}>
+            <View style={[styles.actionButtonsRow, isDesktop && styles.actionButtonsRowDesktop]}>
               <TouchableOpacity
                 style={styles.primaryActionBtn}
                 onPress={() => navigation.navigate('NewItem')}
@@ -368,109 +476,109 @@ export default function ProfileScreen({ navigation }: Props) {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
 
-        {/* Quick Actions Grid */}
-        <View style={styles.quickActionsGrid}>
-          <TouchableOpacity
-            style={styles.quickActionCard}
-            onPress={() => navigation.navigate('MyStore')}
-          >
-            <View style={[styles.quickActionIcon, { backgroundColor: '#E8F5E9' }]}>
-              <Ionicons name="storefront" size={24} color={COLORS.primary} />
-            </View>
-            <Text style={styles.quickActionLabel}>Minha Loja</Text>
-            <Text style={styles.quickActionDesc}>Gerencie seus anúncios</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.quickActionCard}
-            onPress={() => navigation.navigate('Sales')}
-          >
-            <View style={[styles.quickActionIcon, { backgroundColor: '#E3F2FD' }]}>
-              <Ionicons name="trending-up" size={24} color="#1976D2" />
-            </View>
-            <Text style={styles.quickActionLabel}>Vendas</Text>
-            <Text style={styles.quickActionDesc}>Acompanhe resultados</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.quickActionCard}
-            onPress={() => navigation.navigate('Orders')}
-          >
-            <View style={[styles.quickActionIcon, { backgroundColor: '#FFF3E0' }]}>
-              <Ionicons name="cube" size={24} color="#F57C00" />
-            </View>
-            <Text style={styles.quickActionLabel}>Pedidos</Text>
-            <Text style={styles.quickActionDesc}>Suas compras</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.quickActionCard}
-            onPress={() => navigation.navigate('Favorites')}
-          >
-            <View style={[styles.quickActionIcon, { backgroundColor: '#FCE4EC' }]}>
-              <Ionicons name="heart" size={24} color="#E91E63" />
-            </View>
-            <Text style={styles.quickActionLabel}>Favoritos</Text>
-            <Text style={styles.quickActionDesc}>Peças salvas</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Menu Section */}
-        <View style={styles.menuSection}>
-          <Text style={styles.menuSectionTitle}>Configurações</Text>
-
-          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Balance')}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="wallet-outline" size={22} color={COLORS.gray[600]} />
-              <Text style={styles.menuItemText}>Saldo e Pagamentos</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Addresses')}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="location-outline" size={22} color={COLORS.gray[600]} />
-              <Text style={styles.menuItemText}>Endereços</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Subscription')}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="diamond-outline" size={22} color="#7B1FA2" />
-              <Text style={styles.menuItemText}>{isPremium ? 'Gerenciar Premium' : 'Seja Premium'}</Text>
-            </View>
-            {!isPremium && (
-              <View style={styles.menuBadge}>
-                <Text style={styles.menuBadgeText}>UPGRADE</Text>
+          {/* Quick Actions Grid */}
+          <View style={[styles.quickActionsGrid, isDesktop && styles.quickActionsGridDesktop]}>
+            <TouchableOpacity
+              style={[styles.quickActionCard, isDesktop && styles.quickActionCardDesktop]}
+              onPress={() => navigation.navigate('MyStore')}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: '#E8F5E9' }]}>
+                <Ionicons name="storefront" size={24} color={COLORS.primary} />
               </View>
-            )}
-            <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
-          </TouchableOpacity>
+              <Text style={styles.quickActionLabel}>Minha Loja</Text>
+              <Text style={styles.quickActionDesc}>Gerencie seus anuncios</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Help')}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="help-circle-outline" size={22} color={COLORS.gray[600]} />
-              <Text style={styles.menuItemText}>Ajuda</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.quickActionCard, isDesktop && styles.quickActionCardDesktop]}
+              onPress={() => navigation.navigate('Sales')}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: '#E3F2FD' }]}>
+                <Ionicons name="trending-up" size={24} color="#1976D2" />
+              </View>
+              <Text style={styles.quickActionLabel}>Vendas</Text>
+              <Text style={styles.quickActionDesc}>Acompanhe resultados</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={handleLogout}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="log-out-outline" size={22} color="#EF4444" />
-              <Text style={[styles.menuItemText, { color: '#EF4444' }]}>Sair</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#EF4444" />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.quickActionCard, isDesktop && styles.quickActionCardDesktop]}
+              onPress={() => navigation.navigate('Orders')}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: '#FFF3E0' }]}>
+                <Ionicons name="cube" size={24} color="#F57C00" />
+              </View>
+              <Text style={styles.quickActionLabel}>Pedidos</Text>
+              <Text style={styles.quickActionDesc}>Suas compras</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.quickActionCard, isDesktop && styles.quickActionCardDesktop]}
+              onPress={() => navigation.navigate('Favorites')}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: '#FCE4EC' }]}>
+                <Ionicons name="heart" size={24} color="#E91E63" />
+              </View>
+              <Text style={styles.quickActionLabel}>Favoritos</Text>
+              <Text style={styles.quickActionDesc}>Pecas salvas</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Menu Section */}
+          <View style={[styles.menuSection, isDesktop && styles.menuSectionDesktop]}>
+            <Text style={styles.menuSectionTitle}>Configuracoes</Text>
+
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Balance')}>
+              <View style={styles.menuItemLeft}>
+                <Ionicons name="wallet-outline" size={22} color={COLORS.gray[600]} />
+                <Text style={styles.menuItemText}>Saldo e Pagamentos</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Addresses')}>
+              <View style={styles.menuItemLeft}>
+                <Ionicons name="location-outline" size={22} color={COLORS.gray[600]} />
+                <Text style={styles.menuItemText}>Enderecos</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Subscription')}>
+              <View style={styles.menuItemLeft}>
+                <Ionicons name="diamond-outline" size={22} color="#7B1FA2" />
+                <Text style={styles.menuItemText}>{isPremium ? 'Gerenciar Premium' : 'Seja Premium'}</Text>
+              </View>
+              {!isPremium && (
+                <View style={styles.menuBadge}>
+                  <Text style={styles.menuBadgeText}>UPGRADE</Text>
+                </View>
+              )}
+              <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Help')}>
+              <View style={styles.menuItemLeft}>
+                <Ionicons name="help-circle-outline" size={22} color={COLORS.gray[600]} />
+                <Text style={styles.menuItemText}>Ajuda</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.menuItem, styles.menuItemLogout]} onPress={handleLogout}>
+              <View style={styles.menuItemLeft}>
+                <Ionicons name="log-out-outline" size={22} color="#EF4444" />
+                <Text style={[styles.menuItemText, { color: '#EF4444' }]}>Sair</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#EF4444" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Version */}
+          <Text style={styles.version}>apega desapega v1.0.0</Text>
+
+          <View style={{ height: 120 }} />
         </View>
-
-        {/* Version */}
-        <Text style={styles.version}>apega desapega v1.0.0</Text>
-
-        <View style={{ height: 120 }} />
       </ScrollView>
 
       <BottomNavigation navigation={navigation} activeRoute="Profile" />
@@ -486,19 +594,13 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
   },
-  scrollContentDesktop: {
-    alignItems: 'center',
-  },
   contentWrapper: {
     flex: 1,
     width: '100%',
   },
-  webWrapper: {
+  profileWrapper: {
     flex: 1,
-  },
-  webWrapperDesktop: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: '100%',
   },
   loadingContainer: {
     flex: 1,
@@ -511,47 +613,15 @@ const styles = StyleSheet.create({
     color: '#999',
   },
 
-  // Header
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    backgroundColor: '#FAF9F7',
-  },
-  logo: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#1a1a1a',
-    letterSpacing: -0.5,
-  },
-  logoLight: {
-    fontWeight: '400',
-    color: COLORS.gray[400],
-  },
-  navDesktop: {
-    flexDirection: 'row',
-    gap: 32,
-  },
-  navLink: {
-    fontSize: 15,
-    color: COLORS.gray[700],
-    fontWeight: '500',
-  },
-
-  // Hero Banner
+  // Hero Banner (non-auth)
   heroBanner: {
     height: 180,
     marginHorizontal: 16,
+    marginTop: 16,
     marginBottom: 24,
     borderRadius: 24,
     overflow: 'hidden',
     position: 'relative',
-  },
-  heroBannerDesktop: {
-    height: 220,
-    marginHorizontal: 0,
   },
   heroBannerImage: {
     width: '100%',
@@ -571,34 +641,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     letterSpacing: 3,
   },
-  heroBannerTitleDesktop: {
-    fontSize: 36,
-  },
   heroBannerSubtitle: {
     fontSize: 14,
     color: '#fff',
     marginTop: 4,
     fontWeight: '500',
-  },
-  heroBannerSubtitleDesktop: {
-    fontSize: 16,
-  },
-  bannerDots: {
-    position: 'absolute',
-    bottom: 16,
-    right: 24,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  bannerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.5)',
-  },
-  bannerDotActive: {
-    backgroundColor: '#fff',
-    width: 20,
   },
 
   // Login Hero
@@ -607,7 +654,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 40,
     paddingBottom: 32,
-    position: 'relative',
   },
   loginIconCircle: {
     width: 100,
@@ -689,258 +735,92 @@ const styles = StyleSheet.create({
     color: '#666',
   },
 
-  // About Section
-  aboutSection: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+  // Cover Photo (auth)
+  coverPhotoContainer: {
+    height: 180,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  aboutGradient: {
-    borderRadius: 16,
-    padding: 24,
+  coverPhotoImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
-  aboutTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 20,
+  coverPhotoGradient: {
+    width: '100%',
+    height: '100%',
   },
-  founderCard: {
+  editBannerOverlay: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-  },
-  founderImagePlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#e8f5e9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  founderInfo: {
-    flex: 1,
-  },
-  founderName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 2,
-  },
-  founderRole: {
-    fontSize: 13,
-    color: COLORS.primary,
-    fontWeight: '500',
-  },
-  aboutText: {
-    fontSize: 14,
-    color: '#444',
-    lineHeight: 22,
-    marginBottom: 12,
-  },
-  aboutBadges: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 8,
-  },
-  aboutBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 20,
     gap: 6,
   },
-  aboutBadgeText: {
+  editBannerText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  topBadge: {
+    position: 'absolute',
+    top: 60,
+    left: 16,
+  },
+  officialBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  officialBadgeText: {
+    color: '#fff',
     fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
+    fontWeight: '700',
+  },
+  premiumTopBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#7B1FA2',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  premiumTopBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
   },
 
-  // Profile Card (authenticated)
+  // Profile Card
   profileCard: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 28,
-    marginBottom: 16,
-    marginHorizontal: 20,
+    paddingTop: 0,
+    paddingBottom: 24,
+    marginTop: -50,
     backgroundColor: '#fff',
+    marginHorizontal: 16,
     borderRadius: 24,
+    ...Platform.select({
+      web: { boxShadow: '0 4px 20px rgba(0,0,0,0.08)' },
+      default: { elevation: 4 },
+    }),
   },
-  avatarContainer: {
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  avatarPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#f0f7f4',
-    alignItems: 'center',
+  profileCardDesktop: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center',
-  },
-  avatarInitial: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: COLORS.primary,
-  },
-  userName: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 20,
-  },
-  ratingText: {
-    fontSize: 13,
-    color: '#666',
-    marginLeft: 6,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FAF9F7',
-    borderRadius: 20,
-    paddingVertical: 18,
-    paddingHorizontal: 40,
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1a1a1a',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: '#ddd',
-    marginHorizontal: 20,
-  },
-
-  // Quick Actions
-  quickActions: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 24,
-    gap: 12,
-  },
-  quickAction: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingVertical: 16,
-    borderRadius: 20,
-  },
-  quickIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  quickLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.gray[700],
-  },
-
-  // Menu Section
-  menuSection: {
-    marginHorizontal: 20,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 16,
-    marginBottom: 24,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  menuItemLast: {
-    borderBottomWidth: 0,
-  },
-  menuText: {
-    flex: 1,
-    fontSize: 15,
-    color: '#333',
-    marginLeft: 12,
-  },
-
-  // Version
-  version: {
-    fontSize: 12,
-    color: '#999',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-
-  // ===== NEW INSTAGRAM STYLE PROFILE =====
-  profileHeader: {
-    backgroundColor: '#fff',
-    marginBottom: 16,
-  },
-  coverPhoto: {
-    height: 140,
-    position: 'relative',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end',
-    paddingRight: 16,
-    paddingTop: 16,
-  },
-  settingsBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  coverDecor1: {
-    position: 'absolute',
-    top: 20,
-    left: 30,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(201,162,39,0.15)',
-  },
-  coverDecor2: {
-    position: 'absolute',
-    bottom: 30,
-    right: 60,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(201,162,39,0.1)',
+    paddingTop: 20,
   },
   avatarWrapper: {
     alignSelf: 'center',
@@ -948,11 +828,11 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   avatarRing: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
     backgroundColor: '#fff',
-    padding: 3,
+    padding: 4,
     ...Platform.select({
       web: { boxShadow: '0 4px 15px rgba(0,0,0,0.15)' },
       default: { elevation: 5 },
@@ -965,12 +845,12 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 50,
+    borderRadius: 55,
   },
   avatarPlaceholder: {
     width: '100%',
     height: '100%',
-    borderRadius: 50,
+    borderRadius: 55,
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
@@ -979,14 +859,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#7B1FA2',
   },
   avatarInitial: {
-    fontSize: 36,
+    fontSize: 40,
     fontWeight: '700',
     color: '#fff',
+  },
+  avatarCameraOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
   },
   premiumBadge: {
     position: 'absolute',
     bottom: 4,
-    right: 4,
+    right: 30,
     width: 28,
     height: 28,
     borderRadius: 14,
@@ -996,12 +889,19 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#fff',
   },
+  nameSection: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   userName: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
     color: COLORS.gray[800],
     textAlign: 'center',
-    marginTop: 12,
   },
   userHandle: {
     fontSize: 14,
@@ -1013,10 +913,10 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginTop: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 14,
+    marginTop: 12,
   },
   planBadgeFree: {
     backgroundColor: COLORS.gray[200],
@@ -1038,10 +938,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#f8f9fa',
-    marginHorizontal: 20,
-    marginTop: 16,
+    marginTop: 20,
     borderRadius: 16,
-    paddingVertical: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    width: '100%',
+  },
+  statsRowDesktop: {
+    maxWidth: 400,
   },
   statBox: {
     flex: 1,
@@ -1049,18 +953,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   statNumber: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
     color: COLORS.gray[800],
   },
   statLabel: {
     fontSize: 12,
     color: COLORS.gray[500],
-    marginTop: 2,
+    marginTop: 4,
   },
   statDivider: {
     width: 1,
-    height: 30,
+    height: 35,
     backgroundColor: COLORS.gray[300],
   },
   ratingStars: {
@@ -1070,9 +974,11 @@ const styles = StyleSheet.create({
   actionButtonsRow: {
     flexDirection: 'row',
     gap: 12,
-    paddingHorizontal: 20,
-    marginTop: 16,
-    marginBottom: 20,
+    marginTop: 20,
+    width: '100%',
+  },
+  actionButtonsRowDesktop: {
+    maxWidth: 400,
   },
   primaryActionBtn: {
     flex: 1,
@@ -1081,11 +987,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: COLORS.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 16,
+    borderRadius: 14,
   },
   primaryActionBtnText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: '#fff',
   },
@@ -1096,11 +1002,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: '#f0f0f0',
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 16,
+    borderRadius: 14,
   },
   secondaryActionBtnText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.gray[700],
   },
@@ -1109,37 +1015,44 @@ const styles = StyleSheet.create({
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     gap: 12,
+    marginTop: 20,
     marginBottom: 20,
+  },
+  quickActionsGridDesktop: {
+    justifyContent: 'center',
   },
   quickActionCard: {
     width: '47%',
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 16,
+    padding: 18,
     ...Platform.select({
       web: { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
       default: { elevation: 2 },
     }),
   },
+  quickActionCardDesktop: {
+    width: 180,
+  },
   quickActionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   quickActionLabel: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.gray[800],
   },
   quickActionDesc: {
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.gray[500],
-    marginTop: 2,
+    marginTop: 4,
   },
 
   // Menu Section
@@ -1147,8 +1060,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     marginHorizontal: 16,
     borderRadius: 16,
-    padding: 16,
+    padding: 20,
     marginBottom: 20,
+    ...Platform.select({
+      web: { boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
+      default: { elevation: 2 },
+    }),
+  },
+  menuSectionDesktop: {
+    maxWidth: 500,
+    alignSelf: 'center',
+    width: '100%',
   },
   menuSectionTitle: {
     fontSize: 13,
@@ -1156,13 +1078,13 @@ const styles = StyleSheet.create({
     color: COLORS.gray[500],
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
@@ -1175,13 +1097,13 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   menuItemText: {
-    fontSize: 15,
+    fontSize: 16,
     color: COLORS.gray[700],
   },
   menuBadge: {
     backgroundColor: '#7B1FA2',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 10,
     marginRight: 8,
   },
@@ -1189,5 +1111,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: '#fff',
+  },
+
+  // Version
+  version: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'center',
+    marginBottom: 8,
   },
 });

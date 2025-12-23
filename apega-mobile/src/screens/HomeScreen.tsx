@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomNavigation } from '../components';
 import { COLORS } from '../constants/theme';
 import { getProducts, Product, getCategoryCounts } from '../services/products';
+import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -202,8 +203,13 @@ export default function HomeScreen({ navigation }: Props) {
   const [categoryCounts, setCategoryCounts] = useState<{ [key: string]: number }>({});
 
   // Onboarding modal state - multi-step flow
-  const [showPromoPopup, setShowPromoPopup] = useState(true);
+  const [showPromoPopup, setShowPromoPopup] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
+  const [promoStatus, setPromoStatus] = useState<{
+    showOnboarding: boolean;
+    availableSlots: number;
+    currentPromo: { type: string; name: string; slotsRemaining: number } | null;
+  } | null>(null);
   const promoScaleAnim = useRef(new Animated.Value(0)).current;
   const promoOpacityAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -312,6 +318,24 @@ export default function HomeScreen({ navigation }: Props) {
     outputRange: [30, 0],
     extrapolate: 'clamp',
   });
+
+  // Verificar vagas disponíveis ao carregar
+  useEffect(() => {
+    const checkPromoStatus = async () => {
+      try {
+        const response = await api.get('/promo/status');
+        setPromoStatus(response);
+        // Mostrar onboarding apenas se houver vagas e usuário não estiver logado
+        if (response.showOnboarding && !isAuthenticated) {
+          setShowPromoPopup(true);
+        }
+      } catch (error) {
+        console.log('Erro ao verificar promo status:', error);
+        // Em caso de erro, não mostra o onboarding
+      }
+    };
+    checkPromoStatus();
+  }, [isAuthenticated]);
 
   // Animar popup de promoção ao abrir
   useEffect(() => {

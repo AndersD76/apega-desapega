@@ -1,8 +1,91 @@
 const express = require('express');
+const multer = require('multer');
 const { sql } = require('../config/database');
 const { authenticate, optionalAuth } = require('../middleware/auth');
+const { uploadToCloudinary } = require('../config/cloudinary');
 
 const router = express.Router();
+
+// Configuracao do multer para upload em memoria
+const storage = multer.memoryStorage();
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Tipo de arquivo nao permitido'), false);
+  }
+};
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+});
+
+// Upload de imagem de perfil ou banner
+router.post('/upload-image', authenticate, upload.single('image'), async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: true, message: 'Nenhuma imagem enviada' });
+    }
+
+    const { type } = req.body; // 'avatar' ou 'banner'
+    if (!type || !['avatar', 'banner'].includes(type)) {
+      return res.status(400).json({ error: true, message: 'Tipo de imagem invalido. Use "avatar" ou "banner"' });
+    }
+
+    // Upload para Cloudinary
+    const folder = type === 'avatar' ? 'avatars' : 'banners';
+    const result = await uploadToCloudinary(req.file.buffer, folder);
+
+    // Atualizar no banco
+    if (type === 'avatar') {
+      await sql`UPDATE users SET avatar_url = ${result.secure_url} WHERE id = ${req.user.id}`;
+    } else {
+      await sql`UPDATE users SET banner_url = ${result.secure_url} WHERE id = ${req.user.id}`;
+    }
+
+    // Buscar usuario atualizado
+    const updatedUser = await sql`
+      SELECT id, name, email, avatar_url, banner_url FROM users WHERE id = ${req.user.id}
+    `;
+
+    res.json({
+      success: true,
+      message: 'Imagem atualizada com sucesso',
+      url: result.secure_url,
+      user: updatedUser[0]
+    });
+  } catch (error) {
+    console.error('Erro no upload de imagem:', error);
+    next(error);
+  }
+});
+
+// Obter dados do usuario logado
+router.get('/me', authenticate, async (req, res, next) => {
+  try {
+    const users = await sql`
+      SELECT
+        id, name, email, avatar_url, banner_url, bio, phone,
+        city, state, store_name, store_description,
+        subscription_type, subscription_expires_at,
+        balance, cashback_balance, rating, total_reviews, total_sales,
+        total_followers, total_following, is_verified, is_official,
+        commission_rate, promo_type, is_admin, created_at
+      FROM users
+      WHERE id = ${req.user.id}
+    `;
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: true, message: 'Usuario nao encontrado' });
+    }
+
+    res.json(users[0]);
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Obter perfil público de um usuário
 router.get('/:id', optionalAuth, async (req, res, next) => {

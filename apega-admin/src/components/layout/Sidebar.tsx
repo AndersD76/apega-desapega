@@ -17,6 +17,8 @@ import {
   AlertTriangle,
   LogOut,
   Heart,
+  Gift,
+  Star,
 } from 'lucide-react'
 
 interface NavItem {
@@ -33,7 +35,12 @@ const mainNavItems: NavItem[] = [
     icon: <LayoutDashboard className="h-5 w-5" />,
   },
   {
-    title: 'Usuários',
+    title: 'Promocoes',
+    href: '/promocoes',
+    icon: <Gift className="h-5 w-5" />,
+  },
+  {
+    title: 'Usuarios',
     href: '/usuarios',
     icon: <Users className="h-5 w-5" />,
   },
