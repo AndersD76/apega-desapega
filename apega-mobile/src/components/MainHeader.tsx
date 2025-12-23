@@ -82,30 +82,37 @@ export default function MainHeader({ navigation, showBack = false, title }: Main
               style={styles.headerUserBtn}
               onPress={() => navigation.navigate('Profile')}
             >
-              <View style={[
-                styles.headerUserAvatar,
-                user.isPremium && styles.headerUserAvatarPremium
-              ]}>
-                <Text style={styles.headerUserInitial}>
-                  {user.name?.charAt(0).toUpperCase() || 'U'}
-                </Text>
-              </View>
-              <View style={styles.headerUserInfo}>
-                <Text style={styles.headerUserName} numberOfLines={1}>
-                  {user.name || 'Usuario'}
-                </Text>
-                <View style={[
-                  styles.headerUserBadge,
-                  user.isPremium ? styles.headerUserBadgePremium : styles.headerUserBadgeFree
-                ]}>
-                  <Text style={[
-                    styles.headerUserBadgeText,
-                    user.isPremium && styles.headerUserBadgeTextPremium
-                  ]}>
-                    {user.isPremium ? 'PREMIUM' : 'FREE'}
-                  </Text>
-                </View>
-              </View>
+              {(() => {
+                const isPremium = user.subscription_type === 'premium';
+                return (
+                  <>
+                    <View style={[
+                      styles.headerUserAvatar,
+                      isPremium && styles.headerUserAvatarPremium
+                    ]}>
+                      <Text style={styles.headerUserInitial}>
+                        {user.name?.charAt(0).toUpperCase() || 'U'}
+                      </Text>
+                    </View>
+                    <View style={styles.headerUserInfo}>
+                      <Text style={styles.headerUserName} numberOfLines={1}>
+                        {user.name || 'Usuario'}
+                      </Text>
+                      <View style={[
+                        styles.headerUserBadge,
+                        isPremium ? styles.headerUserBadgePremium : styles.headerUserBadgeFree
+                      ]}>
+                        <Text style={[
+                          styles.headerUserBadgeText,
+                          isPremium && styles.headerUserBadgeTextPremium
+                        ]}>
+                          {isPremium ? 'PREMIUM' : 'FREE'}
+                        </Text>
+                      </View>
+                    </View>
+                  </>
+                );
+              })()}
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
