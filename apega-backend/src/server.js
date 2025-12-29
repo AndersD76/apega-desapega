@@ -173,6 +173,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), service: 'apega-backend' });
 });
 
+// Rota do Admin Panel
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/admin.html'));
+});
+
 // Rotas da API
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
