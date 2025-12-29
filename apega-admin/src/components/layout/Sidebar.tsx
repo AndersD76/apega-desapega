@@ -2,6 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import { useAuth } from '@/contexts/AuthContext'
 import {
   LayoutDashboard,
   Users,
@@ -104,6 +105,7 @@ const managementNavItems: NavItem[] = [
 
 export function Sidebar() {
   const location = useLocation()
+  const { logout } = useAuth()
 
   const NavItemComponent = ({ item }: { item: NavItem }) => {
     const isActive = location.pathname === item.href
@@ -182,7 +184,10 @@ export function Sidebar() {
 
         {/* Footer */}
         <div className="border-t p-4">
-          <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-all hover:bg-accent hover:text-foreground">
+          <button
+            onClick={logout}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
+          >
             <LogOut className="h-5 w-5" />
             <span>Sair</span>
           </button>
