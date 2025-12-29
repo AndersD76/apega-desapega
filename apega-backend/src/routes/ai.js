@@ -43,7 +43,8 @@ const upload = multer({
 
 /**
  * Middleware para verificar se usuário tem acesso à IA
- * Apenas assinantes Premium ativos têm acesso
+ * MODO DEV: Permitido para todos os usuários autenticados
+ * PRODUÇÃO: Apenas assinantes Premium ativos têm acesso
  */
 async function checkAIAccess(req, res, next) {
   try {
@@ -72,7 +73,14 @@ async function checkAIAccess(req, res, next) {
       return next();
     }
 
-    // Não tem acesso (apenas Premium)
+    // MODO DEV: Permitir acesso para todos os usuários autenticados
+    // TODO: Remover em produção ou adicionar limite de uso diário
+    if (process.env.NODE_ENV !== 'production') {
+      req.aiAccessType = 'free_trial';
+      return next();
+    }
+
+    // Não tem acesso (apenas Premium em produção)
     return res.status(403).json({
       error: true,
       message: 'Recursos de IA exclusivos para assinantes Premium',
@@ -315,11 +323,26 @@ router.post('/enhance-image', authenticate, checkAIAccess, upload.single('image'
       return res.status(400).json({ error: true, message: 'Envie uma imagem' });
     }
 
-    const result = await enhanceImage(imageUrl);
+    const aiResult = await enhanceImage(imageUrl);
+
+    // Se o resultado for base64, fazer upload para Cloudinary
+    let enhancedUrl = aiResult.imageBase64;
+    if (aiResult.imageBase64 && aiResult.imageBase64.startsWith('data:')) {
+      const base64Data = aiResult.imageBase64.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+      const uploadResult = await uploadToCloudinary(buffer, {
+        folder: 'apega/enhanced',
+      });
+      enhancedUrl = uploadResult.secure_url;
+    }
 
     res.json({
       success: true,
-      ...result
+      result: {
+        enhanced_url: enhancedUrl,
+        original_url: imageUrl,
+        provider: aiResult.provider,
+      }
     });
 
   } catch (error) {
@@ -352,11 +375,26 @@ router.post('/remove-background', authenticate, checkAIAccess, upload.single('im
       return res.status(400).json({ error: true, message: 'Envie uma imagem' });
     }
 
-    const result = await removeBackground(imageUrl);
+    const aiResult = await removeBackground(imageUrl);
+
+    // Se o resultado for base64, fazer upload para Cloudinary
+    let processedUrl = aiResult.imageBase64;
+    if (aiResult.imageBase64 && aiResult.imageBase64.startsWith('data:')) {
+      const base64Data = aiResult.imageBase64.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+      const uploadResult = await uploadToCloudinary(buffer, {
+        folder: 'apega/bg-removed',
+      });
+      processedUrl = uploadResult.secure_url;
+    }
 
     res.json({
       success: true,
-      ...result
+      result: {
+        processed_url: processedUrl,
+        original_url: imageUrl,
+        provider: aiResult.provider,
+      }
     });
 
   } catch (error) {

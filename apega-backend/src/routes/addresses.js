@@ -153,6 +153,40 @@ router.delete('/:id', authenticate, async (req, res, next) => {
   }
 });
 
+// Buscar endereço por CEP (ViaCEP)
+router.get('/cep/:cep', async (req, res, next) => {
+  try {
+    const { cep } = req.params;
+    const cleanCep = cep.replace(/\D/g, '');
+
+    if (cleanCep.length !== 8) {
+      return res.status(400).json({ error: true, message: 'CEP inválido' });
+    }
+
+    // Buscar na API ViaCEP
+    const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+    const data = await response.json();
+
+    if (data.erro) {
+      return res.status(404).json({ error: true, message: 'CEP não encontrado' });
+    }
+
+    res.json({
+      success: true,
+      address: {
+        street: data.logradouro || '',
+        neighborhood: data.bairro || '',
+        city: data.localidade || '',
+        state: data.uf || '',
+        zipcode: cleanCep,
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao buscar CEP:', error);
+    res.status(500).json({ error: true, message: 'Erro ao buscar CEP' });
+  }
+});
+
 // Definir como padrão
 router.patch('/:id/default', authenticate, async (req, res, next) => {
   try {

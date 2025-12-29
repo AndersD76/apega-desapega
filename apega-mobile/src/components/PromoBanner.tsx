@@ -18,7 +18,7 @@ interface PromoBannerProps {
   subtitle?: string;
   buttonText?: string;
   onPress?: () => void;
-  gradientColors?: string[];
+  gradientColors?: readonly [string, string, ...string[]];
   imageUrl?: string;
   variant?: 'large' | 'medium' | 'small';
 }
@@ -28,7 +28,7 @@ export function PromoBanner({
   subtitle,
   buttonText = 'Ver agora',
   onPress,
-  gradientColors = [colors.brand, colors.brandLight],
+  gradientColors = [colors.brand, colors.brandLight] as const,
   imageUrl,
   variant = 'large',
 }: PromoBannerProps) {

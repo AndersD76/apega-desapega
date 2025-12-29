@@ -141,9 +141,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.lg,
-    shadowColor: colors.brand,
-    shadowOpacity: 0.4,
+    ...shadows.brand(0.4),
   },
 });
 

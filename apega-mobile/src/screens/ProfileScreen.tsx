@@ -1,34 +1,89 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
+import { formatPrice } from '../utils/format';
 
 export function ProfileScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const { user, isAuthenticated, logout } = useAuth();
+  const auth = useAuth();
+  const { user, isAuthenticated, isLoading, logout, updateUser } = auth || {};
 
-  const handleLogout = () => {
-    Alert.alert('Sair', 'Deseja sair da sua conta?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sair', style: 'destructive', onPress: () => logout() },
-    ]);
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
+  const [localBannerUrl, setLocalBannerUrl] = useState<string | null>(null);
+
+  const pickImage = async (type: 'avatar' | 'banner') => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (status !== 'granted') {
+      Alert.alert('Permissão necessária', 'Precisamos de acesso à galeria para trocar a imagem.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: type === 'avatar' ? [1, 1] : [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const uri = result.assets[0].uri;
+      if (type === 'avatar') {
+        setLocalAvatarUrl(uri);
+        // TODO: Upload to server and update user
+      } else {
+        setLocalBannerUrl(uri);
+        // TODO: Upload to server and update user
+      }
+    }
+  };
+
+  const avatarUrl = localAvatarUrl || user?.avatar_url;
+  const bannerUrl = localBannerUrl || user?.banner_url;
+
+  const handleLogout = async () => {
+    if (Platform.OS === 'web') {
+      // Use window.confirm on web since Alert.alert doesn't work properly
+      const confirmed = window.confirm('Deseja sair da sua conta?');
+      if (confirmed) {
+        await logout?.();
+      }
+    } else {
+      Alert.alert('Sair', 'Deseja sair da sua conta?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Sair', style: 'destructive', onPress: () => logout?.() },
+      ]);
+    }
   };
 
   const menuItems = [
-    { icon: 'pricetag-outline', title: 'Meus Anúncios', subtitle: 'Gerencie seus produtos' },
-    { icon: 'trending-up-outline', title: 'Minhas Vendas', subtitle: 'Acompanhe suas vendas' },
-    { icon: 'bag-outline', title: 'Minhas Compras', subtitle: 'Histórico de compras' },
-    { icon: 'heart-outline', title: 'Favoritos', subtitle: 'Peças salvas' },
-    { icon: 'chatbubble-outline', title: 'Mensagens', subtitle: '3 novas', badge: 3 },
-    { icon: 'wallet-outline', title: 'Carteira', subtitle: 'Saldo e saques' },
-    { icon: 'location-outline', title: 'Endereços', subtitle: 'Endereços de entrega' },
-    { icon: 'settings-outline', title: 'Configurações', subtitle: 'Preferências' },
-    { icon: 'help-circle-outline', title: 'Ajuda', subtitle: 'Central de ajuda' },
+    { icon: 'pricetag-outline', title: 'Meus Anúncios', subtitle: 'Gerencie seus produtos', screen: 'MyProducts', params: {} },
+    { icon: 'trending-up-outline', title: 'Minhas Vendas', subtitle: 'Acompanhe suas vendas', screen: 'Orders', params: { type: 'sales' } },
+    { icon: 'bag-outline', title: 'Minhas Compras', subtitle: 'Histórico de compras', screen: 'Orders', params: { type: 'purchases' } },
+    { icon: 'heart-outline', title: 'Favoritos', subtitle: 'Peças salvas', screen: 'Favorites', params: {} },
+    { icon: 'chatbubble-outline', title: 'Mensagens', subtitle: 'Conversas', screen: 'Messages', params: {} },
+    { icon: 'wallet-outline', title: 'Carteira', subtitle: 'Saldo e saques', screen: 'Wallet', params: {} },
+    { icon: 'location-outline', title: 'Endereços', subtitle: 'Endereços de entrega', screen: 'Addresses', params: {} },
+    { icon: 'settings-outline', title: 'Configurações', subtitle: 'Preferências', screen: 'Settings', params: {} },
+    { icon: 'help-circle-outline', title: 'Ajuda', subtitle: 'Central de ajuda', screen: 'Help', params: {} },
   ];
 
+  // Show loading only briefly, then fallback to guest view
+  if (isLoading === true) {
+    return (
+      <View style={[styles.container, styles.loadingContainer, { paddingTop: insets.top }]}>
+        <ActivityIndicator size="large" color="#5D8A7D" />
+        <Text style={styles.loadingText}>Carregando...</Text>
+      </View>
+    );
+  }
+
+  // Guest view (not authenticated or auth not loaded yet)
   if (!isAuthenticated) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -43,7 +98,7 @@ export function ProfileScreen({ navigation }: any) {
           <Pressable style={styles.loginBtn} onPress={() => navigation.navigate('Login')}>
             <Text style={styles.loginBtnText}>Entrar</Text>
           </Pressable>
-          <Pressable style={styles.registerBtn}>
+          <Pressable style={styles.registerBtn} onPress={() => navigation.navigate('Register')}>
             <Text style={styles.registerBtnText}>Criar conta</Text>
           </Pressable>
         </View>
@@ -54,63 +109,109 @@ export function ProfileScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <LinearGradient colors={['#5D8A7D', '#7BA396']} style={[styles.header, { paddingTop: insets.top + 16 }]}>
-          <Pressable style={styles.settingsBtn}>
-            <Ionicons name="settings-outline" size={24} color="#fff" />
-          </Pressable>
-
-          <View style={styles.avatarWrap}>
-            {user?.avatar_url ? (
-              <Image source={{ uri: user.avatar_url }} style={styles.avatar} contentFit="cover" />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Ionicons name="person" size={40} color="#5D8A7D" />
-              </View>
-            )}
-            <Pressable style={styles.editAvatarBtn}>
-              <Ionicons name="camera" size={14} color="#fff" />
-            </Pressable>
-          </View>
-
-          <Text style={styles.userName}>{user?.name || 'Usuário'}</Text>
-          {user?.city && (
-            <View style={styles.locationRow}>
-              <Ionicons name="location" size={14} color="rgba(255,255,255,0.8)" />
-              <Text style={styles.locationText}>{user.city}</Text>
-            </View>
+        {/* Header with Banner */}
+        <View style={styles.headerContainer}>
+          {/* Banner Background */}
+          {bannerUrl ? (
+            <Image source={{ uri: bannerUrl }} style={styles.bannerImage} contentFit="cover" />
+          ) : (
+            <LinearGradient colors={['#5D8A7D', '#7BA396']} style={styles.bannerImage} />
           )}
 
-          {/* Stats */}
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{user?.total_sales || 0}</Text>
-              <Text style={styles.statLabel}>Vendas</Text>
+          {/* Banner Edit Button */}
+          <Pressable style={[styles.bannerEditBtn, { top: insets.top + 12 }]} onPress={() => pickImage('banner')}>
+            <Ionicons name="camera" size={18} color="#fff" />
+          </Pressable>
+
+          {/* Profile Content */}
+          <View style={[styles.profileContent, { paddingTop: insets.top + 70 }]}>
+            <View style={styles.avatarWrap}>
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.avatar} contentFit="cover" />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Ionicons name="person" size={48} color="#5D8A7D" />
+                </View>
+              )}
+              <Pressable style={styles.editAvatarBtn} onPress={() => pickImage('avatar')}>
+                <Ionicons name="camera" size={14} color="#fff" />
+              </Pressable>
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{user?.total_followers || 0}</Text>
-              <Text style={styles.statLabel}>Seguidores</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <View style={styles.ratingRow}>
-                <Ionicons name="star" size={14} color="#FFD700" />
-                <Text style={styles.statValue}>{user?.rating?.toFixed(1) || '5.0'}</Text>
+
+            <Text style={styles.userName}>{user?.store_name || user?.name || 'Usuário'}</Text>
+
+            {/* Subscription Badge */}
+            <Pressable
+              style={[
+                styles.subscriptionBadge,
+                user?.subscription_type === 'premium' || user?.subscription_type === 'premium_plus'
+                  ? styles.subscriptionBadgePremium
+                  : styles.subscriptionBadgeFree
+              ]}
+              onPress={() => navigation.navigate('Premium')}
+            >
+              <Ionicons
+                name={user?.subscription_type === 'premium' || user?.subscription_type === 'premium_plus' ? 'star' : 'star-outline'}
+                size={12}
+                color={user?.subscription_type === 'premium' || user?.subscription_type === 'premium_plus' ? '#fff' : '#737373'}
+              />
+              <Text style={[
+                styles.subscriptionBadgeText,
+                user?.subscription_type === 'premium' || user?.subscription_type === 'premium_plus'
+                  ? styles.subscriptionBadgeTextPremium
+                  : styles.subscriptionBadgeTextFree
+              ]}>
+                {user?.subscription_type === 'premium' || user?.subscription_type === 'premium_plus' ? 'Premium' : 'Free'}
+              </Text>
+            </Pressable>
+
+            {user?.city && (
+              <View style={styles.locationRow}>
+                <Ionicons name="location" size={14} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.locationText}>{user.city}</Text>
               </View>
-              <Text style={styles.statLabel}>{user?.total_reviews || 0} avaliações</Text>
+            )}
+
+            {/* Stats */}
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{user?.total_sales || 0}</Text>
+                <Text style={styles.statLabel}>Vendas</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{user?.total_followers || 0}</Text>
+                <Text style={styles.statLabel}>Seguidores</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                {user?.total_reviews && user.total_reviews > 0 ? (
+                  <>
+                    <View style={styles.ratingRow}>
+                      <Ionicons name="star" size={14} color="#FFD700" />
+                      <Text style={styles.statValue}>{user?.rating?.toFixed(1) || '-'}</Text>
+                    </View>
+                    <Text style={styles.statLabel}>{user.total_reviews} avaliações</Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.statValue}>-</Text>
+                    <Text style={styles.statLabel}>Estrelas</Text>
+                  </>
+                )}
+              </View>
             </View>
           </View>
-        </LinearGradient>
+        </View>
 
         {/* Premium Banner */}
-        {user?.subscription_type === 'free' && (
-          <Pressable style={styles.premiumBanner}>
+        {(!user?.subscription_type || user?.subscription_type === 'free') && (
+          <Pressable style={styles.premiumBanner} onPress={() => navigation.navigate('Premium')}>
             <LinearGradient colors={['#FFD700', '#FFA500']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.premiumGrad}>
               <Ionicons name="star" size={24} color="#fff" />
               <View style={styles.premiumText}>
                 <Text style={styles.premiumTitle}>Seja Premium</Text>
-                <Text style={styles.premiumSub}>Anúncios ilimitados + destaque</Text>
+                <Text style={styles.premiumSub}>IA para fotos + taxa de apenas 10%</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#fff" />
             </LinearGradient>
@@ -121,15 +222,15 @@ export function ProfileScreen({ navigation }: any) {
         <View style={styles.balanceCard}>
           <View style={styles.balanceHeader}>
             <Text style={styles.balanceLabel}>Saldo disponível</Text>
-            <Pressable><Text style={styles.withdrawBtn}>Sacar</Text></Pressable>
+            <Pressable onPress={() => navigation.navigate('Wallet')}><Text style={styles.withdrawBtn}>Sacar</Text></Pressable>
           </View>
-          <Text style={styles.balanceValue}>R$ {(user?.balance || 0).toFixed(2)}</Text>
+          <Text style={styles.balanceValue}>R$ {formatPrice(user?.balance || 0)}</Text>
         </View>
 
         {/* Menu */}
         <View style={styles.menuCard}>
           {menuItems.map((item, idx) => (
-            <Pressable key={item.title} style={[styles.menuItem, idx === menuItems.length - 1 && styles.menuItemLast]}>
+            <Pressable key={item.title} style={[styles.menuItem, idx === menuItems.length - 1 && styles.menuItemLast]} onPress={() => item.screen && navigation.navigate(item.screen, item.params)}>
               <View style={styles.menuIcon}>
                 <Ionicons name={item.icon as any} size={22} color="#525252" />
               </View>
@@ -161,6 +262,8 @@ export function ProfileScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAFA' },
+  loadingContainer: { alignItems: 'center', justifyContent: 'center' },
+  loadingText: { fontSize: 14, color: '#737373', marginTop: 12 },
 
   // Guest
   guestContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
@@ -172,14 +275,22 @@ const styles = StyleSheet.create({
   registerBtn: { paddingVertical: 14 },
   registerBtnText: { fontSize: 15, fontWeight: '600', color: '#5D8A7D' },
 
-  // Header
-  header: { paddingHorizontal: 16, paddingBottom: 24, alignItems: 'center' },
-  settingsBtn: { position: 'absolute', top: 60, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  // Header with Banner
+  headerContainer: { position: 'relative', backgroundColor: '#5D8A7D', minHeight: 320 },
+  bannerImage: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 0 },
+  bannerEditBtn: { position: 'absolute', right: 16, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', zIndex: 10 },
+  profileContent: { paddingHorizontal: 16, paddingBottom: 24, alignItems: 'center', zIndex: 1 },
   avatarWrap: { position: 'relative', marginBottom: 12 },
-  avatar: { width: 88, height: 88, borderRadius: 44, borderWidth: 3, borderColor: '#fff' },
-  avatarPlaceholder: { width: 88, height: 88, borderRadius: 44, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#fff' },
+  avatar: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: '#fff' },
+  avatarPlaceholder: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#fff' },
   editAvatarBtn: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: '#5D8A7D', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff' },
   userName: { fontSize: 22, fontWeight: '700', color: '#fff', marginBottom: 4 },
+  subscriptionBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, marginBottom: 8 },
+  subscriptionBadgeFree: { backgroundColor: 'rgba(255,255,255,0.2)' },
+  subscriptionBadgePremium: { backgroundColor: '#FFD700' },
+  subscriptionBadgeText: { fontSize: 12, fontWeight: '600' },
+  subscriptionBadgeTextFree: { color: 'rgba(255,255,255,0.9)' },
+  subscriptionBadgeTextPremium: { color: '#fff' },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 16 },
   locationText: { fontSize: 14, color: 'rgba(255,255,255,0.8)' },
   statsRow: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 16, paddingVertical: 12, paddingHorizontal: 24 },

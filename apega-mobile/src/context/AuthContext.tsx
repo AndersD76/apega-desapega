@@ -12,14 +12,29 @@ interface AuthContextData {
   refreshUser: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextData>({} as AuthContextData);
+const defaultContextValue: AuthContextData = {
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
+  login: async () => {},
+  register: async () => {},
+  logout: async () => {},
+  updateUser: async () => {},
+  refreshUser: async () => {},
+};
+
+const AuthContext = createContext<AuthContextData>(defaultContextValue);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadStoredUser();
+    // Use setTimeout to ensure loading state updates properly
+    const timer = setTimeout(() => {
+      loadStoredUser();
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   async function loadStoredUser() {
@@ -27,17 +42,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const storedUser = await authService.getStoredUser();
       if (storedUser) {
         setUser(storedUser);
-        // Refresh user data from server
-        try {
-          const response = await authService.getMe();
-          if (response.success) {
-            setUser(response.user);
-          }
-        } catch (error) {
-          // Token might be expired
-          await authService.logout();
-          setUser(null);
-        }
+        // Refresh user data from server (don't block on this)
+        authService.getMe()
+          .then(response => {
+            if (response.success) {
+              setUser(response.user);
+            }
+          })
+          .catch(async () => {
+            // Token might be expired
+            await authService.logout();
+            setUser(null);
+          });
       }
     } catch (error) {
       console.error('Error loading stored user:', error);
@@ -47,20 +63,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function login(email: string, password: string) {
-    const response = await authService.login(email, password);
-    if (response.success) {
-      setUser(response.user);
-    } else {
-      throw new Error('Login failed');
+    try {
+      const response = await authService.login(email, password);
+      if (response.success) {
+        setUser(response.user);
+      } else {
+        throw new Error('Email ou senha incorretos');
+      }
+    } catch (error: any) {
+      // Handle axios error response
+      const message = error?.response?.data?.message || error?.message || 'Email ou senha incorretos';
+      throw new Error(message);
     }
   }
 
   async function register(data: { email: string; password: string; name: string; phone?: string }) {
-    const response = await authService.register(data);
-    if (response.success) {
-      setUser(response.user);
-    } else {
-      throw new Error('Registration failed');
+    try {
+      const response = await authService.register(data);
+      if (response.success) {
+        setUser(response.user);
+      } else {
+        throw new Error('Não foi possível criar a conta');
+      }
+    } catch (error: any) {
+      // Handle axios error response
+      const message = error?.response?.data?.message || error?.message || 'Não foi possível criar a conta';
+      throw new Error(message);
     }
   }
 

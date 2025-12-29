@@ -1,6 +1,7 @@
 const express = require('express');
 const { sql } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
+const { trackEvent, EventTypes, EventCategories } = require('../services/analytics');
 
 const router = express.Router();
 
@@ -55,8 +56,14 @@ router.post('/:product_id', authenticate, async (req, res, next) => {
       VALUES (${req.user.id}, ${product_id})
     `;
 
-    // Incrementar contador de favoritos do produto
-    await sql`UPDATE products SET favorites = favorites + 1 WHERE id = ${product_id}`;
+    // Track evento de favorito
+    trackEvent({
+      eventType: EventTypes.FAVORITE_ADD,
+      eventCategory: EventCategories.INTERACTION,
+      userId: req.user.id,
+      productId: product_id,
+      req,
+    });
 
     res.status(201).json({ success: true, message: 'Adicionado aos favoritos' });
   } catch (error) {
@@ -76,8 +83,14 @@ router.delete('/:product_id', authenticate, async (req, res, next) => {
     `;
 
     if (deleted.length > 0) {
-      // Decrementar contador
-      await sql`UPDATE products SET favorites = GREATEST(favorites - 1, 0) WHERE id = ${product_id}`;
+      // Track evento de remover favorito
+      trackEvent({
+        eventType: EventTypes.FAVORITE_REMOVE,
+        eventCategory: EventCategories.INTERACTION,
+        userId: req.user.id,
+        productId: product_id,
+        req,
+      });
     }
 
     res.json({ success: true, message: 'Removido dos favoritos' });

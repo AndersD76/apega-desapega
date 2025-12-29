@@ -87,6 +87,42 @@ router.get('/me', authenticate, async (req, res, next) => {
   }
 });
 
+// Atualizar perfil do usuario logado
+router.put('/me', authenticate, async (req, res, next) => {
+  try {
+    const { name, bio, phone, city, state, store_name, store_description, instagram } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: true, message: 'Nome e obrigatorio' });
+    }
+
+    const updatedUser = await sql`
+      UPDATE users
+      SET
+        name = ${name.trim()},
+        bio = ${bio || null},
+        phone = ${phone || null},
+        city = ${city || null},
+        state = ${state || null},
+        store_name = ${store_name || null},
+        store_description = ${store_description || null},
+        instagram = ${instagram || null},
+        updated_at = NOW()
+      WHERE id = ${req.user.id}
+      RETURNING id, name, email, avatar_url, banner_url, bio, phone, city, state, store_name, store_description, instagram,
+        subscription_type, rating, total_reviews, total_sales, total_followers, total_following, is_verified, created_at
+    `;
+
+    if (updatedUser.length === 0) {
+      return res.status(404).json({ error: true, message: 'Usuario nao encontrado' });
+    }
+
+    res.json({ success: true, message: 'Perfil atualizado com sucesso', user: updatedUser[0] });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Obter perfil público de um usuário
 router.get('/:id', optionalAuth, async (req, res, next) => {
   try {

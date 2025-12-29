@@ -4,65 +4,57 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { AuthProvider } from './src/context/AuthContext';
-import { HomeScreen } from './src/screens/HomeScreen';
-import { ProfileScreen } from './src/screens/ProfileScreen';
-import { LoginScreen } from './src/screens/LoginScreen';
+import { SocketProvider } from './src/context/SocketContext';
+import {
+  HomeScreen,
+  ProfileScreen,
+  LoginScreen,
+  SearchScreen,
+  FavoritesScreen,
+  SellScreen,
+  ProductDetailScreen,
+  RegisterScreen,
+  CartScreen,
+  CheckoutScreen,
+  MyProductsScreen,
+  OrdersScreen,
+  MessagesScreen,
+  ChatScreen,
+  SettingsScreen,
+  EditProfileScreen,
+  AddressesScreen,
+  SubscriptionScreen,
+  WalletScreen,
+  HelpScreen,
+  EditProductScreen,
+  SellerProfileScreen,
+  PoliciesScreen,
+  PremiumScreen,
+} from './src/screens';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Placeholder screens
-function SearchScreen() {
-  return (
-    <View style={styles.placeholder}>
-      <Ionicons name="search" size={48} color="#5D8A7D" />
-      <Text style={styles.placeholderTitle}>Buscar</Text>
-      <Text style={styles.placeholderText}>Em breve</Text>
-    </View>
-  );
-}
-
-function FavoritesScreen() {
-  return (
-    <View style={styles.placeholder}>
-      <Ionicons name="heart" size={48} color="#5D8A7D" />
-      <Text style={styles.placeholderTitle}>Favoritos</Text>
-      <Text style={styles.placeholderText}>Em breve</Text>
-    </View>
-  );
-}
-
-function SellScreen() {
-  return (
-    <View style={styles.placeholder}>
-      <Ionicons name="camera" size={48} color="#5D8A7D" />
-      <Text style={styles.placeholderTitle}>Vender</Text>
-      <Text style={styles.placeholderText}>Em breve</Text>
-    </View>
-  );
-}
-
-// Custom Tab Bar
+// Custom Tab Bar - Clean Design
 function CustomTabBar({ state, descriptors, navigation }: any) {
+  const icons: Record<string, { active: string; inactive: string }> = {
+    Home: { active: 'home', inactive: 'home-outline' },
+    Search: { active: 'search', inactive: 'search-outline' },
+    Sell: { active: 'add-circle', inactive: 'add-circle-outline' },
+    Favorites: { active: 'heart', inactive: 'heart-outline' },
+    Profile: { active: 'person', inactive: 'person-outline' },
+  };
+
   return (
     <View style={styles.tabBar}>
       {state.routes.map((route: any, index: number) => {
         const { options } = descriptors[route.key];
         const isFocused = state.index === index;
         const isSell = route.name === 'Sell';
-
-        const icons: Record<string, string> = {
-          Home: 'home',
-          Search: 'search',
-          Sell: 'add',
-          Favorites: 'heart',
-          Profile: 'person',
-        };
 
         const onPress = () => {
           const event = navigation.emit({
@@ -79,25 +71,23 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         if (isSell) {
           return (
             <Pressable key={route.key} onPress={onPress} style={styles.sellTab}>
-              <LinearGradient
-                colors={['#5D8A7D', '#7BA396']}
-                style={styles.sellButton}
-              >
+              <View style={styles.sellButton}>
                 <Ionicons name="add" size={28} color="#fff" />
-              </LinearGradient>
+              </View>
+              <Text style={styles.sellLabel}>Desapegar</Text>
             </Pressable>
           );
         }
 
+        const iconConfig = icons[route.name];
+
         return (
           <Pressable key={route.key} onPress={onPress} style={styles.tab}>
-            <View style={[styles.tabIconWrap, isFocused && styles.tabIconActive]}>
-              <Ionicons
-                name={(isFocused ? icons[route.name] : `${icons[route.name]}-outline`) as any}
-                size={22}
-                color={isFocused ? '#5D8A7D' : '#A3A3A3'}
-              />
-            </View>
+            <Ionicons
+              name={(isFocused ? iconConfig.active : iconConfig.inactive) as any}
+              size={24}
+              color={isFocused ? '#5D8A7D' : '#9CA3AF'}
+            />
             <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>
               {options.title || route.name}
             </Text>
@@ -115,8 +105,8 @@ function MainTabs() {
       screenOptions={{ headerShown: false }}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Início' }} />
-      <Tab.Screen name="Search" component={SearchScreen} options={{ title: 'Buscar' }} />
-      <Tab.Screen name="Sell" component={SellScreen} options={{ title: 'Vender' }} />
+      <Tab.Screen name="Search" component={SearchScreen} options={{ title: 'Apegar' }} />
+      <Tab.Screen name="Sell" component={SellScreen} options={{ title: 'Desapegar' }} />
       <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ title: 'Favoritos' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Perfil' }} />
     </Tab.Navigator>
@@ -127,64 +117,56 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <NavigationContainer>
-          <StatusBar style="dark" />
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Main" component={MainTabs} />
-            <Stack.Screen name="Login" component={LoginScreen} />
-          </Stack.Navigator>
-        </NavigationContainer>
+        <SocketProvider>
+          <NavigationContainer>
+            <StatusBar style="dark" />
+            <Stack.Navigator screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="Main" component={MainTabs} />
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Register" component={RegisterScreen} />
+              <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+              <Stack.Screen name="Cart" component={CartScreen} />
+              <Stack.Screen name="Checkout" component={CheckoutScreen} />
+              <Stack.Screen name="MyProducts" component={MyProductsScreen} />
+              <Stack.Screen name="EditProduct" component={EditProductScreen} />
+              <Stack.Screen name="Orders" component={OrdersScreen} />
+              <Stack.Screen name="Messages" component={MessagesScreen} />
+              <Stack.Screen name="Chat" component={ChatScreen} />
+              <Stack.Screen name="Settings" component={SettingsScreen} />
+              <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+              <Stack.Screen name="Addresses" component={AddressesScreen} />
+              <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+              <Stack.Screen name="Wallet" component={WalletScreen} />
+              <Stack.Screen name="Help" component={HelpScreen} />
+              <Stack.Screen name="SellerProfile" component={SellerProfileScreen} />
+              <Stack.Screen name="Policies" component={PoliciesScreen} />
+              <Stack.Screen name="Premium" component={PremiumScreen} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </SocketProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  placeholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FAFAFA',
-  },
-  placeholderTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    marginTop: 16,
-  },
-  placeholderText: {
-    fontSize: 14,
-    color: '#A3A3A3',
-    marginTop: 8,
-  },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#E8E8E8',
+    backgroundColor: '#FFFFFF',
     paddingTop: 8,
     paddingBottom: 24,
-    paddingHorizontal: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
   },
   tab: {
     flex: 1,
     alignItems: 'center',
-  },
-  tabIconWrap: {
-    width: 44,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-  },
-  tabIconActive: {
-    backgroundColor: '#E8F0ED',
+    gap: 4,
   },
   tabLabel: {
     fontSize: 10,
     fontWeight: '500',
-    color: '#A3A3A3',
-    marginTop: 4,
+    color: '#9CA3AF',
   },
   tabLabelActive: {
     color: '#5D8A7D',
@@ -193,15 +175,24 @@ const styles = StyleSheet.create({
   sellTab: {
     flex: 1,
     alignItems: 'center',
-    marginTop: -24,
+    marginTop: -20,
   },
   sellButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#5D8A7D',
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 4px 8px rgba(93,138,125,0.3)',
-    elevation: 8,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0 4px 8px rgba(93, 138, 125, 0.4)' }
+      : { shadowColor: '#5D8A7D', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }
+    ),
   } as any,
+  sellLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#5D8A7D',
+    marginTop: 4,
+  },
 });

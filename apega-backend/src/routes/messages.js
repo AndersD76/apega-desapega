@@ -162,6 +162,26 @@ router.post('/conversations/:id/messages', authenticate, async (req, res, next) 
       )
     `;
 
+    // Emit real-time message via WebSocket
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${otherUserId}`).emit('new_message', {
+        conversationId: id,
+        message: {
+          ...newMessage[0],
+          sender_name: req.user.name
+        }
+      });
+
+      // Emit notification
+      io.to(`user_${otherUserId}`).emit('notification', {
+        type: 'message',
+        title: 'Nova mensagem',
+        body: `${req.user.name}: ${content.trim().substring(0, 50)}${content.length > 50 ? '...' : ''}`,
+        data: { conversation_id: id }
+      });
+    }
+
     res.status(201).json({ success: true, message: newMessage[0] });
   } catch (error) {
     next(error);

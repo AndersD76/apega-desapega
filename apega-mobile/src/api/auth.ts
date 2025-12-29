@@ -11,6 +11,7 @@ export interface User {
   bio?: string;
   city?: string;
   state?: string;
+  instagram?: string;
   store_name?: string;
   store_description?: string;
   subscription_type: 'free' | 'premium' | 'premium_plus';

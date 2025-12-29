@@ -74,16 +74,19 @@ async function calculateShipping(data) {
       .map(option => ({
         id: option.id,
         name: option.name,
-        company: option.company?.name || option.name,
-        companyLogo: option.company?.picture || null,
+        company: {
+          id: option.company?.id || 0,
+          name: option.company?.name || option.name,
+          picture: option.company?.picture || null
+        },
         price: parseFloat(option.custom_price || option.price),
-        deliveryTime: option.custom_delivery_time || option.delivery_time,
-        deliveryRange: {
+        currency: 'BRL',
+        delivery_time: option.custom_delivery_time || option.delivery_time,
+        delivery_range: {
           min: option.delivery_range?.min || option.delivery_time,
           max: option.delivery_range?.max || option.delivery_time + 3
         },
-        packageFormat: option.packages?.[0]?.format || 'box',
-        dimensions: option.packages?.[0]?.dimensions || dimensions
+        packages: option.packages || []
       }))
       .sort((a, b) => a.price - b.price);
 
@@ -91,7 +94,7 @@ async function calculateShipping(data) {
       success: true,
       options: shippingOptions,
       cheapest: shippingOptions[0] || null,
-      fastest: [...shippingOptions].sort((a, b) => a.deliveryTime - b.deliveryTime)[0] || null
+      fastest: [...shippingOptions].sort((a, b) => a.delivery_time - b.delivery_time)[0] || null
     };
   } catch (error) {
     console.error('Erro ao calcular frete:', error.response?.data || error.message);

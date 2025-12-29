@@ -2,7 +2,8 @@
 const multer = require('multer');
 const { sql } = require('../config/database');
 const { authenticate, optionalAuth } = require('../middleware/auth');
-const { uploadToCloudinary } = require('../config/cloudinary');
+const { uploadToCloudinary, generateImageVariations } = require('../config/cloudinary');
+const { trackEvent, EventTypes, EventCategories } = require('../services/analytics');
 
 const router = express.Router();
 
@@ -59,114 +60,114 @@ router.get('/', optionalAuth, async (req, res, next) => {
       limit = 20
     } = req.query;
 
-    const offset = (page - 1) * limit;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitNum = parseInt(limit);
+    const userId = req.user?.id || null;
 
-    let query = sql`
-      SELECT
-        p.*,
-        u.name as seller_name,
-        u.avatar_url as seller_avatar,
-        u.rating as seller_rating,
-        u.city as seller_city,
-        c.name as category_name,
-        (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url,
-        ${req.user ? sql`EXISTS(SELECT 1 FROM favorites WHERE user_id = ${req.user.id} AND product_id = p.id)` : sql`false`} as is_favorited
-      FROM products p
-      JOIN users u ON p.seller_id = u.id
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.status = 'active'
-    `;
+    // Construir query base
+    let products;
 
-    // Filtros dinÃ¢micos
-    const conditions = [];
+    // Query simples sem filtros dinâmicos complexos
+    // Premium products appear first (destaque nos resultados)
+    if (userId) {
+      products = await sql`
+        SELECT
+          p.*,
+          u.name as seller_name,
+          u.avatar_url as seller_avatar,
+          u.rating as seller_rating,
+          u.city as seller_city,
+          u.subscription_type as seller_subscription_type,
+          CASE WHEN u.subscription_type IN ('premium', 'premium_plus') THEN true ELSE false END as seller_is_premium,
+          c.name as category_name,
+          (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url,
+          EXISTS(SELECT 1 FROM favorites WHERE user_id = ${userId} AND product_id = p.id) as is_favorited
+        FROM products p
+        JOIN users u ON p.seller_id = u.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.status = 'active'
+        ORDER BY
+          CASE WHEN u.subscription_type IN ('premium', 'premium_plus') THEN 0 ELSE 1 END,
+          p.created_at DESC
+        LIMIT ${limitNum}
+        OFFSET ${offset}
+      `;
+    } else {
+      products = await sql`
+        SELECT
+          p.*,
+          u.name as seller_name,
+          u.avatar_url as seller_avatar,
+          u.rating as seller_rating,
+          u.city as seller_city,
+          u.subscription_type as seller_subscription_type,
+          CASE WHEN u.subscription_type IN ('premium', 'premium_plus') THEN true ELSE false END as seller_is_premium,
+          c.name as category_name,
+          (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url,
+          false as is_favorited
+        FROM products p
+        JOIN users u ON p.seller_id = u.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.status = 'active'
+        ORDER BY
+          CASE WHEN u.subscription_type IN ('premium', 'premium_plus') THEN 0 ELSE 1 END,
+          p.created_at DESC
+        LIMIT ${limitNum}
+        OFFSET ${offset}
+      `;
+    }
+
+    // Aplicar filtros em JavaScript se necessário
+    let filteredProducts = products;
 
     if (category && category !== 'all') {
-      conditions.push(sql`c.slug = ${category}`);
+      filteredProducts = filteredProducts.filter(p => p.category_name?.toLowerCase() === category.toLowerCase() || p.category_id === category);
     }
 
     if (search) {
-      conditions.push(sql`(p.title ILIKE ${'%' + search + '%'} OR p.brand ILIKE ${'%' + search + '%'})`);
+      const searchLower = search.toLowerCase();
+      filteredProducts = filteredProducts.filter(p =>
+        p.title?.toLowerCase().includes(searchLower) ||
+        p.brand?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    if (condition && condition !== 'all') {
+      filteredProducts = filteredProducts.filter(p => p.condition === condition);
     }
 
     if (minPrice) {
-      conditions.push(sql`p.price >= ${parseFloat(minPrice)}`);
+      filteredProducts = filteredProducts.filter(p => p.price >= parseFloat(minPrice));
     }
 
     if (maxPrice) {
-      conditions.push(sql`p.price <= ${parseFloat(maxPrice)}`);
+      filteredProducts = filteredProducts.filter(p => p.price <= parseFloat(maxPrice));
     }
 
-    if (condition) {
-      conditions.push(sql`p.condition = ${condition}`);
+    // Ordenar
+    if (sort === 'price_asc') {
+      filteredProducts.sort((a, b) => a.price - b.price);
+    } else if (sort === 'price_desc') {
+      filteredProducts.sort((a, b) => b.price - a.price);
+    } else if (sort === 'popular') {
+      filteredProducts.sort((a, b) => (b.views || 0) - (a.views || 0));
     }
-
-    if (size) {
-      conditions.push(sql`p.size = ${size}`);
-    }
-
-    if (brand) {
-      conditions.push(sql`p.brand ILIKE ${'%' + brand + '%'}`);
-    }
-
-    if (city) {
-      conditions.push(sql`p.city ILIKE ${'%' + city + '%'}`);
-    }
-
-    const whereClause = conditions.length ? sql` AND ${sql.join(conditions, sql` AND `)}` : sql``;
-
-    // OrdenaÃ§Ã£o
-    let orderBy;
-    switch (sort) {
-      case 'price_asc':
-        orderBy = sql`p.price ASC`;
-        break;
-      case 'price_desc':
-        orderBy = sql`p.price DESC`;
-        break;
-      case 'popular':
-        orderBy = sql`p.views DESC`;
-        break;
-      default:
-        orderBy = sql`p.created_at DESC`;
-    }
-
-    const products = await sql`
-      SELECT
-        p.*,
-        u.name as seller_name,
-        u.avatar_url as seller_avatar,
-        u.rating as seller_rating,
-        u.city as seller_city,
-        c.name as category_name,
-        (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url,
-        ${req.user ? sql`EXISTS(SELECT 1 FROM favorites WHERE user_id = ${req.user.id} AND product_id = p.id)` : sql`false`} as is_favorited
-      FROM products p
-      JOIN users u ON p.seller_id = u.id
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.status = 'active'
-      ${whereClause}
-      ORDER BY ${orderBy}
-      LIMIT ${parseInt(limit)}
-      OFFSET ${offset}
-    `;
 
     // Contar total
     const countResult = await sql`
       SELECT COUNT(*) as total
       FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
       WHERE p.status = 'active'
-      ${whereClause}
     `;
 
     res.json({
       success: true,
-      products,
+      products: filteredProducts,
       pagination: {
         page: parseInt(page),
-        limit: parseInt(limit),
-        total: parseInt(countResult[0].total),
-        pages: Math.ceil(countResult[0].total / limit)
+        limit: limitNum,
+        total: parseInt(countResult[0]?.total || 0),
+        pages: Math.ceil((countResult[0]?.total || 0) / limitNum)
       }
     });
   } catch (error) {
@@ -184,7 +185,9 @@ router.get('/my', authenticate, async (req, res, next) => {
     if (status) {
       products = await sql`
         SELECT p.*,
-          (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url
+          (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url,
+          (SELECT COUNT(*) FROM favorites WHERE product_id = p.id)::int as favorites,
+          COALESCE(p.views, 0) as views
         FROM products p
         WHERE p.seller_id = ${req.user.id} AND p.status = ${status}
         ORDER BY p.created_at DESC
@@ -192,7 +195,9 @@ router.get('/my', authenticate, async (req, res, next) => {
     } else {
       products = await sql`
         SELECT p.*,
-          (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url
+          (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as image_url,
+          (SELECT COUNT(*) FROM favorites WHERE product_id = p.id)::int as favorites,
+          COALESCE(p.views, 0) as views
         FROM products p
         WHERE p.seller_id = ${req.user.id} AND p.status != 'deleted'
         ORDER BY p.created_at DESC
@@ -230,8 +235,17 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // Incrementar visualizaÃ§Ãµes
+    // Incrementar visualizacoes
     await sql`UPDATE products SET views = views + 1 WHERE id = ${id}`;
+
+    // Track visualizacao
+    trackEvent({
+      eventType: EventTypes.PRODUCT_VIEW,
+      eventCategory: EventCategories.PRODUCT,
+      userId: req.user?.id || null,
+      productId: id,
+      req,
+    });
 
     const products = await sql`
       SELECT
@@ -317,12 +331,12 @@ router.post('/', authenticate, async (req, res, next) => {
     // Buscar cidade do usuÃ¡rio e tipo de assinatura
     const userData = await sql`SELECT city, state, subscription_type FROM users WHERE id = ${req.user.id}`;
 
-    // Calcular preÃ§o com comissÃ£o
-    // PROMOÃ‡ÃƒO: 0% para primeiras 50 vendedoras (depois serÃ¡ 20% free, 10% premium)
+    // Calcular preço com comissão
+    // Taxa: 10% para Premium, 20% para Free
     const sellerPrice = parseFloat(price);
     const isPremiumUser = userData[0]?.subscription_type === 'premium' || userData[0]?.subscription_type === 'premium_plus';
-    const commissionRate = 0.00; // 0% durante promoÃ§Ã£o (depois: isPremiumUser ? 0.10 : 0.20)
-    const displayPrice = Math.ceil(sellerPrice * (1 + commissionRate) * 100) / 100; // PreÃ§o = valor do vendedor durante promoÃ§Ã£o
+    const commissionRate = isPremiumUser ? 0.10 : 0.20; // 10% premium, 20% free
+    const displayPrice = Math.ceil(sellerPrice * (1 + commissionRate) * 100) / 100; // Preço final = valor do vendedor + taxa
 
     const resolvedCategoryId = await resolveCategoryId(category_id, category);
     if (category && !resolvedCategoryId) {
@@ -355,6 +369,16 @@ router.post('/', authenticate, async (req, res, next) => {
       RETURNING *
     `;
 
+    // Track criacao de produto
+    trackEvent({
+      eventType: EventTypes.PRODUCT_CREATE,
+      eventCategory: EventCategories.PRODUCT,
+      userId: req.user.id,
+      productId: newProduct[0].id,
+      metadata: { title, price: displayPrice, category },
+      req,
+    });
+
     res.status(201).json({
       success: true,
       message: 'Produto criado com sucesso',
@@ -385,22 +409,31 @@ router.put('/:id', authenticate, async (req, res, next) => {
       status
     } = req.body;
 
-    // Verificar se o produto pertence ao usuÃ¡rio
+    // Verificar se o produto pertence ao usuario
     const existing = await sql`
       SELECT seller_id FROM products WHERE id = ${id}
     `;
 
     if (existing.length === 0) {
-      return res.status(404).json({ error: true, message: 'Produto nÃ£o encontrado' });
+      return res.status(404).json({ error: true, message: 'Produto nao encontrado' });
     }
 
     if (existing[0].seller_id !== req.user.id) {
-      return res.status(403).json({ error: true, message: 'Sem permissÃ£o para editar este produto' });
+      return res.status(403).json({ error: true, message: 'Sem permissao para editar este produto' });
     }
 
     const resolvedCategoryId = await resolveCategoryId(category_id, category);
     if (category && !resolvedCategoryId) {
       return res.status(400).json({ error: true, message: 'Categoria invalida' });
+    }
+
+    // Se o preco foi informado, aplicar comissao
+    let displayPrice = null;
+    if (price) {
+      const userData = await sql`SELECT subscription_type FROM users WHERE id = ${req.user.id}`;
+      const isPremiumUser = userData[0]?.subscription_type === 'premium' || userData[0]?.subscription_type === 'premium_plus';
+      const commissionRate = isPremiumUser ? 0.10 : 0.20; // 10% premium, 20% free
+      displayPrice = Math.ceil(parseFloat(price) * (1 + commissionRate) * 100) / 100;
     }
 
     const updated = await sql`
@@ -412,10 +445,11 @@ router.put('/:id', authenticate, async (req, res, next) => {
         size = COALESCE(${size}, size),
         color = COALESCE(${color}, color),
         condition = COALESCE(${condition}, condition),
-        price = COALESCE(${price ? parseFloat(price) : null}, price),
+        price = COALESCE(${displayPrice}, price),
         original_price = COALESCE(${original_price ? parseFloat(original_price) : null}, original_price),
         category_id = COALESCE(${resolvedCategoryId}, category_id),
-        status = COALESCE(${status}, status)
+        status = COALESCE(${status}, status),
+        updated_at = NOW()
       WHERE id = ${id}
       RETURNING *
     `;
@@ -455,25 +489,26 @@ router.delete('/:id', authenticate, async (req, res, next) => {
 router.post('/:id/images', authenticate, upload.array('images', 10), async (req, res, next) => {
   try {
     const { id } = req.params;
+    const autoGenerate = req.query.autoGenerate !== 'false'; // Por padrão, gera variações
 
-    // Verificar se o produto pertence ao usuÃ¡rio
+    // Verificar se o produto pertence ao usuario
     const existing = await sql`
       SELECT seller_id FROM products WHERE id = ${id}
     `;
 
     if (existing.length === 0) {
-      return res.status(404).json({ error: true, message: 'Produto nÃ£o encontrado' });
+      return res.status(404).json({ error: true, message: 'Produto nao encontrado' });
     }
 
     if (existing[0].seller_id !== req.user.id) {
-      return res.status(403).json({ error: true, message: 'Sem permissÃ£o' });
+      return res.status(403).json({ error: true, message: 'Sem permissao' });
     }
 
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: true, message: 'Nenhuma imagem enviada' });
     }
 
-    // Verificar quantas imagens jÃ¡ existem
+    // Verificar quantas imagens ja existem
     const existingImages = await sql`
       SELECT COUNT(*) as count FROM product_images WHERE product_id = ${id}
     `;
@@ -481,6 +516,8 @@ router.post('/:id/images', authenticate, upload.array('images', 10), async (req,
 
     // Upload para Cloudinary e inserir no banco
     const uploadedImages = [];
+    let sortOrder = existingCount;
+
     for (let i = 0; i < req.files.length; i++) {
       const file = req.files[i];
 
@@ -491,16 +528,41 @@ router.post('/:id/images', authenticate, upload.array('images', 10), async (req,
 
       const result = await sql`
         INSERT INTO product_images (product_id, image_url, sort_order, is_primary)
-        VALUES (${id}, ${imageUrl}, ${existingCount + i}, ${isPrimary})
+        VALUES (${id}, ${imageUrl}, ${sortOrder}, ${isPrimary})
         RETURNING *
       `;
       uploadedImages.push(result[0]);
+      sortOrder++;
+
+      // Para a primeira imagem do produto, gerar 2 variacoes automaticamente
+      if (existingCount === 0 && i === 0 && autoGenerate) {
+        try {
+          const variations = generateImageVariations(cloudinaryResult.public_id);
+
+          // Salvar apenas 2 variacoes (fundo removido e zoom central)
+          for (let v = 0; v < 2; v++) {
+            const varResult = await sql`
+              INSERT INTO product_images (product_id, image_url, sort_order, is_primary)
+              VALUES (${id}, ${variations[v]}, ${sortOrder}, false)
+              RETURNING *
+            `;
+            uploadedImages.push(varResult[0]);
+            sortOrder++;
+          }
+
+          console.log(`[AI] Auto-geradas 2 variacoes para produto ${id}`);
+        } catch (varError) {
+          console.error('Erro ao gerar variacoes:', varError);
+          // Continua mesmo se falhar as variacoes
+        }
+      }
     }
 
     res.json({
       success: true,
       message: `${uploadedImages.length} imagem(s) enviada(s) com sucesso`,
-      images: uploadedImages
+      images: uploadedImages,
+      autoGenerated: autoGenerate && existingCount === 0 ? 2 : 0
     });
   } catch (error) {
     next(error);

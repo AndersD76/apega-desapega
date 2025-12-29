@@ -171,8 +171,7 @@ const styles = StyleSheet.create({
   // Variants
   button_primary: {
     backgroundColor: colors.brand,
-    ...shadows.md,
-    shadowColor: colors.brand,
+    ...shadows.brand(0.2),
   },
   button_secondary: {
     backgroundColor: colors.brandMuted,

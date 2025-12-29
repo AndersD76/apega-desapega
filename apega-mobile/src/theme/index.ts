@@ -1,6 +1,8 @@
 // Apega Desapega - Design System
 // Based on MIV brand identity
 
+import { Platform } from 'react-native';
+
 export const colors = {
   // Brand colors (MIV)
   brand: '#5D8A7D',
@@ -116,35 +118,27 @@ export const typography = {
   },
 };
 
+const createShadow = (offsetY: number, blur: number, opacity: number, color = '#000') => {
+  if (Platform.OS === 'web') {
+    return {
+      boxShadow: `0 ${offsetY}px ${blur}px rgba(0,0,0,${opacity})`,
+    };
+  }
+  return {
+    shadowColor: color,
+    shadowOffset: { width: 0, height: offsetY },
+    shadowOpacity: opacity,
+    shadowRadius: blur / 2,
+    elevation: Math.ceil(offsetY * 1.5),
+  };
+};
+
 export const shadows = {
-  sm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  md: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  lg: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  xl: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
-  },
+  sm: createShadow(1, 2, 0.05) as any,
+  md: createShadow(2, 4, 0.1) as any,
+  lg: createShadow(4, 8, 0.15) as any,
+  xl: createShadow(8, 16, 0.2) as any,
+  brand: (opacity = 0.4) => createShadow(4, 8, opacity, colors.brand) as any,
 };
 
 export default {

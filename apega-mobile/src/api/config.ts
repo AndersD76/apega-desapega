@@ -1,8 +1,20 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
-// Railway backend URL
-const API_URL = 'https://apega-backend-production.up.railway.app/api';
+// URLs do Backend
+const PRODUCTION_URL = 'https://apega-backend-production.up.railway.app/api';
+const DEVELOPMENT_URL = Platform.select({
+  web: 'http://localhost:3001/api',
+  android: 'http://10.0.2.2:3001/api', // Android Emulator
+  ios: 'http://localhost:3001/api',
+  default: 'http://localhost:3001/api',
+});
+
+// Altere para true quando fizer deploy para produção
+const USE_PRODUCTION = false;
+
+export const API_URL = USE_PRODUCTION ? PRODUCTION_URL : DEVELOPMENT_URL;
 
 export const api = axios.create({
   baseURL: API_URL,

@@ -8,7 +8,7 @@ export const favoritesService = {
   },
 
   async addFavorite(productId: string): Promise<{ success: boolean; message: string }> {
-    const response = await api.post('/favorites', { product_id: productId });
+    const response = await api.post(`/favorites/${productId}`);
     return response.data;
   },
 

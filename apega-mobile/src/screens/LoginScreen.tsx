@@ -37,9 +37,17 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
   const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  const showAlert = (title: string, message: string) => {
+    if (Platform.OS === 'web') {
+      window.alert(`${title}\n\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Erro', 'Preencha email e senha');
+      showAlert('Erro', 'Preencha email e senha');
       return;
     }
 
@@ -48,7 +56,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       await login(email, password);
       navigation.replace('Main');
     } catch (error: any) {
-      Alert.alert('Erro', error.response?.data?.message || 'Erro ao fazer login');
+      showAlert('Erro', error.message || 'Erro ao fazer login');
     } finally {
       setLoading(false);
     }
@@ -56,7 +64,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
 
   const handleRegister = async () => {
     if (!name || !email || !password) {
-      Alert.alert('Erro', 'Preencha todos os campos obrigatórios');
+      showAlert('Erro', 'Preencha todos os campos obrigatórios');
       return;
     }
 
@@ -65,7 +73,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
       await register({ name, email, password, phone: phone || undefined });
       navigation.replace('Main');
     } catch (error: any) {
-      Alert.alert('Erro', error.response?.data?.message || 'Erro ao criar conta');
+      showAlert('Erro', error.message || 'Erro ao criar conta');
     } finally {
       setLoading(false);
     }
