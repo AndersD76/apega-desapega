@@ -13,9 +13,22 @@ const authenticate = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+    // Se for admin fixo, não busca no banco
+    if (decoded.userId === 'admin' && decoded.isAdmin) {
+      req.user = {
+        id: 'admin',
+        name: 'Administrador',
+        email: process.env.ADMIN_EMAIL || 'admin@apegadesapega.com',
+        subscription_type: 'premium',
+        is_active: true,
+        is_admin: true
+      };
+      return next();
+    }
+
     // Buscar usuário no banco
     const users = await sql`
-      SELECT id, email, name, subscription_type, is_active
+      SELECT id, email, name, subscription_type, is_active, is_admin
       FROM users
       WHERE id = ${decoded.userId}
     `;

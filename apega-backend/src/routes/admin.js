@@ -21,6 +21,11 @@ const router = express.Router();
  */
 async function checkAdmin(req, res, next) {
   try {
+    // Se for admin fixo (já verificado no middleware authenticate)
+    if (req.user.id === 'admin' && req.user.is_admin) {
+      return next();
+    }
+
     const user = await sql`
       SELECT is_admin FROM users WHERE id = ${req.user.id}
     `;

@@ -29,6 +29,7 @@ const requireAuth = async (req, res, next) => {
     const jwt = require('jsonwebtoken');
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'apega-secret-key');
     req.userId = decoded.userId;
+    req.isAdmin = decoded.isAdmin || false;
     next();
   } catch (err) {
     return res.status(401).json({ error: true, message: 'Token inválido' });
@@ -229,13 +230,14 @@ router.post('/claim', requireAuth, async (req, res) => {
 // GET /api/promo/admin - Estatísticas para o painel admin
 router.get('/admin', requireAuth, async (req, res) => {
   try {
-    // Verificar se é admin
-    const user = await sql`
-      SELECT is_admin FROM users WHERE id = ${req.userId}
-    `;
-
-    if (!user.length || !user[0].is_admin) {
-      return res.status(403).json({ error: true, message: 'Acesso negado' });
+    // Verificar se é admin (aceita admin fixo ou usuário admin do banco)
+    if (!req.isAdmin && req.userId !== 'admin') {
+      const user = await sql`
+        SELECT is_admin FROM users WHERE id = ${req.userId}
+      `;
+      if (!user.length || !user[0].is_admin) {
+        return res.status(403).json({ error: true, message: 'Acesso negado' });
+      }
     }
 
     // Buscar todas as promoções
