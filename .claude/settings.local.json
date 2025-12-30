@@ -100,7 +100,8 @@
       "Bash(git revert:*)",
       "Bash(git ls-remote:*)",
       "Bash(git checkout:*)",
-      "Bash(ls -la \"e:\\\\APPS EM DESENVOLVIMENTO\\\\App Brechó\\\\apega-admin\\\\dist\\\\assets\"\" 2>/dev/null || dir \"e:APPS EM DESENVOLVIMENTOApp Brechóapega-admindistassets \")"
+      "Bash(ls -la \"e:\\\\APPS EM DESENVOLVIMENTO\\\\App Brechó\\\\apega-admin\\\\dist\\\\assets\"\" 2>/dev/null || dir \"e:APPS EM DESENVOLVIMENTOApp Brechóapega-admindistassets \")",
+      "Bash(ls \"e:\\\\APPS EM DESENVOLVIMENTO\\\\App Brechó\\\\apega-mobile\\\\src\\\\screens\"\" 2>/dev/null || dir \"e:APPS EM DESENVOLVIMENTOApp Brechóapega-mobilesrcscreens \")"
     ],
     "deny": [],
     "ask": []
