@@ -83,6 +83,15 @@ export interface User {
   last_login_at?: string
   products_count?: number
   sales_count?: number
+  // Payment info
+  pix_key_type?: 'cpf' | 'cnpj' | 'email' | 'phone' | 'random'
+  pix_key?: string
+  bank_code?: string
+  bank_name?: string
+  bank_agency?: string
+  bank_account?: string
+  bank_account_type?: 'corrente' | 'poupanca'
+  cpf?: string
 }
 
 export interface Product {

@@ -666,9 +666,15 @@ router.get('/admin/users', async (req, res, next) => {
     const offset = (page - 1) * limit;
 
     // Não mostrar usuários deletados (soft delete)
+    // Incluindo campos de pagamento (PIX e banco)
     const users = await sql`
       SELECT
-        u.*,
+        u.id, u.name, u.email, u.phone, u.avatar_url, u.bio,
+        u.city, u.state, u.is_active, u.subscription_type,
+        u.subscription_expires_at, u.seller_rating, u.total_sales,
+        u.balance, u.created_at, u.last_login_at,
+        u.pix_key_type, u.pix_key, u.bank_code, u.bank_name,
+        u.bank_agency, u.bank_account, u.bank_account_type, u.cpf,
         (SELECT COUNT(*) FROM products WHERE seller_id = u.id AND status = 'active') as products_count,
         (SELECT COUNT(*) FROM orders WHERE seller_id = u.id AND status = 'delivered') as sales_count
       FROM users u

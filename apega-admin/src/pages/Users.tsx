@@ -31,6 +31,12 @@ import {
 import { formatCurrency, formatDate, getInitials } from '@/lib/utils'
 import { getUsers, getUsersBySubscription, toggleUserStatus, deleteUser, User } from '@/lib/api'
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   Search,
   Download,
   MoreHorizontal,
@@ -49,6 +55,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Trash2,
+  Wallet,
+  Building,
+  CreditCard,
 } from 'lucide-react'
 
 interface StatCardProps {
@@ -95,6 +104,8 @@ export default function Users() {
     sellers: 0,
     newToday: 0,
   })
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   const fetchUsers = async (page = 1) => {
     setLoading(true)
@@ -178,6 +189,30 @@ export default function Users() {
 
   const handlePageChange = (newPage: number) => {
     fetchUsers(newPage)
+  }
+
+  const handleViewDetails = (user: User) => {
+    setSelectedUser(user)
+    setDetailsOpen(true)
+  }
+
+  const getPixKeyTypeLabel = (type?: string) => {
+    const labels: Record<string, string> = {
+      cpf: 'CPF',
+      cnpj: 'CNPJ',
+      email: 'E-mail',
+      phone: 'Telefone',
+      random: 'Chave Aleatoria',
+    }
+    return labels[type || ''] || type || '-'
+  }
+
+  const getAccountTypeLabel = (type?: string) => {
+    return type === 'poupanca' ? 'Poupanca' : type === 'corrente' ? 'Corrente' : '-'
+  }
+
+  const hasPaymentInfo = (user: User) => {
+    return !!(user.pix_key || user.bank_account)
   }
 
   const filteredUsers = users.filter(user => {
@@ -302,6 +337,7 @@ export default function Users() {
                     <TableHead>Localizacao</TableHead>
                     <TableHead>Plano</TableHead>
                     <TableHead>Saldo</TableHead>
+                    <TableHead>Pagamento</TableHead>
                     <TableHead>Avaliacao</TableHead>
                     <TableHead>Vendas</TableHead>
                     <TableHead>Status</TableHead>
@@ -345,6 +381,18 @@ export default function Users() {
                         <span className="font-medium">{formatCurrency(user.balance || 0)}</span>
                       </TableCell>
                       <TableCell>
+                        {hasPaymentInfo(user) ? (
+                          <Badge variant="success" className="gap-1">
+                            <Wallet className="h-3 w-3" />
+                            {user.pix_key ? 'PIX' : 'Banco'}
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="gap-1">
+                            Pendente
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-1">
                           <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                           <span>{(user.seller_rating || 0).toFixed(1)}</span>
@@ -375,7 +423,7 @@ export default function Users() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Acoes</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewDetails(user)}>
                               <Eye className="mr-2 h-4 w-4" />
                               Ver Perfil
                             </DropdownMenuItem>
@@ -450,6 +498,125 @@ export default function Users() {
           )}
         </CardContent>
       </Card>
+
+      {/* User Details Modal */}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Usuario</DialogTitle>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-6">
+              {/* User Info */}
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={selectedUser.avatar_url || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-xl">
+                    {getInitials(selectedUser.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="text-lg font-semibold">{selectedUser.name}</h3>
+                  <p className="text-sm text-muted-foreground">{selectedUser.email}</p>
+                  {selectedUser.phone && (
+                    <p className="text-sm text-muted-foreground">{selectedUser.phone}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Basic Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Localizacao</p>
+                  <p>{selectedUser.city || '-'}{selectedUser.state ? `, ${selectedUser.state}` : ''}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">CPF</p>
+                  <p>{selectedUser.cpf || 'Nao informado'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Saldo</p>
+                  <p className="font-semibold text-green-600">{formatCurrency(selectedUser.balance || 0)}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Vendas</p>
+                  <p>{selectedUser.sales_count || 0}</p>
+                </div>
+              </div>
+
+              {/* Payment Info */}
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                  <Wallet className="h-4 w-4" />
+                  Dados para Pagamento
+                </h4>
+
+                {/* PIX Info */}
+                <div className="bg-muted/50 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <CreditCard className="h-4 w-4 text-primary" />
+                    <span className="font-medium">PIX</span>
+                    {selectedUser.pix_key ? (
+                      <Badge variant="success" className="ml-auto">Configurado</Badge>
+                    ) : (
+                      <Badge variant="secondary" className="ml-auto">Nao configurado</Badge>
+                    )}
+                  </div>
+                  {selectedUser.pix_key ? (
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Tipo de Chave</p>
+                        <p className="font-medium">{getPixKeyTypeLabel(selectedUser.pix_key_type)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Chave PIX</p>
+                        <p className="font-medium font-mono">{selectedUser.pix_key}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Usuario nao cadastrou chave PIX</p>
+                  )}
+                </div>
+
+                {/* Bank Info */}
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Building className="h-4 w-4 text-primary" />
+                    <span className="font-medium">Conta Bancaria</span>
+                    {selectedUser.bank_account ? (
+                      <Badge variant="success" className="ml-auto">Configurado</Badge>
+                    ) : (
+                      <Badge variant="secondary" className="ml-auto">Nao configurado</Badge>
+                    )}
+                  </div>
+                  {selectedUser.bank_account ? (
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Banco</p>
+                        <p className="font-medium">{selectedUser.bank_name || selectedUser.bank_code || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Agencia</p>
+                        <p className="font-medium">{selectedUser.bank_agency || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Conta</p>
+                        <p className="font-medium">{selectedUser.bank_account}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Tipo</p>
+                        <p className="font-medium">{getAccountTypeLabel(selectedUser.bank_account_type)}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Usuario nao cadastrou conta bancaria</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
