@@ -665,18 +665,20 @@ router.get('/admin/users', async (req, res, next) => {
     const { page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
 
+    // Não mostrar usuários deletados (soft delete)
     const users = await sql`
       SELECT
         u.*,
         (SELECT COUNT(*) FROM products WHERE seller_id = u.id AND status = 'active') as products_count,
         (SELECT COUNT(*) FROM orders WHERE seller_id = u.id AND status = 'delivered') as sales_count
       FROM users u
+      WHERE u.deleted_at IS NULL
       ORDER BY u.created_at DESC
       LIMIT ${parseInt(limit)}
       OFFSET ${offset}
     `;
 
-    const total = await sql`SELECT COUNT(*) as count FROM users`;
+    const total = await sql`SELECT COUNT(*) as count FROM users WHERE deleted_at IS NULL`;
 
     res.json({
       success: true,
