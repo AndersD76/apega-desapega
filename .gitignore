@@ -30,6 +30,7 @@ Thumbs.db
 
 # Build outputs
 dist/
+!apega-admin/dist/
 build/
 .next/
 out/
