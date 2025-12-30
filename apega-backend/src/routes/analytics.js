@@ -662,29 +662,138 @@ router.post('/admin/products/:id/reject', async (req, res, next) => {
 // Listar todos usuários (admin)
 router.get('/admin/users', async (req, res, next) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
+    const { page = 1, limit = 20, search, subscription, status } = req.query;
     const offset = (page - 1) * limit;
 
-    // Não mostrar usuários deletados (soft delete)
-    // Incluindo campos de pagamento (PIX e banco)
-    const users = await sql`
-      SELECT
-        u.id, u.name, u.email, u.phone, u.avatar_url, u.bio,
-        u.city, u.state, u.is_active, u.subscription_type,
-        u.subscription_expires_at, u.seller_rating, u.total_sales,
-        u.balance, u.created_at, u.last_login_at,
-        u.pix_key_type, u.pix_key, u.bank_code, u.bank_name,
-        u.bank_agency, u.bank_account, u.bank_account_type, u.cpf,
-        (SELECT COUNT(*) FROM products WHERE seller_id = u.id AND status = 'active') as products_count,
-        (SELECT COUNT(*) FROM orders WHERE seller_id = u.id AND status = 'delivered') as sales_count
-      FROM users u
-      WHERE u.deleted_at IS NULL
-      ORDER BY u.created_at DESC
-      LIMIT ${parseInt(limit)}
-      OFFSET ${offset}
-    `;
+    // Build dynamic query based on filters
+    let users;
+    let total;
 
-    const total = await sql`SELECT COUNT(*) as count FROM users WHERE deleted_at IS NULL`;
+    // Base conditions
+    const baseConditions = `u.deleted_at IS NULL`;
+
+    // Filter by subscription
+    if (subscription === 'premium') {
+      if (search) {
+        users = await sql`
+          SELECT
+            u.id, u.name, u.email, u.phone, u.avatar_url, u.bio,
+            u.city, u.state, u.is_active, u.subscription_type,
+            u.subscription_expires_at, u.seller_rating, u.total_sales,
+            u.balance, u.created_at, u.last_login_at,
+            u.pix_key_type, u.pix_key, u.bank_code, u.bank_name,
+            u.bank_agency, u.bank_account, u.bank_account_type, u.cpf,
+            (SELECT COUNT(*) FROM products WHERE seller_id = u.id AND status = 'active') as products_count,
+            (SELECT COUNT(*) FROM orders WHERE seller_id = u.id AND status = 'delivered') as sales_count
+          FROM users u
+          WHERE u.deleted_at IS NULL
+            AND u.subscription_type IN ('premium', 'premium_plus')
+            AND (u.name ILIKE ${'%' + search + '%'} OR u.email ILIKE ${'%' + search + '%'})
+          ORDER BY u.created_at DESC
+          LIMIT ${parseInt(limit)}
+          OFFSET ${offset}
+        `;
+        total = await sql`SELECT COUNT(*) as count FROM users u WHERE u.deleted_at IS NULL AND u.subscription_type IN ('premium', 'premium_plus') AND (u.name ILIKE ${'%' + search + '%'} OR u.email ILIKE ${'%' + search + '%'})`;
+      } else {
+        users = await sql`
+          SELECT
+            u.id, u.name, u.email, u.phone, u.avatar_url, u.bio,
+            u.city, u.state, u.is_active, u.subscription_type,
+            u.subscription_expires_at, u.seller_rating, u.total_sales,
+            u.balance, u.created_at, u.last_login_at,
+            u.pix_key_type, u.pix_key, u.bank_code, u.bank_name,
+            u.bank_agency, u.bank_account, u.bank_account_type, u.cpf,
+            (SELECT COUNT(*) FROM products WHERE seller_id = u.id AND status = 'active') as products_count,
+            (SELECT COUNT(*) FROM orders WHERE seller_id = u.id AND status = 'delivered') as sales_count
+          FROM users u
+          WHERE u.deleted_at IS NULL
+            AND u.subscription_type IN ('premium', 'premium_plus')
+          ORDER BY u.created_at DESC
+          LIMIT ${parseInt(limit)}
+          OFFSET ${offset}
+        `;
+        total = await sql`SELECT COUNT(*) as count FROM users u WHERE u.deleted_at IS NULL AND u.subscription_type IN ('premium', 'premium_plus')`;
+      }
+    } else if (status === 'inactive') {
+      if (search) {
+        users = await sql`
+          SELECT
+            u.id, u.name, u.email, u.phone, u.avatar_url, u.bio,
+            u.city, u.state, u.is_active, u.subscription_type,
+            u.subscription_expires_at, u.seller_rating, u.total_sales,
+            u.balance, u.created_at, u.last_login_at,
+            u.pix_key_type, u.pix_key, u.bank_code, u.bank_name,
+            u.bank_agency, u.bank_account, u.bank_account_type, u.cpf,
+            (SELECT COUNT(*) FROM products WHERE seller_id = u.id AND status = 'active') as products_count,
+            (SELECT COUNT(*) FROM orders WHERE seller_id = u.id AND status = 'delivered') as sales_count
+          FROM users u
+          WHERE u.deleted_at IS NULL
+            AND u.is_active = false
+            AND (u.name ILIKE ${'%' + search + '%'} OR u.email ILIKE ${'%' + search + '%'})
+          ORDER BY u.created_at DESC
+          LIMIT ${parseInt(limit)}
+          OFFSET ${offset}
+        `;
+        total = await sql`SELECT COUNT(*) as count FROM users u WHERE u.deleted_at IS NULL AND u.is_active = false AND (u.name ILIKE ${'%' + search + '%'} OR u.email ILIKE ${'%' + search + '%'})`;
+      } else {
+        users = await sql`
+          SELECT
+            u.id, u.name, u.email, u.phone, u.avatar_url, u.bio,
+            u.city, u.state, u.is_active, u.subscription_type,
+            u.subscription_expires_at, u.seller_rating, u.total_sales,
+            u.balance, u.created_at, u.last_login_at,
+            u.pix_key_type, u.pix_key, u.bank_code, u.bank_name,
+            u.bank_agency, u.bank_account, u.bank_account_type, u.cpf,
+            (SELECT COUNT(*) FROM products WHERE seller_id = u.id AND status = 'active') as products_count,
+            (SELECT COUNT(*) FROM orders WHERE seller_id = u.id AND status = 'delivered') as sales_count
+          FROM users u
+          WHERE u.deleted_at IS NULL
+            AND u.is_active = false
+          ORDER BY u.created_at DESC
+          LIMIT ${parseInt(limit)}
+          OFFSET ${offset}
+        `;
+        total = await sql`SELECT COUNT(*) as count FROM users u WHERE u.deleted_at IS NULL AND u.is_active = false`;
+      }
+    } else if (search) {
+      users = await sql`
+        SELECT
+          u.id, u.name, u.email, u.phone, u.avatar_url, u.bio,
+          u.city, u.state, u.is_active, u.subscription_type,
+          u.subscription_expires_at, u.seller_rating, u.total_sales,
+          u.balance, u.created_at, u.last_login_at,
+          u.pix_key_type, u.pix_key, u.bank_code, u.bank_name,
+          u.bank_agency, u.bank_account, u.bank_account_type, u.cpf,
+          (SELECT COUNT(*) FROM products WHERE seller_id = u.id AND status = 'active') as products_count,
+          (SELECT COUNT(*) FROM orders WHERE seller_id = u.id AND status = 'delivered') as sales_count
+        FROM users u
+        WHERE u.deleted_at IS NULL
+          AND (u.name ILIKE ${'%' + search + '%'} OR u.email ILIKE ${'%' + search + '%'})
+        ORDER BY u.created_at DESC
+        LIMIT ${parseInt(limit)}
+        OFFSET ${offset}
+      `;
+      total = await sql`SELECT COUNT(*) as count FROM users u WHERE u.deleted_at IS NULL AND (u.name ILIKE ${'%' + search + '%'} OR u.email ILIKE ${'%' + search + '%'})`;
+    } else {
+      // Default: all users
+      users = await sql`
+        SELECT
+          u.id, u.name, u.email, u.phone, u.avatar_url, u.bio,
+          u.city, u.state, u.is_active, u.subscription_type,
+          u.subscription_expires_at, u.seller_rating, u.total_sales,
+          u.balance, u.created_at, u.last_login_at,
+          u.pix_key_type, u.pix_key, u.bank_code, u.bank_name,
+          u.bank_agency, u.bank_account, u.bank_account_type, u.cpf,
+          (SELECT COUNT(*) FROM products WHERE seller_id = u.id AND status = 'active') as products_count,
+          (SELECT COUNT(*) FROM orders WHERE seller_id = u.id AND status = 'delivered') as sales_count
+        FROM users u
+        WHERE u.deleted_at IS NULL
+        ORDER BY u.created_at DESC
+        LIMIT ${parseInt(limit)}
+        OFFSET ${offset}
+      `;
+      total = await sql`SELECT COUNT(*) as count FROM users WHERE deleted_at IS NULL`;
+    }
 
     res.json({
       success: true,

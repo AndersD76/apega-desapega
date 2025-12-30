@@ -1,8 +1,8 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Select,
   SelectContent,
@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { formatCurrency, formatPercentage } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import { getSettings, Settings } from '@/lib/api'
 import {
   Calculator,
@@ -19,9 +19,7 @@ import {
   Percent,
   CreditCard,
   Wallet,
-  Receipt,
   TrendingUp,
-  ArrowRight,
   Crown,
   User,
 } from 'lucide-react'
@@ -33,7 +31,6 @@ const DEFAULT_FEES = {
   pixFeePercent: 0.99,
   cardFeePercent: 3.99,
   cardFeeFixed: 0.39,
-  boletoFeeFixed: 3.49,
   withdrawalFee: 2.00,
   cashbackPercentage: 5,
 }
@@ -71,7 +68,6 @@ export default function Simulator() {
             pixFeePercent: settings.pix_fee ?? prev.pixFeePercent,
             cardFeePercent: settings.card_fee_percent ?? prev.cardFeePercent,
             cardFeeFixed: settings.card_fee_fixed ?? prev.cardFeeFixed,
-            boletoFeeFixed: settings.boleto_fee ?? prev.boletoFeeFixed,
             withdrawalFee: settings.withdrawal_fee ?? prev.withdrawalFee,
             cashbackPercentage: settings.cashback_buyer ?? prev.cashbackPercentage,
           }));
@@ -103,10 +99,6 @@ export default function Simulator() {
         paymentFee = ((productPrice + shippingPrice) * (fees.cardFeePercent / 100)) + fees.cardFeeFixed
         paymentFeeDescription = `${fees.cardFeePercent}% + R$ ${fees.cardFeeFixed.toFixed(2)}`
         break
-      case 'boleto':
-        paymentFee = fees.boletoFeeFixed
-        paymentFeeDescription = `Taxa fixa R$ ${fees.boletoFeeFixed.toFixed(2)}`
-        break
     }
 
     const totalBuyerPays = productPrice + shippingPrice
@@ -126,7 +118,7 @@ export default function Simulator() {
       platformProfit,
       cashbackAmount,
     }
-  }, [productPrice, shippingPrice, paymentMethod, sellerType])
+  }, [productPrice, shippingPrice, paymentMethod, sellerType, fees])
 
   const ResultRow = ({ label, value, highlight = false, icon }: {
     label: string
@@ -147,9 +139,9 @@ export default function Simulator() {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Simulador de NegÃ³cio</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Simulador de Negocio</h1>
         <p className="text-muted-foreground">
-          Simule transaÃ§Ãµes e entenda o fluxo financeiro do marketplace
+          Simule transacoes e entenda o fluxo financeiro do marketplace
         </p>
       </div>
 
@@ -159,15 +151,15 @@ export default function Simulator() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calculator className="h-5 w-5" />
-              Dados da TransaÃ§Ã£o
+              Dados da Transacao
             </CardTitle>
             <CardDescription>
-              Configure os parÃ¢metros da venda para simular
+              Configure os parametros da venda para simular
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium">PreÃ§o do Produto</label>
+              <label className="text-sm font-medium">Preco do Produto</label>
               <div className="relative">
                 <span className="absolute left-3 top-2.5 text-muted-foreground">R$</span>
                 <Input
@@ -181,7 +173,7 @@ export default function Simulator() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">PreÃ§o do Frete</label>
+              <label className="text-sm font-medium">Preco do Frete</label>
               <div className="relative">
                 <span className="absolute left-3 top-2.5 text-muted-foreground">R$</span>
                 <Input
@@ -204,13 +196,13 @@ export default function Simulator() {
                   <SelectItem value="free">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4" />
-                      Vendedor Free ({fees.commissionPercentage}% comissÃ£o)
+                      Vendedor Free ({fees.commissionPercentage}% comissao)
                     </div>
                   </SelectItem>
                   <SelectItem value="premium">
                     <div className="flex items-center gap-2">
                       <Crown className="h-4 w-4 text-yellow-500" />
-                      Vendedor Premium ({fees.premiumCommissionPercentage}% comissÃ£o)
+                      Vendedor Premium ({fees.premiumCommissionPercentage}% comissao)
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -220,18 +212,14 @@ export default function Simulator() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Forma de Pagamento</label>
               <Tabs value={paymentMethod} onValueChange={setPaymentMethod}>
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="pix" className="gap-2">
                     <Wallet className="h-4 w-4" />
                     PIX
                   </TabsTrigger>
                   <TabsTrigger value="card" className="gap-2">
                     <CreditCard className="h-4 w-4" />
-                    CartÃ£o
-                  </TabsTrigger>
-                  <TabsTrigger value="boleto" className="gap-2">
-                    <Receipt className="h-4 w-4" />
-                    Boleto
+                    Cartao
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -247,10 +235,10 @@ export default function Simulator() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
-              Resultado da SimulaÃ§Ã£o
+              Resultado da Simulacao
             </CardTitle>
             <CardDescription>
-              Detalhamento completo da transaÃ§Ã£o
+              Detalhamento completo da transacao
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -290,7 +278,7 @@ export default function Simulator() {
                 Plataforma
               </h3>
               <ResultRow
-                label={`ComissÃ£o (${simulation.commissionRate}%)`}
+                label={`Comissao (${simulation.commissionRate}%)`}
                 value={formatCurrency(simulation.commissionAmount)}
               />
               <ResultRow
@@ -299,7 +287,7 @@ export default function Simulator() {
               />
               <Separator />
               <ResultRow
-                label="Lucro LÃ­quido"
+                label="Lucro Liquido"
                 value={formatCurrency(simulation.platformProfit)}
                 highlight
                 icon={<TrendingUp className="h-4 w-4 text-green-500" />}
@@ -317,21 +305,21 @@ export default function Simulator() {
                 Vendedor Recebe
               </h3>
               <ResultRow
-                label="PreÃ§o do Produto"
+                label="Preco do Produto"
                 value={formatCurrency(simulation.productPrice)}
               />
               <ResultRow
-                label={`ComissÃ£o (${simulation.commissionRate}%)`}
+                label={`Comissao (${simulation.commissionRate}%)`}
                 value={`- ${formatCurrency(simulation.commissionAmount)}`}
               />
               <Separator />
               <ResultRow
-                label="Valor LÃ­quido"
+                label="Valor Liquido"
                 value={formatCurrency(simulation.sellerReceives)}
                 highlight
               />
               <p className="mt-2 text-xs text-muted-foreground">
-                * Valor liberado apÃ³s confirmaÃ§Ã£o de entrega
+                * Valor liberado apos confirmacao de entrega
               </p>
             </div>
           </CardContent>
@@ -343,7 +331,7 @@ export default function Simulator() {
         <CardHeader>
           <CardTitle>Tabela de Taxas</CardTitle>
           <CardDescription>
-            ReferÃªncia rÃ¡pida de todas as taxas aplicadas
+            Referencia rapida de todas as taxas aplicadas
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -351,7 +339,7 @@ export default function Simulator() {
             <div className="rounded-lg border p-4">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Percent className="h-4 w-4 text-primary" />
-                ComissÃ£o Free
+                Comissao Free
               </div>
               <p className="mt-2 text-2xl font-bold">{fees.commissionPercentage}%</p>
               <p className="text-xs text-muted-foreground">Por venda realizada</p>
@@ -360,7 +348,7 @@ export default function Simulator() {
             <div className="rounded-lg border p-4">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Crown className="h-4 w-4 text-yellow-500" />
-                ComissÃ£o Premium
+                Comissao Premium
               </div>
               <p className="mt-2 text-2xl font-bold">{fees.premiumCommissionPercentage}%</p>
               <p className="text-xs text-muted-foreground">Por venda realizada</p>
@@ -378,19 +366,10 @@ export default function Simulator() {
             <div className="rounded-lg border p-4">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <CreditCard className="h-4 w-4 text-blue-500" />
-                Taxa CartÃ£o
+                Taxa Cartao
               </div>
               <p className="mt-2 text-2xl font-bold">{fees.cardFeePercent}% + R$ {fees.cardFeeFixed.toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground">Por transaÃ§Ã£o</p>
-            </div>
-
-            <div className="rounded-lg border p-4">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Receipt className="h-4 w-4 text-orange-500" />
-                Taxa Boleto
-              </div>
-              <p className="mt-2 text-2xl font-bold">{formatCurrency(fees.boletoFeeFixed)}</p>
-              <p className="text-xs text-muted-foreground">Taxa fixa por boleto</p>
+              <p className="text-xs text-muted-foreground">Por transacao</p>
             </div>
 
             <div className="rounded-lg border p-4">
@@ -416,6 +395,3 @@ export default function Simulator() {
     </div>
   )
 }
-
-
-
