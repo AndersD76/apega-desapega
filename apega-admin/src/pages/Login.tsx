@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, Lock, Mail, AlertCircle } from 'lucide-react'
 import { adminLogin } from '@/lib/api'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Login() {
-  const navigate = useNavigate()
+  const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -22,10 +22,8 @@ export default function Login() {
     try {
       const response = await adminLogin(email, password)
 
-      if (response.success && response.token) {
-        localStorage.setItem('admin_token', response.token)
-        localStorage.setItem('admin_user', JSON.stringify(response.user))
-        navigate('/')
+      if (response.success && response.token && response.user) {
+        login(response.token, response.user)
       } else {
         setError(response.message || 'Credenciais invalidas')
       }

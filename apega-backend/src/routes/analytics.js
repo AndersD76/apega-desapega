@@ -720,7 +720,11 @@ router.delete('/admin/users/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const user = await sql`SELECT id, email FROM users WHERE id = ${id}`;
+    if (!id) {
+      return res.status(400).json({ error: true, message: 'ID do usuário é obrigatório' });
+    }
+
+    const user = await sql`SELECT id, email FROM users WHERE id = ${id}::uuid`;
     if (user.length === 0) {
       return res.status(404).json({ error: true, message: 'Usuário não encontrado' });
     }
@@ -729,17 +733,17 @@ router.delete('/admin/users/:id', async (req, res, next) => {
     await sql`
       UPDATE users SET
         is_active = false,
-        email = CONCAT('deleted_', ${id}, '@deleted.com'),
+        email = CONCAT('deleted_', ${id}::text, '@deleted.com'),
         name = 'Usuário Removido',
         phone = null,
         avatar_url = null,
         bio = null,
         deleted_at = NOW()
-      WHERE id = ${id}
+      WHERE id = ${id}::uuid
     `;
 
     // Remover produtos do usuário
-    await sql`UPDATE products SET status = 'deleted' WHERE seller_id = ${id}`;
+    await sql`UPDATE products SET status = 'deleted' WHERE seller_id = ${id}::uuid`;
 
     res.json({ success: true, message: 'Usuário excluído com sucesso' });
   } catch (error) {

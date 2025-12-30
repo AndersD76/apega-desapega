@@ -13,6 +13,7 @@ interface AuthContextType {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
+  login: (token: string, user: User) => void
   logout: () => void
 }
 
@@ -66,6 +67,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth()
   }, [])
 
+  const login = (token: string, userData: User) => {
+    localStorage.setItem('admin_token', token)
+    localStorage.setItem('admin_user', JSON.stringify(userData))
+    setUser(userData)
+    navigate('/')
+  }
+
   const logout = () => {
     localStorage.removeItem('admin_token')
     localStorage.removeItem('admin_user')
@@ -78,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isLoading,
       isAuthenticated: !!user,
+      login,
       logout
     }}>
       {children}
