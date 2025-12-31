@@ -1221,13 +1221,15 @@ router.put('/admin/settings/:key', async (req, res, next) => {
     const { key } = req.params;
     const { value } = req.body;
 
+    // UPSERT - insere se não existir, atualiza se existir
     await sql`
-      UPDATE settings
-      SET value = ${JSON.stringify(value)}, updated_at = NOW()
-      WHERE key = ${key}
+      INSERT INTO settings (key, value, updated_at)
+      VALUES (${key}, ${JSON.stringify(value)}, NOW())
+      ON CONFLICT (key)
+      DO UPDATE SET value = ${JSON.stringify(value)}, updated_at = NOW()
     `;
 
-    res.json({ success: true, message: 'Configuração atualizada' });
+    res.json({ success: true, message: 'Configuracao atualizada' });
   } catch (error) {
     next(error);
   }
