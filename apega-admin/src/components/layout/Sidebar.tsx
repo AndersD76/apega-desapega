@@ -131,7 +131,7 @@ export function Sidebar() {
         <div className="flex h-16 items-center gap-2 border-b px-6">
           <Heart className="h-8 w-8 text-primary" />
           <div className="flex flex-col">
-            <span className="text-lg font-bold">Apega Admin</span>
+            <span className="text-lg font-bold">ApegaDesapega</span>
             <span className="text-xs text-muted-foreground">Painel de Controle</span>
           </div>
         </div>

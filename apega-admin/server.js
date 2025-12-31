@@ -48,6 +48,6 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Apega Admin running on port ${PORT}`);
+  console.log(`ApegaDesapega Admin running on port ${PORT}`);
   console.log(`Serving static files from: ${distPath}`);
 });
