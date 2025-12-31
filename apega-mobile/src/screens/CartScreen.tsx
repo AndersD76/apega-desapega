@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -59,27 +60,35 @@ export function CartScreen({ navigation }: any) {
   const total = selectedShipping === 'express' ? subtotal + (shipping * 1.8) : summary.total;
   const savings = cartItems.reduce((sum, item) => sum + ((item.original_price || item.price) - item.price), 0);
 
-  const handleRemoveItem = (productId: string) => {
-    Alert.alert('Remover item', 'Deseja remover este item do carrinho?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Remover',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await cartService.removeFromCart(productId);
-            setCartItems(cartItems.filter((item) => item.id !== productId));
-            setSummary(prev => ({
-              ...prev,
-              itemCount: prev.itemCount - 1,
-              subtotal: prev.subtotal - (cartItems.find(i => i.id === productId)?.price || 0),
-            }));
-          } catch (error) {
-            Alert.alert('Erro', 'Não foi possível remover o item');
-          }
-        },
-      },
-    ]);
+  const handleRemoveItem = async (productId: string) => {
+    const doRemove = async () => {
+      try {
+        await cartService.removeFromCart(productId);
+        setCartItems(prev => prev.filter((item) => item.id !== productId));
+        setSummary(prev => ({
+          ...prev,
+          itemCount: prev.itemCount - 1,
+          subtotal: prev.subtotal - (cartItems.find(i => i.id === productId)?.price || 0),
+        }));
+      } catch (error) {
+        if (Platform.OS === 'web') {
+          window.alert('Não foi possível remover o item');
+        } else {
+          Alert.alert('Erro', 'Não foi possível remover o item');
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Deseja remover este item do carrinho?')) {
+        await doRemove();
+      }
+    } else {
+      Alert.alert('Remover item', 'Deseja remover este item do carrinho?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Remover', style: 'destructive', onPress: doRemove },
+      ]);
+    }
   };
 
   const handleCheckout = () => {

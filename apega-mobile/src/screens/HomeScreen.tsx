@@ -14,6 +14,7 @@ import {
   Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
@@ -195,9 +196,15 @@ export function HomeScreen({ navigation }: any) {
 
   useEffect(() => {
     fetchData();
-    fetchCartCount();
     fetchFavorites();
-  }, [fetchData, fetchCartCount, fetchFavorites]);
+  }, [fetchData, fetchFavorites]);
+
+  // Atualizar carrinho quando a tela volta a ter foco
+  useFocusEffect(
+    useCallback(() => {
+      fetchCartCount();
+    }, [fetchCartCount])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
