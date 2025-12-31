@@ -7,20 +7,21 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
 import { formatPrice } from '../utils/format';
+import { usersService } from '../api/users';
 
 export function ProfileScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const auth = useAuth();
-  const { user, isAuthenticated, isLoading, logout, updateUser } = auth || {};
+  const { user, isAuthenticated, isLoading, logout, refreshUser } = auth || {};
 
-  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
-  const [localBannerUrl, setLocalBannerUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   const pickImage = async (type: 'avatar' | 'banner') => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (status !== 'granted') {
-      Alert.alert('Permissão necessária', 'Precisamos de acesso à galeria para trocar a imagem.');
+      Alert.alert('Permissao necessaria', 'Precisamos de acesso a galeria para trocar a imagem.');
       return;
     }
 
@@ -33,18 +34,40 @@ export function ProfileScreen({ navigation }: any) {
 
     if (!result.canceled && result.assets[0]) {
       const uri = result.assets[0].uri;
+      await uploadImage(uri, type);
+    }
+  };
+
+  const uploadImage = async (imageUri: string, type: 'avatar' | 'banner') => {
+    if (type === 'avatar') {
+      setUploadingAvatar(true);
+    } else {
+      setUploadingBanner(true);
+    }
+
+    try {
+      const response = await usersService.uploadImage(imageUri, type);
+      if (response.success) {
+        // Refresh user data to get updated avatar/banner URLs
+        if (refreshUser) {
+          await refreshUser();
+        }
+        Alert.alert('Sucesso', 'Imagem atualizada com sucesso!');
+      }
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      Alert.alert('Erro', error?.response?.data?.message || 'Nao foi possivel enviar a imagem');
+    } finally {
       if (type === 'avatar') {
-        setLocalAvatarUrl(uri);
-        // TODO: Upload to server and update user
+        setUploadingAvatar(false);
       } else {
-        setLocalBannerUrl(uri);
-        // TODO: Upload to server and update user
+        setUploadingBanner(false);
       }
     }
   };
 
-  const avatarUrl = localAvatarUrl || user?.avatar_url;
-  const bannerUrl = localBannerUrl || user?.banner_url;
+  const avatarUrl = user?.avatar_url;
+  const bannerUrl = user?.banner_url;
 
   const handleLogout = async () => {
     if (Platform.OS === 'web') {
@@ -119,21 +142,37 @@ export function ProfileScreen({ navigation }: any) {
           )}
 
           {/* Banner Edit Button */}
-          <Pressable style={[styles.bannerEditBtn, { top: insets.top + 12 }]} onPress={() => pickImage('banner')}>
-            <Ionicons name="camera" size={18} color="#fff" />
+          <Pressable
+            style={[styles.bannerEditBtn, { top: insets.top + 12 }]}
+            onPress={() => pickImage('banner')}
+            disabled={uploadingBanner}
+          >
+            {uploadingBanner ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="camera" size={18} color="#fff" />
+            )}
           </Pressable>
 
           {/* Profile Content */}
           <View style={[styles.profileContent, { paddingTop: insets.top + 70 }]}>
             <View style={styles.avatarWrap}>
-              {avatarUrl ? (
+              {uploadingAvatar ? (
+                <View style={styles.avatarPlaceholder}>
+                  <ActivityIndicator size="large" color="#5D8A7D" />
+                </View>
+              ) : avatarUrl ? (
                 <Image source={{ uri: avatarUrl }} style={styles.avatar} contentFit="cover" />
               ) : (
                 <View style={styles.avatarPlaceholder}>
                   <Ionicons name="person" size={48} color="#5D8A7D" />
                 </View>
               )}
-              <Pressable style={styles.editAvatarBtn} onPress={() => pickImage('avatar')}>
+              <Pressable
+                style={styles.editAvatarBtn}
+                onPress={() => pickImage('avatar')}
+                disabled={uploadingAvatar}
+              >
                 <Ionicons name="camera" size={14} color="#fff" />
               </Pressable>
             </View>

@@ -21,6 +21,7 @@ import { ordersService, shippingService, Order, api } from '../api';
 import { formatPrice } from '../utils/format';
 import { API_URL } from '../api/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const STATUS_CONFIG: Record<string, { color: string; bgColor: string; label: string; icon: string }> = {
   pending_payment: { color: '#F59E0B', bgColor: '#FEF3C7', label: 'Aguardando pagamento', icon: 'time-outline' },
@@ -47,6 +48,13 @@ export function OrdersScreen({ navigation, route }: any) {
   const [shippingCode, setShippingCode] = useState('');
   const [orderToShip, setOrderToShip] = useState<Order | null>(null);
   const [submittingShipping, setSubmittingShipping] = useState(false);
+
+  // Review Modal
+  const [reviewModal, setReviewModal] = useState(false);
+  const [orderToReview, setOrderToReview] = useState<Order | null>(null);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -172,6 +180,52 @@ export function OrdersScreen({ navigation, route }: any) {
     }
   };
 
+  const handleOpenReview = (order: Order) => {
+    setOrderToReview(order);
+    setReviewRating(0);
+    setReviewComment('');
+    setReviewModal(true);
+  };
+
+  const submitReview = async () => {
+    if (reviewRating === 0) {
+      Alert.alert('Erro', 'Selecione uma avaliacao de 1 a 5 estrelas');
+      return;
+    }
+    if (!orderToReview) return;
+
+    setSubmittingReview(true);
+    try {
+      const token = await AsyncStorage.getItem('@auth_token');
+      const response = await fetch(`${API_URL}/reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          order_id: orderToReview.id,
+          rating: reviewRating,
+          comment: reviewComment.trim() || null,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        Alert.alert('Sucesso', 'Avaliacao enviada com sucesso!');
+        setReviewModal(false);
+        fetchOrders();
+      } else {
+        Alert.alert('Erro', data.message || 'Nao foi possivel enviar a avaliacao');
+      }
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      Alert.alert('Erro', 'Nao foi possivel enviar a avaliacao');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
   const renderOrder = ({ item }: { item: Order }) => {
     const status = STATUS_CONFIG[item.status] || STATUS_CONFIG.pending_payment;
     const personName = orderType === 'purchases' ? item.seller_name : item.buyer_name;
@@ -237,11 +291,17 @@ export function OrdersScreen({ navigation, route }: any) {
               <Text style={styles.actionBtnPrimaryText}>Rastrear</Text>
             </Pressable>
           )}
-          {(item.status === 'delivered' || item.status === 'completed') && orderType === 'purchases' && (
-            <Pressable style={styles.actionBtnPrimary}>
+          {(item.status === 'delivered' || item.status === 'completed') && orderType === 'purchases' && !item.has_review && (
+            <Pressable style={styles.actionBtnPrimary} onPress={() => handleOpenReview(item)}>
               <Ionicons name="star-outline" size={16} color="#fff" />
               <Text style={styles.actionBtnPrimaryText}>Avaliar</Text>
             </Pressable>
+          )}
+          {(item.status === 'delivered' || item.status === 'completed') && orderType === 'purchases' && item.has_review && (
+            <View style={[styles.actionBtnPrimary, { backgroundColor: '#10B981' }]}>
+              <Ionicons name="checkmark-circle" size={16} color="#fff" />
+              <Text style={styles.actionBtnPrimaryText}>Avaliado</Text>
+            </View>
           )}
           {/* Seller actions */}
           {(item.status === 'paid' || item.status === 'pending_shipment') && orderType === 'sales' && (
@@ -440,6 +500,91 @@ export function OrdersScreen({ navigation, route }: any) {
           </View>
         </View>
       </Modal>
+
+      {/* Review Modal */}
+      <Modal visible={reviewModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 20 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Avaliar Vendedor</Text>
+              <Pressable onPress={() => setReviewModal(false)}>
+                <Ionicons name="close" size={24} color="#1A1A1A" />
+              </Pressable>
+            </View>
+
+            {orderToReview && (
+              <>
+                {/* Order Info */}
+                <View style={styles.shippingOrderInfo}>
+                  <Image source={{ uri: orderToReview.product_image }} style={styles.shippingProductImg} contentFit="cover" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.shippingProductTitle} numberOfLines={1}>{orderToReview.product_title}</Text>
+                    <Text style={styles.shippingOrderNumber}>Vendido por {orderToReview.seller_name}</Text>
+                  </View>
+                </View>
+
+                {/* Stars */}
+                <Text style={styles.reviewLabel}>Sua avaliacao</Text>
+                <View style={styles.starsRow}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Pressable key={star} onPress={() => setReviewRating(star)}>
+                      <Ionicons
+                        name={star <= reviewRating ? 'star' : 'star-outline'}
+                        size={40}
+                        color={star <= reviewRating ? '#FFD700' : '#D1D5DB'}
+                      />
+                    </Pressable>
+                  ))}
+                </View>
+                <Text style={styles.ratingLabel}>
+                  {reviewRating === 0 ? 'Toque nas estrelas' :
+                   reviewRating === 1 ? 'Muito ruim' :
+                   reviewRating === 2 ? 'Ruim' :
+                   reviewRating === 3 ? 'Regular' :
+                   reviewRating === 4 ? 'Bom' : 'Excelente'}
+                </Text>
+
+                {/* Comment */}
+                <Text style={styles.reviewLabel}>Comentario (opcional)</Text>
+                <TextInput
+                  style={styles.reviewInput}
+                  placeholder="Conte como foi sua experiencia..."
+                  placeholderTextColor="#A3A3A3"
+                  value={reviewComment}
+                  onChangeText={setReviewComment}
+                  multiline
+                  numberOfLines={3}
+                  maxLength={500}
+                />
+
+                {/* Actions */}
+                <View style={styles.shippingActions}>
+                  <Pressable
+                    style={styles.shippingCancelBtn}
+                    onPress={() => setReviewModal(false)}
+                  >
+                    <Text style={styles.shippingCancelText}>Cancelar</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.reviewSubmitBtn, submittingReview && { opacity: 0.6 }]}
+                    onPress={submitReview}
+                    disabled={submittingReview}
+                  >
+                    {submittingReview ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <>
+                        <Ionicons name="star" size={16} color="#fff" />
+                        <Text style={styles.shippingConfirmText}>Enviar Avaliacao</Text>
+                      </>
+                    )}
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -545,6 +690,13 @@ const styles = StyleSheet.create({
   shippingCancelText: { fontSize: 14, fontWeight: '500', color: '#737373' },
   shippingConfirmBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#5D8A7D', borderRadius: 12, paddingVertical: 14 },
   shippingConfirmText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+
+  // Review Modal
+  reviewLabel: { fontSize: 14, fontWeight: '600', color: '#1A1A1A', marginBottom: 12, marginTop: 8 },
+  starsRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 8 },
+  ratingLabel: { fontSize: 14, color: '#737373', textAlign: 'center', marginBottom: 16 },
+  reviewInput: { backgroundColor: '#F5F5F5', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 15, color: '#1A1A1A', textAlignVertical: 'top', minHeight: 100, marginBottom: 20 },
+  reviewSubmitBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, paddingVertical: 14, overflow: 'hidden', backgroundColor: '#FFD700' },
 });
 
 export default OrdersScreen;

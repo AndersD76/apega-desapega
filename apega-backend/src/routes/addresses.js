@@ -141,9 +141,12 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     if (deleted[0].is_default) {
       await sql`
         UPDATE addresses SET is_default = true
-        WHERE user_id = ${req.user.id}
-        ORDER BY created_at DESC
-        LIMIT 1
+        WHERE id = (
+          SELECT id FROM addresses
+          WHERE user_id = ${req.user.id}
+          ORDER BY created_at DESC
+          LIMIT 1
+        )
       `;
     }
 

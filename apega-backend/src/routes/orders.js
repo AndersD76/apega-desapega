@@ -31,7 +31,8 @@ router.get('/purchases', authenticate, async (req, res, next) => {
           p.size as product_size,
           (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as product_image,
           u.name as seller_name,
-          u.avatar_url as seller_avatar
+          u.avatar_url as seller_avatar,
+          EXISTS(SELECT 1 FROM reviews r WHERE r.order_id = o.id AND r.reviewer_id = ${req.user.id}) as has_review
         FROM orders o
         JOIN products p ON o.product_id = p.id
         JOIN users u ON o.seller_id = u.id
@@ -47,7 +48,8 @@ router.get('/purchases', authenticate, async (req, res, next) => {
           p.size as product_size,
           (SELECT image_url FROM product_images WHERE product_id = p.id AND is_primary = true LIMIT 1) as product_image,
           u.name as seller_name,
-          u.avatar_url as seller_avatar
+          u.avatar_url as seller_avatar,
+          EXISTS(SELECT 1 FROM reviews r WHERE r.order_id = o.id AND r.reviewer_id = ${req.user.id}) as has_review
         FROM orders o
         JOIN products p ON o.product_id = p.id
         JOIN users u ON o.seller_id = u.id

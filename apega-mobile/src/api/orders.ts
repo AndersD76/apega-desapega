@@ -27,6 +27,7 @@ export interface Order {
   seller_avatar?: string;
   buyer_name?: string;
   buyer_avatar?: string;
+  has_review?: boolean;
   created_at: string;
 }
 
