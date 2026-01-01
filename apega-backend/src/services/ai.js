@@ -158,7 +158,7 @@ async function virtualTryOn(clothingImageUrl, modelImageUrl = null) {
       const statusResponse = await axios.get(
         `https://api.replicate.com/v1/predictions/${prediction.id}`,
         {
-          headers: { 'Authorization': `Token ${REPLICATE_API_KEY}` },
+          headers: { 'Authorization': `Token ${REPLICATE_API_TOKEN}` },
         }
       );
       prediction = statusResponse.data;
