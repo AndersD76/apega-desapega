@@ -9,9 +9,46 @@ const mercadopago = require('../services/mercadopago');
 
 const router = express.Router();
 
-// Taxa de comissão - PROMOÇÃO: 0% para primeiras 50 vendedoras
-const COMMISSION_RATE = 0.00; // 0% (promocional para primeiros 50) - depois será 20%
-const PREMIUM_COMMISSION_RATE = 0.00; // 0% (promocional) - depois será 10%
+// Função para buscar taxas do banco de dados
+const getCommissionRates = async () => {
+  try {
+    const settings = await sql`SELECT key, value FROM settings WHERE key IN ('commission_rate', 'premium_commission_rate')`;
+    const rates = {
+      standard: 0.20, // 20% padrão
+      premium: 0.10   // 10% premium
+    };
+
+    settings.forEach(s => {
+      const value = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
+      if (s.key === 'commission_rate') {
+        rates.standard = parseFloat(value) / 100; // Converte de porcentagem para decimal
+      } else if (s.key === 'premium_commission_rate') {
+        rates.premium = parseFloat(value) / 100;
+      }
+    });
+
+    return rates;
+  } catch (error) {
+    console.error('Erro ao buscar taxas:', error);
+    return { standard: 0.20, premium: 0.10 }; // Valores padrão em caso de erro
+  }
+};
+
+// Rota pública para buscar taxas (para o app exibir)
+router.get('/fees', async (req, res, next) => {
+  try {
+    const rates = await getCommissionRates();
+    res.json({
+      success: true,
+      fees: {
+        standard_rate: rates.standard * 100, // Retorna em porcentagem
+        premium_rate: rates.premium * 100
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Gerar número do pedido
 const generateOrderNumber = () => {
@@ -54,7 +91,9 @@ router.post('/pix', authenticate, async (req, res, next) => {
     const calculatedShippingPrice = shipping_price || shipping_option?.price || 15.00;
     const totalAmount = productPrice + calculatedShippingPrice;
 
-    const commissionRate = product.seller_subscription === 'premium' ? PREMIUM_COMMISSION_RATE : COMMISSION_RATE;
+    // Buscar taxas do banco de dados
+    const rates = await getCommissionRates();
+    const commissionRate = product.seller_subscription === 'premium' ? rates.premium : rates.standard;
     const commissionAmount = productPrice * commissionRate;
     const sellerReceives = productPrice - commissionAmount;
 
@@ -157,7 +196,9 @@ router.post('/card', authenticate, async (req, res, next) => {
     const calculatedShippingPrice = shipping_price || shipping_option?.price || 15.00;
     const totalAmount = productPrice + calculatedShippingPrice;
 
-    const commissionRate = product.seller_subscription === 'premium' ? PREMIUM_COMMISSION_RATE : COMMISSION_RATE;
+    // Buscar taxas do banco de dados
+    const rates = await getCommissionRates();
+    const commissionRate = product.seller_subscription === 'premium' ? rates.premium : rates.standard;
     const commissionAmount = productPrice * commissionRate;
     const sellerReceives = productPrice - commissionAmount;
 
@@ -260,7 +301,9 @@ router.post('/boleto', authenticate, async (req, res, next) => {
     const calculatedShippingPrice = shipping_price || shipping_option?.price || 15.00;
     const totalAmount = productPrice + calculatedShippingPrice;
 
-    const commissionRate = product.seller_subscription === 'premium' ? PREMIUM_COMMISSION_RATE : COMMISSION_RATE;
+    // Buscar taxas do banco de dados
+    const rates = await getCommissionRates();
+    const commissionRate = product.seller_subscription === 'premium' ? rates.premium : rates.standard;
     const commissionAmount = productPrice * commissionRate;
     const sellerReceives = productPrice - commissionAmount;
 
