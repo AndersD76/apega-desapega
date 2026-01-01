@@ -12,17 +12,17 @@ const router = express.Router();
 // Função para buscar taxas do banco de dados
 const getCommissionRates = async () => {
   try {
-    const settings = await sql`SELECT key, value FROM settings WHERE key IN ('commission_rate', 'premium_commission_rate')`;
+    const settings = await sql`SELECT key, value FROM settings WHERE key IN ('commission_free', 'commission_premium')`;
     const rates = {
-      standard: 0.20, // 20% padrão
-      premium: 0.10   // 10% premium
+      standard: 0.12, // 12% padrão
+      premium: 0.08   // 8% premium
     };
 
     settings.forEach(s => {
       const value = typeof s.value === 'string' ? JSON.parse(s.value) : s.value;
-      if (s.key === 'commission_rate') {
+      if (s.key === 'commission_free') {
         rates.standard = parseFloat(value) / 100; // Converte de porcentagem para decimal
-      } else if (s.key === 'premium_commission_rate') {
+      } else if (s.key === 'commission_premium') {
         rates.premium = parseFloat(value) / 100;
       }
     });
@@ -30,7 +30,7 @@ const getCommissionRates = async () => {
     return rates;
   } catch (error) {
     console.error('Erro ao buscar taxas:', error);
-    return { standard: 0.20, premium: 0.10 }; // Valores padrão em caso de erro
+    return { standard: 0.12, premium: 0.08 }; // Valores padrão em caso de erro
   }
 };
 
