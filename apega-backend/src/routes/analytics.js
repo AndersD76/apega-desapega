@@ -679,7 +679,7 @@ router.get('/admin/users', async (req, res, next) => {
           SELECT
             u.id, u.name, u.email, u.phone, u.avatar_url, u.bio,
             u.city, u.state, u.is_active, u.subscription_type,
-            u.subscription_expires_at, u.seller_rating, u.total_sales,
+            u.subscription_expires_at, u.rating as seller_rating, u.total_sales,
             u.balance, u.created_at, u.last_login_at,
             u.pix_key_type, u.pix_key, u.bank_code, u.bank_name,
             u.bank_agency, u.bank_account, u.bank_account_type, u.cpf,
@@ -699,7 +699,7 @@ router.get('/admin/users', async (req, res, next) => {
           SELECT
             u.id, u.name, u.email, u.phone, u.avatar_url, u.bio,
             u.city, u.state, u.is_active, u.subscription_type,
-            u.subscription_expires_at, u.seller_rating, u.total_sales,
+            u.subscription_expires_at, u.rating as seller_rating, u.total_sales,
             u.balance, u.created_at, u.last_login_at,
             u.pix_key_type, u.pix_key, u.bank_code, u.bank_name,
             u.bank_agency, u.bank_account, u.bank_account_type, u.cpf,
@@ -720,7 +720,7 @@ router.get('/admin/users', async (req, res, next) => {
           SELECT
             u.id, u.name, u.email, u.phone, u.avatar_url, u.bio,
             u.city, u.state, u.is_active, u.subscription_type,
-            u.subscription_expires_at, u.seller_rating, u.total_sales,
+            u.subscription_expires_at, u.rating as seller_rating, u.total_sales,
             u.balance, u.created_at, u.last_login_at,
             u.pix_key_type, u.pix_key, u.bank_code, u.bank_name,
             u.bank_agency, u.bank_account, u.bank_account_type, u.cpf,
@@ -740,7 +740,7 @@ router.get('/admin/users', async (req, res, next) => {
           SELECT
             u.id, u.name, u.email, u.phone, u.avatar_url, u.bio,
             u.city, u.state, u.is_active, u.subscription_type,
-            u.subscription_expires_at, u.seller_rating, u.total_sales,
+            u.subscription_expires_at, u.rating as seller_rating, u.total_sales,
             u.balance, u.created_at, u.last_login_at,
             u.pix_key_type, u.pix_key, u.bank_code, u.bank_name,
             u.bank_agency, u.bank_account, u.bank_account_type, u.cpf,
@@ -760,7 +760,7 @@ router.get('/admin/users', async (req, res, next) => {
         SELECT
           u.id, u.name, u.email, u.phone, u.avatar_url, u.bio,
           u.city, u.state, u.is_active, u.subscription_type,
-          u.subscription_expires_at, u.seller_rating, u.total_sales,
+          u.subscription_expires_at, u.rating as seller_rating, u.total_sales,
           u.balance, u.created_at, u.last_login_at,
           u.pix_key_type, u.pix_key, u.bank_code, u.bank_name,
           u.bank_agency, u.bank_account, u.bank_account_type, u.cpf,
@@ -780,7 +780,7 @@ router.get('/admin/users', async (req, res, next) => {
         SELECT
           u.id, u.name, u.email, u.phone, u.avatar_url, u.bio,
           u.city, u.state, u.is_active, u.subscription_type,
-          u.subscription_expires_at, u.seller_rating, u.total_sales,
+          u.subscription_expires_at, u.rating as seller_rating, u.total_sales,
           u.balance, u.created_at, u.last_login_at,
           u.pix_key_type, u.pix_key, u.bank_code, u.bank_name,
           u.bank_agency, u.bank_account, u.bank_account_type, u.cpf,
