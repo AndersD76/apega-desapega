@@ -317,18 +317,31 @@ router.post('/withdrawals/:transactionId/:action', requireAdmin, async (req, res
       return res.status(400).json({ error: true, message: 'Acao invalida' });
     }
 
+    // Buscar transação primeiro para pegar o valor e user_id
+    const transaction = await sql`
+      SELECT * FROM transactions WHERE id = ${transactionId} AND type = 'withdrawal' AND status = 'pending'
+    `;
+
+    if (transaction.length === 0) {
+      return res.status(404).json({ error: true, message: 'Transacao nao encontrada ou ja processada' });
+    }
+
     const status = action === 'approve' ? 'approved' : 'rejected';
+
+    // Se rejeitado, devolver o valor ao saldo do usuário
+    if (action === 'reject') {
+      await sql`
+        UPDATE users SET balance = balance + ${transaction[0].amount}
+        WHERE id = ${transaction[0].user_id}
+      `;
+    }
 
     const updated = await sql`
       UPDATE transactions
-      SET status = ${status}
-      WHERE id = ${transactionId} AND type = 'withdrawal'
+      SET status = ${status}, updated_at = NOW()
+      WHERE id = ${transactionId}
       RETURNING *
     `;
-
-    if (updated.length === 0) {
-      return res.status(404).json({ error: true, message: 'Transacao nao encontrada' });
-    }
 
     res.json({ success: true, transaction: updated[0] });
   } catch (error) {
