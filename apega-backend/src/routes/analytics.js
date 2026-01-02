@@ -332,8 +332,8 @@ router.get('/admin/abandoned-carts', async (req, res, next) => {
     const offset = (page - 1) * limit;
 
     // Buscar carrinhos agrupados por usuário
-    // Considera "abandonado" se criado há mais de 1 hora e não foi convertido em pedido
-    let carts = await sql`
+    // Considera "abandonado" se criado há mais de 24 horas
+    const allCarts = await sql`
       SELECT
         ci.user_id as id,
         ci.user_id,
@@ -348,20 +348,26 @@ router.get('/admin/abandoned-carts', async (req, res, next) => {
           WHEN MAX(ci.created_at) < NOW() - INTERVAL '24 hours' THEN 'abandoned'
           WHEN MAX(ci.created_at) < NOW() - INTERVAL '1 hour' THEN 'expiring'
           ELSE 'active'
-        END as status
+        END as cart_status
       FROM cart_items ci
       JOIN users u ON ci.user_id = u.id
       JOIN products p ON ci.product_id = p.id
       WHERE p.status = 'active'
       GROUP BY ci.user_id, u.name, u.email, u.phone
-      HAVING ${status === 'all' ? sql`true` :
-              status === 'abandoned' ? sql`MAX(ci.created_at) < NOW() - INTERVAL '24 hours'` :
-              status === 'expiring' ? sql`MAX(ci.created_at) < NOW() - INTERVAL '1 hour' AND MAX(ci.created_at) >= NOW() - INTERVAL '24 hours'` :
-              sql`MAX(ci.created_at) >= NOW() - INTERVAL '1 hour'`}
       ORDER BY last_activity_at DESC
-      LIMIT ${parseInt(limit)}
-      OFFSET ${offset}
     `;
+
+    // Filtrar por status no JavaScript
+    let carts = allCarts;
+    if (status !== 'all') {
+      carts = allCarts.filter(c => c.cart_status === status);
+    }
+
+    // Aplicar paginação
+    const paginatedCarts = carts.slice(offset, offset + parseInt(limit));
+
+    // Adicionar campo status para compatibilidade
+    paginatedCarts.forEach(c => c.status = c.cart_status);
 
     // Stats
     const statsResult = await sql`
@@ -384,7 +390,8 @@ router.get('/admin/abandoned-carts', async (req, res, next) => {
 
     res.json({
       success: true,
-      carts,
+      carts: paginatedCarts,
+      total: carts.length,
       stats: statsResult[0] || { abandoned: 0, recovered: 0, expiring: 0, lost_revenue: 0 }
     });
   } catch (error) {
