@@ -5,6 +5,6 @@
     "buildCommand": "cd apega-backend && npm install"
   },
   "deploy": {
-    "startCommand": "cd apega-backend && node src/index.js"
+    "startCommand": "cd apega-backend && node src/server.js"
   }
 }
